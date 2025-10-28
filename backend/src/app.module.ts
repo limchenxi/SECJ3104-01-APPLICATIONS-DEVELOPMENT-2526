@@ -9,6 +9,8 @@ import { QuizModule } from './quiz/quiz.module';
 import { RphModule } from './rph/rph.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { AuthModule } from './auth/auth.module';
     QuizModule,
     RphModule,
     UsersModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
