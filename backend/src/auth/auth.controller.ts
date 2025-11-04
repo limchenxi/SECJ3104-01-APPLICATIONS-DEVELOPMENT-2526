@@ -7,14 +7,18 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // @Post('login')
+  // async login(@Body() dto: LoginDto) {
+  //   return this.authService.login(dto.email, dto.password);
+  // }
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+  login(@Body(ValidationPipe) loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async getProfile(@Req() req) {
-    return this.authService.getProfile(req.user);
-  }
+  // @UseGuards(JwtAuthGuard)
+  // @Get('me')
+  // async getProfile(@Req() req) {
+  //   return this.authService.getProfile(req.user);
+  // }
 }

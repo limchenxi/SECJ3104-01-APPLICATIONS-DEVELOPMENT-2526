@@ -8,8 +8,15 @@ import * as bcrypt from 'bcryptjs';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+  findByEmail(email: string): User | null {
+    // return this.userModel.findOne({ email }).exec();
+    const user = this.users.find(
+      (u) => u.email === email && u.password === password,
+    );
+    if (!user) {
+      return { message: 'User not found or invalid password' };
+    }
+    return user;
   }
 
   async createUser(

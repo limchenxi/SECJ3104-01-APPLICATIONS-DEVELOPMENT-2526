@@ -1,9 +1,11 @@
-import { IsOptional, IsString, IsEmail } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
-export class ProfileDto {
-  @IsOptional()
+export class CreateUserDto {
   @IsString()
   name?: string;
+
+  @IsString()
+  password: string;
 
   @IsString()
   role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
