@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Query,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/createUser.dto';
 import { FindByEmailDto } from './dto/findUser.dto';
@@ -16,19 +9,7 @@ export class UsersController {
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
-    if (
-      !createUserDto.email ||
-      !createUserDto.password ||
-      !createUserDto.role
-    ) {
-      throw new BadRequestException('Email, password and role are required');
-    }
-    return this.userService.createUser(
-      createUserDto.name || '',
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.role,
-    );
+    return this.userService.createUser(createUserDto);
   }
 
   @Get('find-by-email')

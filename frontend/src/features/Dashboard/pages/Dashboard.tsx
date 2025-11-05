@@ -16,13 +16,6 @@ export default function Dashboard() {
     const [quizGenerated, setQuizGenerated] = useState<number>(0);
     const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
 
-
-  useEffect(() => {
-    axios.get("http://localhost:5000/api/attendance").then((res) => {
-      setRecords(res.data);
-    });
-  }, []);
-
   return (
     <div>
       <h2>📊 出席记录</h2>

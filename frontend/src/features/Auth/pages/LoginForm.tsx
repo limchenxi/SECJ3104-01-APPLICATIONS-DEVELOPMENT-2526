@@ -1,28 +1,37 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Paper } from '@mui/material';
-import { authService } from '../../api/authService';
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Box, Button, TextField, Typography, Paper } from "@mui/material";
+import { resolveRedirectPath } from "../../../utils/navigation";
+import useAuth from "../../../hooks/useAuth";
 
 export default function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const { login } = useAuth();
+
+  const [form, setForm] = useState({ email: "", password: "" });
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = resolveRedirectPath(searchParams.get("redirect"), "/");
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await authService.login(form.email, form.password);
-      navigate('/dashboard');
+      await login(form.email, form.password);
+      navigate(redirectTo, { replace: true });
     } catch (err) {
-      alert(err.response?.data?.msg || 'Login failed');
+      alert(err.response?.data?.msg || "Login failed");
     }
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
+    <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
       <Paper sx={{ p: 4, width: 350 }}>
-        <Typography variant="h5" gutterBottom>Login</Typography>
+        <Typography variant="h5" gutterBottom>
+          Login
+        </Typography>
         <form onSubmit={handleSubmit}>
           <TextField
             name="email"

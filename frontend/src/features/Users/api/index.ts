@@ -1,30 +1,46 @@
-import axios from 'axios';
+import { backendClient } from "../../../utils/axios-client";
+import type { UserItem } from "../stores";
 
-const API_URL = 'http://localhost:3000/users'; 
+const client = () => backendClient();
+const basePath = "/users";
+
+export interface CreateUserPayload {
+  name: string;
+  email: string;
+  role?: string;
+  password?: string;
+}
+
+export type UpdateUserPayload = Partial<CreateUserPayload>;
 
 export const userApi = {
-  getAll: async () => {
-    const res = await axios.get(API_URL);
-    return res.data;
+  getAll: async (): Promise<UserItem[]> => {
+    const response = await client().get<UserItem[]>(basePath);
+    return response.data;
   },
 
-  getById: async (id) => {
-    const res = await axios.get(`${API_URL}/${id}`);
-    return res.data;
+  getById: async (id: string | number): Promise<UserItem> => {
+    const response = await client().get<UserItem>(`${basePath}/${id}`);
+    return response.data;
   },
 
-  create: async (userData) => {
-    const res = await axios.post(API_URL, userData);
-    return res.data;
+  create: async (userData: CreateUserPayload): Promise<UserItem> => {
+    const response = await client().post<UserItem>(basePath, userData);
+    return response.data;
   },
 
-  update: async (id, userData) => {
-    const res = await axios.patch(`${API_URL}/${id}`, userData);
-    return res.data;
+  update: async (
+    id: string | number,
+    userData: UpdateUserPayload,
+  ): Promise<UserItem> => {
+    const response = await client().patch<UserItem>(
+      `${basePath}/${id}`,
+      userData,
+    );
+    return response.data;
   },
 
-  delete: async (id) => {
-    const res = await axios.delete(`${API_URL}/${id}`);
-    return res.data;
+  delete: async (id: string | number): Promise<void> => {
+    await client().delete(`${basePath}/${id}`);
   },
 };

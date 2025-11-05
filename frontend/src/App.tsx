@@ -1,10 +1,11 @@
 import { useEffect } from "react";
+import { BrowserRouter } from "react-router-dom";
 import useAttendance from "./hooks/useAttendance";
-import Dashboard from "./pages/Dashboard";
 import { recordAttendance } from "./features/Kedatangan/api/kedatanganService";
+import AppRoutes from "./routes";
 
 export default function App() {
-    useAttendance();
+  useAttendance();
   useEffect(() => {
     const autoRecordAttendance = async () => {
       try {
@@ -36,8 +37,8 @@ export default function App() {
   }, []);
 
   return (
-    <div>
-      <Dashboard />
-    </div>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }

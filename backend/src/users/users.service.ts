@@ -1,8 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
+
+export type CreateUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  ic: string;
+  gender: 'Male' | 'Female';
+  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
+  contactNumber?: string;
+  profilePicture?: string;
+};
 
 @Injectable()
 export class UsersService {
@@ -12,18 +23,24 @@ export class UsersService {
     return this.userModel.findOne({ email });
   }
 
-  async createUser(
-    name: string,
-    email: string,
-    password: string,
-    role: string,
-  ) {
-    const hashedPassword = await bcrypt.hash(password, 10);
+  findById(id: string): Promise<User | null> {
+    return this.userModel.findById(id);
+  }
+
+  async countUsers(): Promise<number> {
+    return this.userModel.countDocuments();
+  }
+
+  async createUser(input: CreateUserInput) {
+    const existing = await this.findByEmail(input.email);
+    if (existing) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(input.password, 10);
     const user = new this.userModel({
-      name,
-      email,
+      ...input,
       password: hashedPassword,
-      role,
     });
     return user.save();
   }

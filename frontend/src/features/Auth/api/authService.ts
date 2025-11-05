@@ -1,28 +1,32 @@
-import API from '../api';
-
-const TOKEN_KEY = 'token';
+import { setAuthToken } from "../../../utils/auth";
+import { backendClient } from "../../../utils/axios-client";
+import type { UserRole } from "../type";
 
 export const authService = {
-  login: async (email, password) => {
-    const res = await API.post('/auth/login', { email, password });
-    localStorage.setItem(TOKEN_KEY, res.data.token);
+  login: async (email: string, password: string) => {
+    const client = backendClient({ withAuth: false });
+    const res = await client.post<{
+      token: string;
+      user: {
+        name: string;
+        role: "GURU" | "PENTADBIR" | "DEVELOPER";
+      };
+    }>("/auth/login", { email, password });
+    setAuthToken(res.data.token);
     return res.data;
   },
-
   logout: () => {
-    localStorage.removeItem(TOKEN_KEY);
+    setAuthToken(null);
   },
-
-  getToken: () => {
-    return localStorage.getItem(TOKEN_KEY);
-  },
-
-  isAuthenticated: () => {
-    return !!localStorage.getItem(TOKEN_KEY);
-  },
-
   getProfile: async () => {
-    const res = await API.get('/auth/me');
+    const client = backendClient();
+    const res = await client.get<{
+      // TODO: Add profile type
+      email: string;
+      role: UserRole;
+      name: string;
+      id: string;
+    }>("/auth/me");
     return res.data;
   },
 };
