@@ -1,7 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
+import { LoginDto } from './dto/login.dto';
+import { User } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class AuthService {
@@ -11,46 +13,28 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const targetUser = await this.usersService.findUser(loginDto);
+    const user = await this.validateUser(loginDto.email, loginDto.password);
 
-    const isMatch = await bcrypt.compare(
-      loginDto.password,
-      targetUser.password,
-    );
-
-    if (isMatch) {
-      const { password, ...user } = targetUser;
-      return {
-        token: this.jwtService.sign(user),
-        user: { name: user.name, role: user.role },
-      };
-    } else {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!user) {
+      throw new BadRequestException('Invalid credentials');
     }
+
+    return {
+      token: this.jwtService.sign(user),
+      user: { name: user.name, role: user.role },
+    };
   }
 
-  // async login(email: string, password: string) {
-  //   const user = await this.usersService.findByEmail(email);
-  //   if (!user) throw new UnauthorizedException('User not found');
-
-  //   const isMatch = await bcrypt.compare(password, user.password);
-  //   if (!isMatch) throw new UnauthorizedException('Invalid credentials');
-
-  //   const payload = { id: user._id, email: user.email, role: user.role };
-  //   const token = this.jwtService.sign(payload);
-
-  //   return {
-  //     token,
-  //     user: {
-  //       id: user._id,
-  //       email: user.email,
-  //       name: user.name,
-  //       role: user.role,
-  //     },
-  //   };
-  // }
-
-  // async getProfile(user: any) {
-  //   return user;
-  // }
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<Omit<User, 'password'> | null> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+      const { password, ...result } = user;
+      return result as Omit<User, 'password'>;
+    }
+    return null;
+  }
 }

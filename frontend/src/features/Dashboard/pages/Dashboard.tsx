@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import type { AttendanceRecord } from "../../Kedatangan/type";
 
 interface Activity {
   type: "attendance" | "cerapan" | "quiz" | "rph";

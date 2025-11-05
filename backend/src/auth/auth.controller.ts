@@ -1,6 +1,5 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt.strategy';
 import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
@@ -12,7 +11,7 @@ export class AuthController {
   //   return this.authService.login(dto.email, dto.password);
   // }
   @Post('login')
-  login(@Body(ValidationPipe) loginDto: LoginDto) {
+  login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 

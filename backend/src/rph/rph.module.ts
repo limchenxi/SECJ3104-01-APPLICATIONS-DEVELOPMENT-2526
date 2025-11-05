@@ -4,6 +4,6 @@ import { RphController } from './rph.controller';
 
 @Module({
   providers: [RphService],
-  controllers: [RphController]
+  controllers: [RphController],
 })
 export class RphModule {}

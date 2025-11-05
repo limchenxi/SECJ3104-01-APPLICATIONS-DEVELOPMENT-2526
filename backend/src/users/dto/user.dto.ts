@@ -1,30 +1,27 @@
-import { IsOptional, IsString, IsEmail } from 'class-validator';
+import { IsOptional, IsString, IsEmail, IsEnum } from 'class-validator';
 
 export class ProfileDto {
-  @IsOptional()
   @IsString()
-  name?: string;
-
-  @IsString()
-  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
-
-  @IsString()
-  gender?: 'male' | 'female' | 'other';
-
-  @IsString()
-  ic?: string;
+  name: string;
 
   @IsEmail()
-  email?: string;
+  email: string;
 
+  @IsString()
+  password: string;
+
+  @IsString()
+  ic: string;
+
+  @IsEnum(['Male', 'Female'])
+  gender: 'Male' | 'Female';
+
+  @IsEnum(['GURU', 'PENTADBIR', 'DEVELOPER'])
+  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
+
+  @IsOptional()
   @IsString()
   contactNumber?: string;
-
-  @IsString()
-  school?: string;
-
-  @IsString()
-  subject?: string;
 
   @IsOptional()
   @IsString()
