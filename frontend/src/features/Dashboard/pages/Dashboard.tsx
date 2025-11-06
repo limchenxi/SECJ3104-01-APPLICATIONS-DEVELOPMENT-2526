@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import type { AttendanceRecord } from "../../Kedatangan/type";
 
 interface Activity {
@@ -10,15 +10,15 @@ interface Activity {
 
 export default function Dashboard() {
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
-    const [attendanceRate, setAttendanceRate] = useState<number>(0);
-    const [cerapanCount, setCerapanCount] = useState<number>(0);
-    const [rphCount, setRphCount] = useState<number>(0);
-    const [quizGenerated, setQuizGenerated] = useState<number>(0);
-    const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+    // const [attendanceRate, setAttendanceRate] = useState<number>(0);
+    // const [cerapanCount, setCerapanCount] = useState<number>(0);
+    // const [rphCount, setRphCount] = useState<number>(0);
+    // const [quizGenerated, setQuizGenerated] = useState<number>(0);
+    // const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
 
   return (
     <div>
-      <h2>📊 出席记录</h2>
+      <h2>📊 Kedatangan</h2>
       <table>
         <thead>
           <tr>

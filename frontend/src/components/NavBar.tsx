@@ -1,4 +1,4 @@
-import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, IconButton, Menu, Toolbar, Typography, useTheme } from "@mui/material";
 import type { ReactNode } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -16,17 +16,27 @@ interface NavBarProps {
 const defaultItems: NavItem[] = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Kedatangan", to: "/kedatangan" },
-  { label: "Cerapan", to: "/cerapan" },
+  { label: "Profile", to: "/profile" },
 ];
 
 export default function NavBar({
-  brand = "App Development",
+  brand = "Smart School System",
   items = defaultItems,
   trailing,
 }: NavBarProps) {
+  const theme = useTheme();
   return (
-    <AppBar position="static" color="primary">
-      <Toolbar sx={{ display: "flex", gap: 2 }}>
+    <AppBar position="sticky" elevation={3}
+      sx={{
+        background: theme.palette.primary.main,
+        backdropFilter: "blur(8px)",
+      }}>
+      <Toolbar 
+        sx={{ display: "flex", 
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: { xs: 2, sm: 4 },}}>
+              
         <Typography variant="h6" component="div">
           {brand}
         </Typography>

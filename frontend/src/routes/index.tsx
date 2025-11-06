@@ -17,8 +17,8 @@ const KedatanganPage = lazy(() =>
   }))
 );
 const ProfilePage = lazy(() =>
-  import("../features/Profil/pages/Profile").then((module) => ({
-    default: module.Profil,
+  import("../features/Profile/pages/Profile").then((module) => ({
+    default: module.ProfilePage,
   }))
 );
 const QuizFlashcardPage = lazy(
@@ -71,7 +71,7 @@ export default function AppRoutes() {
           <Route path="cerapan" element={<PentadbirCerapanForm />} />
           <Route path="rph" element={<RPHGeneratorPage />} />
           <Route path="quiz" element={<QuizFlashcardPage />} />
-          <Route path="profil" element={<ProfilePage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

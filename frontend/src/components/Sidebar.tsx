@@ -16,9 +16,11 @@ interface SidebarProps {
 
 const defaultSidebarItems: SidebarItem[] = [
   { label: "Dashboard", to: "/dashboard" },
+  { label: "Cerapan Kendiri", to: "/cerapan" },
+  { label: "Kedatangan", to: "/kedatangan" },
   { label: "RPH Generator", to: "/rph" },
   { label: "AI Quiz", to: "/quiz" },
-  { label: "Profil", to: "/profil" },
+  { label: "Profile", to: "/profile" },
 ];
 
 export default function Sidebar({

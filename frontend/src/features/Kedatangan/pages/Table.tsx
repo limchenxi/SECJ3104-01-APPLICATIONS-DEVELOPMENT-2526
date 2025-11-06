@@ -1,5 +1,5 @@
-import { AttendanceRecord } from "../../../types/attendance";
 import { Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material";
+import type { AttendanceRecord } from "../type";
 
 interface Props {
   data: AttendanceRecord[];

@@ -2,6 +2,8 @@ import { Box, CircularProgress } from "@mui/material";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import { resolveRedirectPath } from "../utils/navigation";
+import Sidebar from "../components/Sidebar";
+import NavBar from "../components/NavBar";
 
 export default function ProtectedLayout() {
   const location = useLocation();
@@ -31,5 +33,18 @@ export default function ProtectedLayout() {
     return <Navigate to={`/login${search}`} replace />;
   }
 
-  return <Outlet />;
+  return (
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* main */}
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        <NavBar />
+        <Box component="main" sx={{ p: 3, flexGrow: 1 }}>
+          <Outlet />
+        </Box>
+      </Box>
+    </Box>
+  );;
 }

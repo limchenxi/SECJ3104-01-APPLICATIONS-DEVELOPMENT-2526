@@ -193,7 +193,7 @@ export function KedatanganPage() {
         {/* Summary Cards */}
         <Grid container spacing={3}>
           {/* Attendance Percentage Card - Col 1 */}
-          <Grid item xs={12} lg={3}>
+          <Grid size={12}>
             <PercentageCard elevation={1}>
               <CardContent>
                 <CircularProgress percentage={stats.percentage} />
@@ -202,10 +202,10 @@ export function KedatanganPage() {
           </Grid>
 
           {/* Stats Grid - Cols 2, 3, 4 */}
-          <Grid item xs={12} lg={9}>
+          <Grid size={12}>
             <Grid container spacing={3}>
               {/* Hari Hadir Card */}
-              <Grid item xs={12} md={4}>
+              <Grid size={12}>
                 <StatCard color={theme.palette.success.main}>
                   <CardHeader
                     title={
@@ -228,7 +228,7 @@ export function KedatanganPage() {
               </Grid>
 
               {/* Ketidakhadiran Card */}
-              <Grid item xs={12} md={4}>
+              <Grid size={12}>
                 <StatCard color={theme.palette.error.main}>
                   <CardHeader
                     title={
@@ -257,7 +257,7 @@ export function KedatanganPage() {
               </Grid>
 
               {/* Status Card */}
-              <Grid item xs={12} md={4}>
+              <Grid size={12}>
                 <StatCard color={theme.palette.secondary.main}>
                   <CardHeader
                     title={
@@ -387,23 +387,23 @@ export function KedatanganPage() {
             {/* Table Footer Stats */}
             <Box sx={{ mt: 3, p: 2, bgcolor: theme.palette.info.light, borderRadius: theme.shape.borderRadius, border: `1px solid ${theme.palette.info.main}` }}>
               <Grid container spacing={2} justifyContent="space-around" textAlign="center">
-                <Grid item xs={6} md={3}>
+                <Grid size={6}>
                   <Typography variant="body2" sx={{ color: theme.palette.info.dark, mb: 0.5 }}>Jumlah Hari</Typography>
                   <Typography variant="h5" sx={{ color: theme.palette.info.main, fontWeight: 'bold' }}>{attendanceRecords.length}</Typography>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={6}>
                   <Typography variant="body2" sx={{ color: theme.palette.success.dark, mb: 0.5 }}>Hadir</Typography>
                   <Typography variant="h5" sx={{ color: theme.palette.success.main, fontWeight: 'bold' }}>
                     {attendanceRecords.filter(r => r.status === "present").length}
                   </Typography>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={6}>
                   <Typography variant="body2" sx={{ color: theme.palette.warning.dark, mb: 0.5 }}>Lewat</Typography>
                   <Typography variant="h5" sx={{ color: theme.palette.warning.main, fontWeight: 'bold' }}>
                     {attendanceRecords.filter(r => r.status === "late").length}
                   </Typography>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={6}>
                   <Typography variant="body2" sx={{ color: theme.palette.error.dark, mb: 0.5 }}>Tidak Hadir</Typography>
                   <Typography variant="h5" sx={{ color: theme.palette.error.main, fontWeight: 'bold' }}>
                     {attendanceRecords.filter(r => r.status === "absent" || r.status === "mc").length}
