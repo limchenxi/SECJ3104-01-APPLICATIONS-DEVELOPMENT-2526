@@ -2,7 +2,7 @@ import { Store, useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
 import { authService } from "../features/Auth/api/authService";
 import type { AuthUser } from "../features/Auth/type";
-import { getAuthToken } from "../utils/auth";
+import { getAuthToken, setAuthToken } from "../utils/auth";
 
 const store = new Store<{
   isInitialized: boolean;
@@ -65,12 +65,23 @@ const useAuth = () => {
     }));
   };
 
+  const logout = async () => {
+    store.setState((prev) => {
+      return {
+        ...prev,
+        user: null,
+      }
+    });
+    setAuthToken(null);
+  }
+
   return {
     isInitialized,
     isLoading,
     user,
     isAuthenticated: !!user,
     login,
+    logout,
   };
 };
 

@@ -18,9 +18,7 @@ const KedatanganPage = lazy(() =>
   }))
 );
 const ProfilePage = lazy(() =>
-  import("../features/Profile/pages/Profile").then((module) => ({
-    default: module.ProfilePage,
-  }))
+  import("../features/Profile/pages/Profile")
 );
 const QuizFlashcardPage = lazy(
   () => import("../features/Quiz/pages/QuizGenerator")
