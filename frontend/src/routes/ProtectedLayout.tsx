@@ -34,14 +34,21 @@ export default function ProtectedLayout() {
   }
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar */}
-      <Sidebar />
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <NavBar />
 
-      {/* main */}
-      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <NavBar />
-        <Box component="main" sx={{ p: 3, flexGrow: 1 }}>
+      <Box sx={{ display: "flex", flexGrow: 1 }}>
+        <Sidebar />
+
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            backgroundColor: "#f7f9fc",
+            minHeight: "calc(100vh - 64px)", // minus navbar height
+          }}
+        >
           <Outlet />
         </Box>
       </Box>

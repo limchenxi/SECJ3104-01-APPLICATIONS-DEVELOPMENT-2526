@@ -1,59 +1,54 @@
-import { AppBar, Box, Button, IconButton, Menu, Toolbar, Typography, useTheme } from "@mui/material";
+import { AppBar, Avatar, Container, Toolbar, Typography } from "@mui/material";
+import { Box } from "lucide-react";
 import type { ReactNode } from "react";
-import { Link as RouterLink } from "react-router-dom";
-
-interface NavItem {
-  label: string;
-  to: string;
-}
 
 interface NavBarProps {
   brand?: string;
-  items?: NavItem[];
   trailing?: ReactNode;
 }
 
-const defaultItems: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard" },
-  { label: "Kedatangan", to: "/kedatangan" },
-  { label: "Profile", to: "/profile" },
-];
-
 export default function NavBar({
   brand = "Smart School System",
-  items = defaultItems,
   trailing,
 }: NavBarProps) {
-  const theme = useTheme();
   return (
     <AppBar position="sticky" elevation={3}
       sx={{
-        background: theme.palette.primary.main,
+        background: "#E3F2FD", // 浅蓝色
+        color: "#0D47A1",      // 深蓝色文字
         backdropFilter: "blur(8px)",
       }}>
-      <Toolbar 
-        sx={{ display: "flex", 
-            alignItems: "center",
-            justifyContent: "space-between",
-            px: { xs: 2, sm: 4 },}}>
-              
-        <Typography variant="h6" component="div">
-          {brand}
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexGrow: 1 }}>
-          {items.map((item) => (
-            <Button
-              key={item.to}
-              color="inherit"
-              component={RouterLink}
-              to={item.to}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </Box>
-        {trailing}
-      </Toolbar>
+        <Container>
+          <Toolbar 
+            sx={{ display: "flex", 
+                alignItems: "center",
+                justifyContent: "flex-start",
+                px: { xs: 2, sm: 4 },}}>
+                  
+            <Typography variant="h6" component="div">
+              {brand}
+            </Typography>
+            {trailing}
+            {/* <Box display="flex" alignItems="center" gap={2}>
+              <div className="text-right">
+                <Typography variant="subtitle2" color="text.secondary">
+                  {currentUser?.role || "Guru"} 
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {currentUser?.name || "Cikgu Ahmad Abdullah"}
+                </Typography>
+              </div>
+
+              <Avatar
+                alt={`${currentUser?.name || "Cikgu Ahmad Abdullah"}'s Avatar`}
+                src={currentUser?.profilePhoto ?? undefined}
+                sx={{ bgcolor: "#90CAF9", color: "#0D47A1", fontWeight: 600 }}
+              >
+                {(currentUser?.name?.[0] || "A").toUpperCase()}
+              </Avatar>
+            </Box> */}
+          </Toolbar>
+        </Container>
     </AppBar>
   );
 }

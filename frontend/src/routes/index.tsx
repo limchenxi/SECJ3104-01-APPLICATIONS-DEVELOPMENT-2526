@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { resolveRedirectPath } from "../utils/navigation";
 import useAuth from "../hooks/useAuth";
+import Logout from "../components/Logout";
 
 const Login = lazy(() => import("../features/Auth/pages/LoginForm"));
 const PentadbirCerapanForm = lazy(
@@ -66,12 +67,13 @@ export default function AppRoutes() {
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="kedatangan" element={<KedatanganPage />} />
-          <Route path="cerapan" element={<PentadbirCerapanForm />} />
-          <Route path="rph" element={<RPHGeneratorPage />} />
-          <Route path="quiz" element={<QuizFlashcardPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/kedatangan" element={<KedatanganPage />} />
+          <Route path="/cerapan" element={<PentadbirCerapanForm />} />
+          <Route path="/rph" element={<RPHGeneratorPage />} />
+          <Route path="/quiz" element={<QuizFlashcardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/logout" element={<Logout />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

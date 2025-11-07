@@ -21,6 +21,8 @@ const defaultSidebarItems: SidebarItem[] = [
   { label: "RPH Generator", to: "/rph" },
   { label: "AI Quiz", to: "/quiz" },
   { label: "Profile", to: "/profile" },
+  { label: "Logout", to: "/logout" },
+
 ];
 
 export default function Sidebar({
