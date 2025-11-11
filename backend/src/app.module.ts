@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CerapanModule } from './cerapan/cerapan.module';
 // import { KedatanganModule } from './kedatangan/kedatangan.module';
-import { ProfileModule } from './profile/profile.module';
 import { QuizModule } from './quiz/quiz.module';
 import { RphModule } from './rph/rph.module';
 import { UsersModule } from './users/users.module';
@@ -21,7 +20,6 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     CerapanModule,
     // KedatanganModule,
-    ProfileModule,
     QuizModule,
     RphModule,
     UsersModule,
