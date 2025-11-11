@@ -1,5 +1,16 @@
 import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 
+export enum Gender {
+  Male = 'Male',
+  Female = 'Female',
+}
+
+export enum Role {
+  GURU = 'GURU',
+  PENTADBIR = 'PENTADBIR',
+  DEVELOPER = 'DEVELOPER',
+}
+
 export class CreateUserDto {
   @IsString()
   name: string;
@@ -13,11 +24,11 @@ export class CreateUserDto {
   @IsString()
   ic: string;
 
-  @IsEnum(['Male', 'Female'])
-  gender: 'Male' | 'Female';
+  @IsEnum(Gender)
+  gender: Gender;
 
-  @IsEnum(['GURU', 'PENTADBIR', 'DEVELOPER'])
-  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
+  @IsEnum(Role)
+  role: Role;
 
   @IsOptional()
   @IsString()

@@ -1,23 +1,30 @@
 import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+import { Gender, Role } from './createUser.dto';
 
 export class UpdateUserDto {
+  @IsOptional()
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsEmail()
   email: string;
 
+  @IsOptional()
   @IsString()
   password: string;
 
+  @IsOptional()
   @IsString()
   ic: string;
 
-  @IsEnum(['Male', 'Female'])
-  gender: 'Male' | 'Female';
+  @IsOptional()
+  @IsEnum(Gender)
+  gender: Gender;
 
-  @IsEnum(['GURU', 'PENTADBIR', 'DEVELOPER'])
-  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
+  @IsOptional()
+  @IsEnum(Role)
+  role: Role;
 
   @IsOptional()
   @IsString()

@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 
 export default function ProfilePage() {
+  // Example usage of useRoleGuard
+  // const { isInitialized, canAccessPage } = useRoleGuard(['DEVELOPER']); 
+
+  // useEffect(() => {}, []);
+
   return (
     <Box sx={{ p: 4 }}>
       {/* Page Header */}

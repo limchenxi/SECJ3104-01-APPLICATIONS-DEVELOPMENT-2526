@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from './dto/updateUser.dto';
 
 export type CreateUserInput = {
   name: string;
@@ -17,6 +18,9 @@ export type CreateUserInput = {
 
 @Injectable()
 export class UsersService {
+  updateUser(id: any, updateUserDto: UpdateUserDto): any {
+    throw new Error('Method not implemented.');
+  }
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   findByEmail(email: string): Promise<User | null> {
@@ -43,5 +47,8 @@ export class UsersService {
       password: hashedPassword,
     });
     return user.save();
+    // const savedUser = await user.save();
+    // savedUser.password = undefined;
+    // return savedUser;
   }
 }
