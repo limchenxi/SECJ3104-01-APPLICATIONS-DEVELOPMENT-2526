@@ -1,11 +1,7 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty } from 'class-validator';
 
 export class FindByEmailDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @IsNotEmpty()
-  @IsString()
-  password: string;
 }

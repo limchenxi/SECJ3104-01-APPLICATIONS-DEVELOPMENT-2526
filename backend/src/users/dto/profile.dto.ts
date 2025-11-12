@@ -1,4 +1,5 @@
 import { IsOptional, IsString, IsEmail, IsEnum } from 'class-validator';
+import { Gender, Role } from './createUser.dto';
 
 export class ProfileDto {
   @IsString()
@@ -8,16 +9,13 @@ export class ProfileDto {
   email: string;
 
   @IsString()
-  password: string;
-
-  @IsString()
   ic: string;
 
-  @IsEnum(['Male', 'Female'])
-  gender: 'Male' | 'Female';
+  @IsEnum(Gender)
+  gender: Gender;
 
-  @IsEnum(['GURU', 'PENTADBIR', 'DEVELOPER'])
-  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
+  @IsEnum(Role)
+  role: Role;
 
   @IsOptional()
   @IsString()
