@@ -1,0 +1,19 @@
+{
+  "name": "secj3104-workspace",
+  "private": true,
+  "scripts": {
+    "kill-ports": "kill-port 3000 5173 5174",
+    "dev:backend": "cd backend && bun run start:dev",
+    "dev:frontend": "cd frontend && bun run dev -- --port 5173",
+    "dev:all": "concurrently -n backend,frontend -c blue,magenta \"bun run dev:backend\" \"bun run dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "kill-port": "^2.0.1"
+  },
+  "dependencies": {
+    "@nestjs/mongoose": "^11.0.3",
+    "mongoose": "^8.19.3",
+    "xlsx": "^0.18.5"
+  }
+}

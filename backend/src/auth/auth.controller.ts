@@ -20,10 +20,6 @@ export class AuthController {
     private readonly userService: UsersService,
   ) {}
 
-  // @Post('login')
-  // async login(@Body() dto: LoginDto) {
-  //   return this.authService.login(dto.email, dto.password);
-  // }
   @Post('login')
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
@@ -38,6 +34,10 @@ export class AuthController {
     }
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { password, ...user } = result.toJSON();
-    return user;
+    // Map _id to id for frontend compatibility
+    return {
+      ...user,
+      id: user._id.toString(),
+    };
   }
 }

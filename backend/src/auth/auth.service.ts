@@ -24,7 +24,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         email: user.email,
-        id: user._id,
+        id: (user._id as any).toString(),
       },
     };
   }

@@ -6,9 +6,27 @@ import useAuth from "../hooks/useAuth";
 import Logout from "../components/Logout";
 
 const Login = lazy(() => import("../features/Auth/pages/LoginForm"));
+
+// Cerapan Pages
+const TeacherCerapanKendiri = lazy(
+  () => import("../features/Cerapan/pages/TeacherCerapanKendiri")
+);
+const SelfEvaluationForm = lazy(
+  () => import("../features/Cerapan/pages/SelfEvaluationForm")
+);
+const CerapanResults = lazy(
+  () => import("../features/Cerapan/pages/CerapanResults")
+);
+const AdminCerapanDashboard = lazy(
+  () => import("../features/Cerapan/pages/AdminCerapanDashboard")
+);
+const AdminObservationForm = lazy(
+  () => import("../features/Cerapan/pages/AdminObservationForm")
+);
 const PentadbirCerapanForm = lazy(
   () => import("../features/Cerapan/pages/Cerapan")
 );
+
 const Dashboard = lazy(
   () => import("../features/Dashboard/pages/Dashboard")
 );
@@ -67,7 +85,15 @@ export default function AppRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/kedatangan" element={<KedatanganPage />} />
-          <Route path="/cerapan" element={<PentadbirCerapanForm />} />
+          
+          {/* Cerapan Routes */}
+          <Route path="/cerapan" element={<TeacherCerapanKendiri />} />
+          <Route path="/cerapan/task/:id" element={<SelfEvaluationForm />} />
+          <Route path="/cerapan/results/:id" element={<CerapanResults />} />
+          <Route path="/cerapan/admin" element={<AdminCerapanDashboard />} />
+          <Route path="/cerapan/admin/observation/:id" element={<AdminObservationForm />} />
+          <Route path="/cerapan/old" element={<PentadbirCerapanForm />} />
+          
           <Route path="/rph" element={<RPHGeneratorPage />} />
           <Route path="/quiz" element={<QuizFlashcardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
