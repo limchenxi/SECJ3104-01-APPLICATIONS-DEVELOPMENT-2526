@@ -10,6 +10,9 @@ import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiModule } from './ai/ai.module';
 import { ConfigModule } from '@nestjs/config';
+import { TeachingAssignmentModule } from './teaching-assignment/teaching-assignment.module';
+import { ClassModule } from './class/class.module';
+import { SubjectModule } from './subject/subject.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { ConfigModule } from '@nestjs/config';
     RphModule,
     UsersModule,
     AiModule,
+    TeachingAssignmentModule,
+    ClassModule,
+    SubjectModule,
   ],
   controllers: [AppController],
   providers: [AppService],
