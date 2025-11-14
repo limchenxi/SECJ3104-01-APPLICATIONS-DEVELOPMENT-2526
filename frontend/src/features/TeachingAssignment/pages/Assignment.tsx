@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { motion } from "framer-motion";
-import type { User } from "../../Users/tyoe";
+import type { User } from "../../Users/type";
 import type { Class } from "../../Class/type";
 import type { Subject } from "../../Subject/type";
 

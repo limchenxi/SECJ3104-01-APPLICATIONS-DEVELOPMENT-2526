@@ -1,6 +1,6 @@
 import type { Class } from "../Class/type";
 import type { Subject } from "../Subject/type";
-import type { User } from "../Users/tyoe";
+import type { User } from "../Users/type";
 
 
 export interface TeachingAssignment {
