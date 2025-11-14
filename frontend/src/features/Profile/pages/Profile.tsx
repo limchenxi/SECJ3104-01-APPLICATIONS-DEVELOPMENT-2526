@@ -64,9 +64,9 @@ export default function ProfilePage() {
               <Button variant="contained" startIcon={<Edit />}>
                 Edit Profil
               </Button>
-              <Button variant="outlined" startIcon={<Lock />}>
+              {/* <Button variant="outlined" startIcon={<Lock />}>
                 Tukar Kata Laluan
-              </Button>
+              </Button> */}
             </Box>
           </Box>
         </CardContent>
