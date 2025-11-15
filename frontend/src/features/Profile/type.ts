@@ -7,7 +7,4 @@ export interface Profile {
   contactNumber?: string;
   role: "GURU" | "PENTADBIR" | "DEVELOPER";
   profilePicture?: string;
-
-  subjectIds?: string[];
-  classIds?: string[];
 }

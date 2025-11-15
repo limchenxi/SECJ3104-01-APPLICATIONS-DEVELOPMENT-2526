@@ -16,7 +16,7 @@ import type { UserItem } from "../stores";
 import { Plus, Trash2 } from "lucide-react";
 import { enqueueSnackbar } from "notistack";
 
-export default function UserListPage() {
+export default function UserList() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [openAddDialog, setOpenAddDialog] = useState(false);

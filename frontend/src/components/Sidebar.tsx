@@ -1,4 +1,15 @@
-import { Box, Divider, List, ListItemButton, ListItemText, Typography } from "@mui/material";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Divider,
+  List,
+  ListItemButton,
+  ListItemText,
+  Typography,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { NavLink } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import type { ReactNode } from "react";
@@ -22,7 +33,6 @@ const guruSidebarItems: SidebarItem[] = [
   { label: "RPH Generator", to: "/rph" },
   { label: "AI Quiz", to: "/quiz" },
   { label: "Profile", to: "/profile" },
-  { label: "Logout", to: "/logout" },
 ];
 
 const pentadbirSidebarItems: SidebarItem[] = [
@@ -31,34 +41,88 @@ const pentadbirSidebarItems: SidebarItem[] = [
   { label: "Cerapan", to: "/pentadbir/cerapan" },
   { label: "Template Rubrik", to: "/pentadbir/template-rubrik" },
   { label: "Profil", to: "/pentadbir/profil" },
-  { label: "Log Keluar", to: "/logout" },
+];
+
+const devSidebarItems: SidebarItem[] = [
+  { label: "AI Management", to: "/ai" },
+  { label: "User List", to: "/users" },
 ];
 
 export default function Sidebar({
-  items,
   header,
   footer,
   width = 240,
 }: SidebarProps) {
   const { user } = useAuth();
-  
-  // Determine which items to show based on user role
-  const sidebarItems = items || (user?.role === "PENTADBIR" ? pentadbirSidebarItems : guruSidebarItems);
-  
-  // Determine header content based on user role
-  const defaultHeader = (
-    <>
-      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-        {user?.role === "PENTADBIR" ? "Panel Pentadbir" : "Panel Guru"}
-      </Typography>
-      {user && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {user.name}
-        </Typography>
-      )}
-    </>
-  );
+  const role = user?.role;
 
+  const headerTitle =
+    role === "DEVELOPER"
+      ? "Developer Panel"
+      : role === "PENTADBIR"
+      ? "Panel Pentadbir"
+      : "Panel Guru";
+
+  // ----------------------------------------------------------
+  // NORMAL USER (guru/pentadbir)
+  // ----------------------------------------------------------
+  if (role !== "DEVELOPER") {
+    const items =
+      role === "PENTADBIR" ? pentadbirSidebarItems : guruSidebarItems;
+
+    return (
+      <Box
+        component="nav"
+        sx={{
+          width,
+          minHeight: "100vh",
+          borderRight: 1,
+          borderColor: "divider",
+          display: "flex",
+          flexDirection: "column",
+          bgcolor: "background.paper",
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {headerTitle}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user?.name}
+          </Typography>
+        </Box>
+
+        <Divider />
+
+        <List sx={{ flexGrow: 1 }}>
+          {items.map((item) => (
+            <ListItemButton
+              key={item.to}
+              component={NavLink}
+              to={item.to}
+              sx={{
+                "&.active": {
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                },
+              }}
+            >
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          ))}
+        </List>
+
+        <ListItemButton component={NavLink} to="/logout">
+          <ListItemText primary="Logout" />
+        </ListItemButton>
+      </Box>
+    );
+  }
+
+  // ----------------------------------------------------------
+  // DEVELOPER SIDEBAR (with accordion)
+  // ----------------------------------------------------------
   return (
     <Box
       component="nav"
@@ -72,24 +136,82 @@ export default function Sidebar({
         bgcolor: "background.paper",
       }}
     >
-      <Box sx={{ p: 2 }}>{header || defaultHeader}</Box>
+      {/* Header */}
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          Developer Panel
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {user?.name}
+        </Typography>
+      </Box>
       <Divider />
+
       <List sx={{ flexGrow: 1 }}>
-        {sidebarItems.map((item) => (
+        {/* Guru Accordion */}
+        <Accordion>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Guru Module</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {guruSidebarItems.map((item) => (
+              <ListItemButton
+                component={NavLink}
+                to={item.to}
+                key={item.to}
+                sx={{
+                  "&.active": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                  },
+                }}
+              >
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            ))}
+          </AccordionDetails>
+        </Accordion>
+
+        {/* Pentadbir Accordion */}
+        <Accordion>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={600}>Pentadbir Module</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {pentadbirSidebarItems.map((item) => (
+              <ListItemButton
+                component={NavLink}
+                to={item.to}
+                key={item.to}
+                sx={{
+                  "&.active": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                  },
+                }}
+              >
+                <ListItemText primary={item.label} />
+              </ListItemButton>
+            ))}
+          </AccordionDetails>
+        </Accordion>
+
+        {/* Dev Tools */}
+        <Divider sx={{ my: 1 }} />
+
+        <Typography px={2} py={1} fontWeight={600} fontSize={14}>
+          Developer Tools
+        </Typography>
+
+        {devSidebarItems.map((item) => (
           <ListItemButton
-            key={item.to}
             component={NavLink}
             to={item.to}
+            key={item.to}
             sx={{
               "&.active": {
                 bgcolor: "primary.main",
                 color: "primary.contrastText",
-                "& .MuiListItemText-primary": {
-                  fontWeight: 600,
-                },
-              },
-              "&:hover": {
-                bgcolor: "action.hover",
               },
             }}
           >
@@ -97,7 +219,10 @@ export default function Sidebar({
           </ListItemButton>
         ))}
       </List>
-      {footer ? <Box sx={{ p: 2 }}>{footer}</Box> : null}
+
+      <ListItemButton component={NavLink} to="/logout">
+        <ListItemText primary="Logout" />
+      </ListItemButton>
     </Box>
   );
 }
