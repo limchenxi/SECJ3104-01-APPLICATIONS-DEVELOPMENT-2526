@@ -1,10 +1,15 @@
 import { Store } from "@tanstack/react-store";
 
 export interface UserItem {
-  id: string;
+  id?: string; // from Mongodb
+  _id?: string; // for Datagrid
   name: string;
   email: string;
-  role?: string;
+  role: "GURU" | "PENTADBIR" | "DEVELOPER";
+  ic: string;
+  gender: string;
+  phone?: string;
+  profileImageUrl?: string;
 }
 
 export interface UsersState {

@@ -17,7 +17,16 @@ export class TeachingAssignmentService {
     return created.save();
   }
 
-  async findAll(filter: Partial<{ academicYear: number; term: string; teacherId: string; subject: string; class: string; active: boolean; }>): Promise<TeachingAssignment[]> {
+  async findAll(
+    filter: Partial<{
+      academicYear: number;
+      term: string;
+      teacherId: string;
+      subject: string;
+      class: string;
+      active: boolean;
+    }>,
+  ): Promise<TeachingAssignment[]> {
     return this.assignmentModel.find(filter).sort({ subject: 1, class: 1 }).exec();
   }
 
@@ -27,8 +36,13 @@ export class TeachingAssignmentService {
     return doc;
   }
 
-  async update(id: string, dto: UpdateTeachingAssignmentDto): Promise<TeachingAssignment> {
-    const updated = await this.assignmentModel.findByIdAndUpdate(id, dto, { new: true }).exec();
+  async update(
+    id: string,
+    dto: UpdateTeachingAssignmentDto,
+  ): Promise<TeachingAssignment> {
+    const updated = await this.assignmentModel
+      .findByIdAndUpdate(id, dto, { new: true })
+      .exec();
     if (!updated) throw new NotFoundException('Teaching assignment not found');
     return updated;
   }
@@ -38,10 +52,16 @@ export class TeachingAssignmentService {
     if (!res) throw new NotFoundException('Teaching assignment not found');
   }
 
-  async getForTeacher(teacherId: string, academicYear?: number, term?: string): Promise<TeachingAssignment[]> {
+  async getForTeacher(
+    teacherId: string,
+    academicYear?: number,
+    term?: string,
+  ): Promise<TeachingAssignment[]> {
     const query: any = { teacherId, active: true };
+
     if (academicYear) query.academicYear = academicYear;
     if (term) query.term = term;
+
     return this.assignmentModel.find(query).sort({ subject: 1, class: 1 }).exec();
   }
 }

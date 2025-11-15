@@ -2,8 +2,12 @@ export interface Profile {
   id: string;
   name: string;
   email: string;
-  role: "guru" | "pentadbir"| "developer";
-  school?: string;
-  subject?: string;
+  gender: "Male" | "Female";
+  ic: string;
+  contactNumber?: string;
+  role: "GURU" | "PENTADBIR" | "DEVELOPER";
   profilePicture?: string;
+
+  subjectIds?: string[];
+  classIds?: string[];
 }
