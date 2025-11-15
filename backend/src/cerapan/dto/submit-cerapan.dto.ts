@@ -1,22 +1,22 @@
-import { IsArray, IsString, IsNotEmpty, IsNumber, ValidateNested, Min, Max } from 'class-validator';
+import { IsArray, IsString, IsNotEmpty, IsNumber, ValidateNested, Min, Max, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// Defines the shape of ONE mark
 class MarkDto {
   @IsString()
   @IsNotEmpty()
   questionId: string;
 
   @IsNumber()
-  @Min(0) // Set a minimum score
-  @Max(5) // Set a maximum score (you can change this)
+  @Min(0) 
+  @Max(4) 
   mark: number;
 
   @IsString()
-  comment: string; // Admin's comment for this question
+  @IsOptional()
+  comment?: string; // optional comment
 }
 
-// This is the main DTO class your controller will use
+
 export class SubmitObservationDto {
   @IsArray()
   @ValidateNested({ each: true })

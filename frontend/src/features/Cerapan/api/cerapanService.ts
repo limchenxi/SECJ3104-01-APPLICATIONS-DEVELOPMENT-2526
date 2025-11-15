@@ -3,7 +3,8 @@ import type {
   CerapanRecord, 
   SubmitSelfEvalDto, 
   SubmitObservationDto,
-  StartEvaluationDto 
+  StartEvaluationDto,
+  ReportSummary,
 } from "../type";
 
 const client = () => backendClient();
@@ -62,6 +63,30 @@ export const submitObservation2 = async (
   return response.data;
 };
 
+/**
+ * (ADMIN) Get full evaluation details for observation by id (with questions).
+ * GET /cerapan/admin/task/:id
+ */
+export const getAdminEvaluationDetails = async (
+  id: string,
+): Promise<CerapanRecord> => {
+  const response = await client().get<CerapanRecord>(`/cerapan/admin/task/${id}`);
+  return response.data;
+};
+
+/**
+ * (ADMIN) Get the full details + computed summary for ANY report (no teacher restriction).
+ * GET /cerapan/admin/report/:id/summary
+ */
+export const getAdminReportSummary = async (
+  id: string,
+): Promise<{ report: CerapanRecord; summary: ReportSummary }> => {
+  const response = await client().get<{ report: CerapanRecord; summary: ReportSummary }>(
+    `/cerapan/admin/report/${id}/summary`,
+  );
+  return response.data;
+};
+
 // ===============================================
 // === 2. TEACHER (GURU) FUNCTIONS ===
 // ===============================================
@@ -103,6 +128,19 @@ export const getReportDetails = async (id: string): Promise<CerapanRecord> => {
 };
 
 /**
+ * (TEACHER) Get the full details + computed summary for ONE report.
+ * GET /cerapan/report/:id/summary
+ */
+export const getReportSummary = async (
+  id: string,
+): Promise<{ report: CerapanRecord; summary: ReportSummary }> => {
+  const response = await client().get<{ report: CerapanRecord; summary: ReportSummary }>(
+    `/cerapan/report/${id}/summary`,
+  );
+  return response.data;
+};
+
+/**
  * (TEACHER) Submit their self-evaluation (cerapan kendiri).
  * PUT /cerapan/self-evaluation/:id
  */
@@ -114,5 +152,16 @@ export const submitSelfEvaluation = async (
     `/cerapan/self-evaluation/${id}`,
     payload,
   );
+  return response.data;
+};
+
+/**
+ * (TEACHER) Start their own self-evaluation (no teacherId sent; derived from JWT)
+ * POST /cerapan/self-start
+ */
+export const startSelfEvaluation = async (
+  payload: Omit<StartEvaluationDto, 'teacherId'> & { templateId: string; period: string; subject: string; class: string },
+): Promise<CerapanRecord> => {
+  const response = await client().post<CerapanRecord>("/cerapan/self-start", payload);
   return response.data;
 };

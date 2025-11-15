@@ -19,35 +19,14 @@ import {
 } from "@mui/material";
 import { Calendar, BookOpen, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { startEvaluation, getMyTasks } from "../api/cerapanService";
+import { startSelfEvaluation, getMyTasks } from "../api/cerapanService";
+import { getTemplates } from "../../Pentadbir/api/templateService";
+import { userApi } from "../../Users/api";
 import type { CerapanRecord } from "../type";
+import type { TemplateRubric } from "../../Pentadbir/type";
 import useAuth from "../../../hooks/useAuth";
 
-// Mock data - replace with API call to get available templates/rubrics
-const availableSubjects = [
-  "Bahasa Melayu",
-  "Bahasa Inggeris",
-  "Matematik",
-  "Sains",
-  "Sejarah",
-  "Pendidikan Islam",
-  "Pendidikan Jasmani",
-];
-
-const availableClasses = [
-  "1 Amanah",
-  "1 Bestari",
-  "2 Amanah",
-  "2 Bestari",
-  "3 Amanah",
-  "3 Bestari",
-  "4 Amanah",
-  "4 Bestari",
-  "5 Amanah",
-  "5 Bestari",
-  "6 Amanah",
-  "6 Bestari",
-];
+// Subjects & Classes will be loaded from API based on logged-in teacher assignments
 
 export default function TeacherCerapanKendiri() {
   const theme = useTheme();
@@ -61,6 +40,11 @@ export default function TeacherCerapanKendiri() {
   const [error, setError] = useState("");
   const [pendingTasks, setPendingTasks] = useState<CerapanRecord[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
+  const [tapakTemplate, setTapakTemplate] = useState<TemplateRubric | null>(null);
+  const [tapakTemplateLoading, setTapakTemplateLoading] = useState(true);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [classes, setClasses] = useState<string[]>([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
 
   // Current evaluation period - you can fetch this from backend
   const currentPeriod = {
@@ -69,10 +53,41 @@ export default function TeacherCerapanKendiri() {
     status: "active", // active, completed
   };
 
-  // Fetch pending tasks on load
+  // Fetch pending tasks and assignments on load
   useEffect(() => {
     loadPendingTasks();
+    loadAssignments();
+    loadTapakTemplate();
   }, []);
+
+  const loadTapakTemplate = async () => {
+    try {
+      setTapakTemplateLoading(true);
+      const templates = await getTemplates();
+      const tapak = templates.find(t => t.name.includes("TAPAK STANDARD 4") || t.name.includes("TAPAK"));
+      if (tapak) {
+        setTapakTemplate(tapak);
+      }
+    } catch (err) {
+      console.error("Error loading TAPAK template:", err);
+    } finally {
+      setTapakTemplateLoading(false);
+    }
+  };
+
+  const loadAssignments = async () => {
+    try {
+      setLoadingAssignments(true);
+      const data = await userApi.getMyAssignments();
+      setSubjects(data.subjects);
+      setClasses(data.classes);
+    } catch (err) {
+      console.error("Error loading assignments", err);
+      setError("Gagal memuat senarai mata pelajaran dan kelas.");
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
 
   const loadPendingTasks = async () => {
     try {
@@ -109,22 +124,38 @@ export default function TeacherCerapanKendiri() {
       return;
     }
 
+    // Ensure template loaded
+    if (tapakTemplateLoading) {
+      setError("Sedang memuat template TAPAK. Sila tunggu sebentar.");
+      return;
+    }
+    if (!tapakTemplate) {
+      // Attempt a refetch once (silent)
+      try {
+        await loadTapakTemplate();
+      } catch (e) {
+        /* ignore */
+      }
+      if (!tapakTemplate) {
+        setError("Template TAPAK tidak dijumpai. Sila hubungi pentadbir untuk mencipta atau aktifkan template.");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError("");
-
-      // Real template ID for TAPAK STANDARD 4 PdPc rubric
-      const templateId = "690e1a9d52fa9b68a451a9f8";
+      
+      const templateId = tapakTemplate.id;
 
       const payload = {
-        teacherId: user.id,
         templateId: templateId,
         period: currentPeriod.name,
         subject: selectedSubject,
         class: selectedClass,
       };
 
-      const newEvaluation = await startEvaluation(payload);
+      const newEvaluation = await startSelfEvaluation(payload);
       
       // Navigate to the evaluation form
       navigate(`/cerapan/task/${newEvaluation._id}`);
@@ -267,6 +298,29 @@ export default function TeacherCerapanKendiri() {
                 {error}
               </Alert>
             )}
+            {tapakTemplateLoading && (
+              <Alert severity="info">Memuat template TAPAK...</Alert>
+            )}
+            {!tapakTemplateLoading && !tapakTemplate && (
+              <Alert severity="warning">
+                Template TAPAK tidak ditemui. Sila hubungi pentadbir untuk menambah template rubrik TAPAK STANDARD 4.
+              </Alert>
+            )}
+            {!tapakTemplateLoading && tapakTemplate && (
+              <Alert severity="success">
+                Template dipilih: <strong>{tapakTemplate.name}</strong> ({tapakTemplate.categories.reduce((c, cat) => c + cat.subCategories.reduce((s, sub) => s + sub.items.length, 0), 0)} item)
+              </Alert>
+            )}
+            {loadingAssignments && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <CircularProgress size={32} />
+              </Box>
+            )}
+            {!loadingAssignments && subjects.length === 0 && (
+              <Alert severity="warning">
+                Tiada mata pelajaran ditetapkan kepada anda. Sila hubungi pentadbir.
+              </Alert>
+            )}
             
             <TextField
               select
@@ -275,8 +329,9 @@ export default function TeacherCerapanKendiri() {
               onChange={(e) => setSelectedSubject(e.target.value)}
               fullWidth
               required
+              disabled={loadingAssignments || subjects.length === 0}
             >
-              {availableSubjects.map((subject) => (
+              {subjects.map((subject) => (
                 <MenuItem key={subject} value={subject}>
                   {subject}
                 </MenuItem>
@@ -290,8 +345,9 @@ export default function TeacherCerapanKendiri() {
               onChange={(e) => setSelectedClass(e.target.value)}
               fullWidth
               required
+              disabled={loadingAssignments || classes.length === 0}
             >
-              {availableClasses.map((kelas) => (
+              {classes.map((kelas) => (
                 <MenuItem key={kelas} value={kelas}>
                   {kelas}
                 </MenuItem>
@@ -306,7 +362,7 @@ export default function TeacherCerapanKendiri() {
           <Button
             onClick={handleSubmitSelection}
             variant="contained"
-            disabled={loading || !selectedSubject || !selectedClass}
+            disabled={loading || !selectedSubject || !selectedClass || loadingAssignments || tapakTemplateLoading || !tapakTemplate}
           >
             {loading ? <CircularProgress size={24} /> : "Teruskan"}
           </Button>

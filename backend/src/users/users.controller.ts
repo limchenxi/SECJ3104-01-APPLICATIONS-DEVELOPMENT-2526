@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Req, Patch, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/createUser.dto';
 import { FindByEmailDto } from './dto/findUser.dto';
+import { JwtAuthGuard } from '../auth/jwt.strategy';
+type RequestWithUser = any; // keep consistent with other controllers
 
 @Controller('users')
 export class UsersController {
@@ -21,6 +23,35 @@ export class UsersController {
   @Get('find-by-email')
   findByEmail(@Query() query: FindByEmailDto) {
     return this.userService.findByEmail(query.email);
+  }
+
+  // Return the subjects and classes assigned to the logged-in teacher
+  @UseGuards(JwtAuthGuard)
+  @Get('me/assignments')
+  getMyAssignments(@Req() req: RequestWithUser) {
+    const userId = (req.user._id as any).toString();
+    return this.userService.getAssignments(userId);
+  }
+
+  // Get all users (for admin)
+  @Get()
+  getAllUsers() {
+    return this.userService.findAll();
+  }
+
+  // Get user by ID
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.userService.findById(id);
+  }
+
+  // Update teacher assignments (subjects & classes)
+  @Patch(':id/assignments')
+  updateAssignments(
+    @Param('id') userId: string,
+    @Body() body: { subjects: string[]; classes: string[] },
+  ) {
+    return this.userService.updateAssignments(userId, body.subjects, body.classes);
   }
 
   // @UseGuards(JwtAuthGuard)

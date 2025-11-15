@@ -3,17 +3,43 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+// Score Description Schema
+@Schema({ _id: false })
+class ScoreDescription {
+  @Prop({ required: true })
+  score: number; // 0-4
+
+  @Prop({ required: true })
+  label: string; 
+
+  @Prop({ required: true })
+  description: string; 
+}
+const ScoreDescriptionSchema = SchemaFactory.createForClass(ScoreDescription);
+
 // --- Sub-document for question snapshot ---
 @Schema({ _id: false })
 class QuestionSnapshot {
   @Prop({ required: true })
   questionId: string;
+  
   @Prop({ required: true })
   text: string;
+  
+  @Prop({ required: true })
+  maxScore: number;
+
+  @Prop({ required: false })
+  categoryCode?: string;
+
+  @Prop({ required: false })
+  subCategoryCode?: string;
+  
+  @Prop({ type: [ScoreDescriptionSchema], default: [] })
+  scoreDescriptions: ScoreDescription[]; // Array of score 0-4 descriptions
 }
 const QuestionSnapshotSchema = SchemaFactory.createForClass(QuestionSnapshot);
 
-// --- Sub-document for teacher's answers ---
 @Schema({ _id: false })
 class SelfEvaluationAnswer {
   @Prop({ required: true })
@@ -23,15 +49,14 @@ class SelfEvaluationAnswer {
 }
 const SelfEvaluationAnswerSchema = SchemaFactory.createForClass(SelfEvaluationAnswer);
 
-// --- Sub-document for admin's marks ---
 @Schema({ _id: false })
 class AdminMark {
   @Prop({ required: true })
   questionId: string;
   @Prop({ required: true })
   mark: number;
-  @Prop({ required: true })
-  comment: string;
+  @Prop({ required: false })
+  comment?: string;
 }
 const AdminMarkSchema = SchemaFactory.createForClass(AdminMark);
 
@@ -51,7 +76,6 @@ class ObservationSection {
 }
 const ObservationSectionSchema = SchemaFactory.createForClass(ObservationSection);
 
-// --- THIS IS YOUR MAIN SCHEMA, NAMED 'Cerapan' ---
 @Schema({ timestamps: true })
 export class Cerapan extends Document {
   @Prop({ required: true })
@@ -67,7 +91,7 @@ export class Cerapan extends Document {
   class: string; // Kelas - e.g., "5 Amanah", "4 Bestari"
   
   @Prop({ type: String, required: true })
-  templateId: string; // The _id from your 'QuestionnaireTemplates' collection
+  templateId: string; 
   
   @Prop({ required: true })
   status: string; // Overall status: 'pending_self_evaluation', 'pending_observation_1', etc.

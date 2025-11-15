@@ -63,6 +63,7 @@ const useAuth = () => {
       ...prev,
       user: res.user as AuthUser,
     }));
+    return res; 
   };
 
   const logout = async () => {

@@ -45,7 +45,7 @@ function ResultBlock({ title, results, type }) {
 
 // The main page component
 export default function ReportView() {
-  const { id }_ = useParams<{ id: string }>(); // Get ID from URL
+  const { id } = useParams<{ id: string }>(); // Get ID from URL
   const [report, setReport] = useState<CerapanRecord | null>(null);
   const [loading, setLoading] = useState(true);
 

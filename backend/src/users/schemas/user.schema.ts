@@ -26,6 +26,14 @@ export class User extends Document {
 
   @Prop({ required: false })
   profilePicture?: string;
+
+  // List of subjects the teacher teaches (only relevant when role === 'GURU')
+  @Prop({ type: [String], default: [] })
+  subjects?: string[];
+
+  // List of classes the teacher teaches (only relevant when role === 'GURU')
+  @Prop({ type: [String], default: [] })
+  classes?: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

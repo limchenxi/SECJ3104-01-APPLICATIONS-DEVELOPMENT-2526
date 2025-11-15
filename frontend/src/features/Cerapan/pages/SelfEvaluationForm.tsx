@@ -20,287 +20,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { BookOpen, Users, Calendar, Send } from "lucide-react";
 import { getTaskDetails, submitSelfEvaluation } from "../api/cerapanService";
-import type { CerapanRecord } from "../type";
-
-// Scoring rubric function - returns different rubrics based on question pattern
-const getScoreDescriptions = (questionId: string) => {
-  // Pattern 1: Aspek 4.3 (4 criteria)
-  if (questionId.startsWith("4.3.")) {
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Mengikut keperluan/pelbagai aras keupayaan murid\nii. Dengan betul dan tepat\niii. Secara berhemah\niv. Bersungguh-sungguh",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "Mengambil kira mana-mana tiga (3) perkara",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "Mengambil kira mana-mana dua (2) perkara",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "Mengambil kira mana-mana satu (1) perkara",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak mengambil kira mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Pattern 2: Aspek 4.5 (4 criteria)
-  if (questionId.startsWith("4.5.")) {
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Berdasarkan objektif pelajaran\nii. Mengikut arahan pelaksanaan pentaksiran/ketetapan kurikulum yang berkuat kuasa\niii. Secara menyeluruh kepada semua murid\niv. Dari semasa ke semasa",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "Mengambil kira mana-mana tiga (3) perkara",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "Mengambil kira mana-mana dua (2) perkara",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "Mengambil kira mana-mana satu (1) perkara",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak mengambil kira mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Pattern 3: Aspek 4.6 (percentage-based)
-  if (questionId.startsWith("4.6.")) {
-    // Check if it's 4.6.1d, 4.6.1e, 4.6.1f, 4.6.1g (50-100% base)
-    if (["4.6.1d", "4.6.1e", "4.6.1f", "4.6.1g"].includes(questionId)) {
-      return [
-        {
-          score: 4,
-          label: "Cemerlang",
-          description: "i. Pelibatan 50%-100% murid\nii. Selaras dengan objektif pelajaran\niii. Dengan yakin\niv. Secara berhemah/bersungguh-sungguh",
-        },
-        {
-          score: 3,
-          label: "Baik",
-          description: "Memenuhi sekurang-kurangnya dua (2) perkara daripada (ii), (iii), (iv)",
-        },
-        {
-          score: 2,
-          label: "Sederhana",
-          description: "Memenuhi sekurang-kurangnya satu (1) perkara daripada (ii), (iii), (iv)",
-        },
-        {
-          score: 1,
-          label: "Lemah",
-          description: "Memenuhi sekurang-kurangnya satu (1) perkara daripada (ii), (iii), (iv)",
-        },
-        {
-          score: 0,
-          label: "Tidak Memuaskan",
-          description: "Tidak memenuhi mana-mana perkara",
-        },
-      ];
-    }
-    // Default 4.6 (90-100% base)
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Pelibatan 90%-100% murid\nii. Selaras dengan objektif pelajaran\niii. Dengan yakin\niv. Secara berhemah/bersungguh-sungguh",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "i. Pelibatan 80%-89% murid\nii. Memenuhi sekurang-kurangnya dua (2) perkara daripada (ii), (iii), (iv)",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "i. Pelibatan 50%-79% murid\nii. Memenuhi sekurang-kurangnya satu (1) perkara daripada (ii), (iii), (iv)",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "i. Pelibatan 1%-49% murid\nii. Memenuhi sekurang-kurangnya satu (1) perkara daripada (ii), (iii), (iv)",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak memenuhi mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Pattern 4: Aspek 4.2.2 (3 criteria - berhemah/menyeluruh/semasa)
-  if (questionId.startsWith("4.2.2")) {
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Secara berhemah/mengikut kesesuaian\nii. Secara menyeluruh meliputi semua murid\niii. Dari semasa ke semasa",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "Mengambil kira perkara (i) dan (ii) atau perkara (i) dan (iii)",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "Mengambil kira perkara (ii) dan (iii)",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "Mengambil kira mana-mana satu (1) perkara",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak mengambil kira mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Pattern 5: Aspek 4.4.2 (3 criteria - berhemah/menyeluruh/semasa)
-  if (questionId.startsWith("4.4.2")) {
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Secara berhemah\nii. Secara menyeluruh meliputi semua murid\niii. Dari semasa ke semasa",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "Mengambil kira perkara (i) dan (ii) atau perkara (i) dan (iii)",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "Mengambil kira perkara (ii) dan (iii)",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "Mengambil kira mana-mana satu (1) perkara",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak mengambil kira mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Pattern 6: Aspek 4.2.1 (menepati/pelbagai/semasa)
-  if (questionId.startsWith("4.2.1")) {
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Menepati objektif pelajaran\nii. Mengikut pelbagai aras keupayaan murid/pembelajaran terbeza\niii. Dari semasa ke semasa",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "Mengambil kira perkara (i) dan (ii) atau perkara (i) dan (iii)",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "Mengambil kira perkara (ii) dan (iii)",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "Mengambil kira mana-mana satu (1) perkara",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak mengambil kira mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Pattern 7: Aspek 4.4.1 (objektif/pelbagai/semasa)
-  if (questionId.startsWith("4.4.1")) {
-    return [
-      {
-        score: 4,
-        label: "Cemerlang",
-        description: "i. Berdasarkan objektif pelajaran\nii. Mengikut pelbagai aras keupayaan murid\niii. Dari semasa ke semasa",
-      },
-      {
-        score: 3,
-        label: "Baik",
-        description: "Mengambil kira perkara (i) dan (ii) atau perkara (i) dan (iii)",
-      },
-      {
-        score: 2,
-        label: "Sederhana",
-        description: "Mengambil kira perkara (ii) dan (iii)",
-      },
-      {
-        score: 1,
-        label: "Lemah",
-        description: "Mengambil kira mana-mana satu (1) perkara",
-      },
-      {
-        score: 0,
-        label: "Tidak Memuaskan",
-        description: "Tidak mengambil kira mana-mana perkara",
-      },
-    ];
-  }
-  
-  // Default: Aspek 4.1 pattern (pelbagai/masa/arahan)
-  return [
-    {
-      score: 4,
-      label: "Cemerlang",
-      description: "i. Mengikut pelbagai aras keupayaan murid\nii. Mengikut peruntukan masa yang ditetapkan\niii. Mematuhi arahan/ketetapan kurikulum yang berkuat kuasa",
-    },
-    {
-      score: 3,
-      label: "Baik",
-      description: "Mengambil kira perkara (i) dan (ii) atau perkara (i) dan (iii)",
-    },
-    {
-      score: 2,
-      label: "Sederhana",
-      description: "Mengambil kira perkara (ii) dan (iii)",
-    },
-    {
-      score: 1,
-      label: "Lemah",
-      description: "Mengambil kira mana-mana satu (1) perkara",
-    },
-    {
-      score: 0,
-      label: "Tidak Memuaskan",
-      description: "Tidak mengambil kira mana-mana perkara",
-    },
-  ];
-};
+import type { CerapanRecord, QuestionSnapshot, ScoreDescription } from "../type";
 
 export default function SelfEvaluationForm() {
   const theme = useTheme();
@@ -346,74 +66,103 @@ export default function SelfEvaluationForm() {
     }));
   };
 
+  // Get score descriptions from question snapshot (from backend template)
+  const getScoreDescriptions = (question: QuestionSnapshot): ScoreDescription[] => {
+    // If question has score descriptions from template, use them
+    if (question.scoreDescriptions && question.scoreDescriptions.length > 0) {
+      return question.scoreDescriptions;
+    }
+    
+    // Fallback: Generate basic 0-4 scale
+    return [
+      { score: 4, label: "Cemerlang", description: "Sangat baik" },
+      { score: 3, label: "Baik", description: "Baik" },
+      { score: 2, label: "Sederhana", description: "Sederhana" },
+      { score: 1, label: "Lemah", description: "Lemah" },
+      { score: 0, label: "Tidak Memuaskan", description: "Tidak memuaskan" },
+    ];
+  };
+
   // Group questions by Aspek with titles
   const groupQuestionsByAspek = () => {
     if (!task) return [];
-    
-    const aspekTitles: { [key: string]: { title: string; subtitle: string } } = {
-      "4.1": { 
-        title: "Aspek 4.1: GURU SEBAGAI PERANCANG", 
-        subtitle: "Guru merancang pelaksanaan PdPc secara profesional dan sistematik" 
-      },
-      "4.2": { 
-        title: "Aspek 4.2: GURU SEBAGAI PENGAWAL", 
-        subtitle: "Guru mengawal proses dan suasana pembelajaran" 
-      },
-      "4.3": { 
-        title: "Aspek 4.3: GURU SEBAGAI PEMBIMBING", 
-        subtitle: "Guru membimbing murid secara profesional dan terancang" 
-      },
-      "4.4": { 
-        title: "Aspek 4.4: GURU SEBAGAI PENDORONG", 
-        subtitle: "Guru mendorong minda dan emosi murid" 
-      },
-      "4.5": { 
-        title: "Aspek 4.5: GURU SEBAGAI PENILAI", 
-        subtitle: "Guru melaksanakan penilaian secara sistematik dan profesional" 
-      },
-      "4.6": { 
-        title: "Aspek 4.6: MURID SEBAGAI PEMBELAJAR AKTIF", 
-        subtitle: "Murid melibatkan diri dalam proses pembelajaran" 
-      },
-    };
-    
-    const grouped: { 
-      [key: string]: { 
-        title: string; 
-        subtitle: string; 
-        questions: typeof task.questions_snapshot 
-      } 
+
+    const aspekGroups: {
+      [key: string]: {
+        title: string;
+        subtitle: string;
+        questions: QuestionSnapshot[];
+      };
     } = {};
-    
+
     task.questions_snapshot.forEach((question) => {
-      // Extract Aspek from questionId (e.g., "4.1.1a" -> "4.1")
-      const aspekMatch = question.questionId.match(/^(\d+\.\d+)/);
-      const aspekId = aspekMatch ? aspekMatch[1] : "Other";
-      
-      if (!grouped[aspekId]) {
-        grouped[aspekId] = {
-          title: aspekTitles[aspekId]?.title || `Aspek ${aspekId}`,
-          subtitle: aspekTitles[aspekId]?.subtitle || "",
+      // Extract aspek from questionId (e.g., "4.1.1a" -> "4.1")
+      const parts = question.questionId.split(".");
+      const aspekKey = parts.length >= 2 ? `${parts[0]}.${parts[1]}` : parts[0];
+
+      if (!aspekGroups[aspekKey]) {
+        // Set title and subtitle based on aspekKey
+        let title = "";
+        let subtitle = "";
+
+        switch (aspekKey) {
+          case "4.1":
+            title = "ASPEK 4.1: GURU SEBAGAI PERANCANG";
+            subtitle = "Perancangan pengajaran dan pembelajaran";
+            break;
+          case "4.2":
+            title = "ASPEK 4.2: GURU SEBAGAI PENYAMPAI";
+            subtitle = "Penyampaian pengajaran dan pembelajaran";
+            break;
+          case "4.3":
+            title = "ASPEK 4.3: GURU SEBAGAI PEMBIMBING";
+            subtitle = "Bimbingan kepada murid";
+            break;
+          case "4.4":
+            title = "ASPEK 4.4: GURU SEBAGAI PENTAKSIR";
+            subtitle = "Pentaksiran murid";
+            break;
+          case "4.5":
+            title = "ASPEK 4.5: GURU SEBAGAI PENTADBIR";
+            subtitle = "Pentadbiran bilik darjah";
+            break;
+          case "4.6":
+            title = "ASPEK 4.6: GURU SEBAGAI PROFESIONAL";
+            subtitle = "Profesionalisme dan etika";
+            break;
+          default:
+            title = `ASPEK ${aspekKey}`;
+            subtitle = "";
+        }
+
+        aspekGroups[aspekKey] = {
+          title,
+          subtitle,
           questions: [],
         };
       }
-      grouped[aspekId].questions.push(question);
+
+      aspekGroups[aspekKey].questions.push(question);
     });
-    
-    return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
+
+    // Convert to sorted array
+    return Object.entries(aspekGroups).sort((a, b) => {
+      const aNum = parseFloat(a[0]);
+      const bNum = parseFloat(b[0]);
+      return aNum - bNum;
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!task || !id) return;
+  const handleSubmit = async () => {
+    if (!task) return;
 
     // Validate all questions are answered
     const unanswered = task.questions_snapshot.filter(
-      (q) => !answers[q.questionId] || answers[q.questionId].trim() === ""
+      (q) => !answers[q.questionId] || answers[q.questionId] === ""
     );
 
     if (unanswered.length > 0) {
-      setError("Sila jawab semua soalan sebelum menghantar.");
+      setError(`Sila jawab semua soalan. ${unanswered.length} soalan belum dijawab.`);
       return;
     }
 
@@ -421,20 +170,20 @@ export default function SelfEvaluationForm() {
       setSubmitting(true);
       setError("");
 
-      const payload = {
-        answers: Object.entries(answers).map(([questionId, answer]) => ({
-          questionId,
-          answer,
-        })),
-      };
+      // Convert answers object to array format
+      const answersArray = Object.entries(answers).map(([questionId, answer]) => ({
+        questionId,
+        answer,
+      }));
 
-      await submitSelfEvaluation(id, payload);
-      
+      await submitSelfEvaluation(task._id, { answers: answersArray });
+
       // Navigate to results page
-      navigate(`/cerapan/results/${id}`);
+      navigate(`/cerapan/results/${task._id}`);
     } catch (err: any) {
       console.error("Error submitting evaluation:", err);
-      setError(err.response?.data?.message || "Gagal menghantar. Sila cuba lagi.");
+      setError(err.response?.data?.message || "Gagal menghantar penilaian. Sila cuba lagi.");
+    } finally {
       setSubmitting(false);
     }
   };
@@ -447,56 +196,126 @@ export default function SelfEvaluationForm() {
     );
   }
 
-  if (!task) {
+  if (error && !task) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">Tugasan tidak dijumpai.</Alert>
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
+  if (!task) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="info">Tiada data tugasan.</Alert>
+      </Box>
+    );
+  }
+
+  // Calculate progress
+  const answeredCount = Object.values(answers).filter((a) => a !== "").length;
+  const totalCount = task.questions_snapshot.length;
+  const progress = totalCount > 0 ? (answeredCount / totalCount) * 100 : 0;
+
   return (
-    <Box sx={{ p: 3, maxWidth: "lg", mx: "auto" }}>
-      <form onSubmit={handleSubmit}>
-        <Stack spacing={3}>
-          {/* Header */}
-          <Box>
-            <Typography variant="h4" component="h1" sx={{ color: theme.palette.grey[900], mb: 0.5 }}>
-              Borang Penilaian Kendiri
-            </Typography>
-            <Typography color="text.secondary">
-              Sila jawab semua soalan dengan jujur berdasarkan prestasi anda
-            </Typography>
-          </Box>
+    <Box sx={{ p: 4 }}>
+      {/* Page Header */}
+      <Stack spacing={3} sx={{ mb: 4 }}>
+        <Box>
+          <Typography variant="h4" color="primary" gutterBottom>
+            Penilaian Kendiri
+          </Typography>
+          <Typography color="text.secondary">
+            Sila isi borang penilaian kendiri berdasarkan prestasi anda
+          </Typography>
+        </Box>
 
-          {/* Task Info Card */}
-          <Card raised>
-            <CardContent>
-              <Stack spacing={2}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <BookOpen size={20} style={{ color: theme.palette.primary.main }} />
-                  <Typography variant="h6">{task.subject}</Typography>
-                </Stack>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Users size={18} style={{ color: theme.palette.grey[600] }} />
-                  <Typography color="text.secondary">Kelas: {task.class}</Typography>
-                </Stack>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Calendar size={18} style={{ color: theme.palette.grey[600] }} />
-                  <Typography color="text.secondary">Tempoh: {task.period}</Typography>
-                </Stack>
+        {/* Task Info Card */}
+        <Card>
+          <CardContent>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
+                <BookOpen size={20} style={{ color: theme.palette.primary.main }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Subjek
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {task.subject}
+                  </Typography>
+                </Box>
               </Stack>
-            </CardContent>
-          </Card>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
+                <Users size={20} style={{ color: theme.palette.primary.main }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Kelas
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {task.class}
+                  </Typography>
+                </Box>
+              </Stack>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
+                <Calendar size={20} style={{ color: theme.palette.primary.main }} />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Tempoh
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {task.period}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
 
-          {error && (
-            <Alert severity="error" onClose={() => setError("")}>
-              {error}
-            </Alert>
-          )}
+        {/* Progress Bar */}
+        <Card>
+          <CardContent>
+            <Stack spacing={1}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" color="text.secondary">
+                  Kemajuan Penilaian
+                </Typography>
+                <Typography variant="body2" fontWeight={600}>
+                  {answeredCount} / {totalCount} soalan
+                </Typography>
+              </Stack>
+              <Box
+                sx={{
+                  height: 8,
+                  bgcolor: theme.palette.grey[200],
+                  borderRadius: 1,
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    height: "100%",
+                    width: `${progress}%`,
+                    bgcolor: theme.palette.success.main,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
 
-          {/* Questions Grouped by Aspek */}
-          <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.grey[50] }}>
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Questions */}
+      <Card>
+        <CardContent>
+          <Stack spacing={4}>
             <Typography variant="h6" sx={{ mb: 3, color: theme.palette.primary.main }}>
               Soalan Penilaian
             </Typography>
@@ -544,7 +363,7 @@ export default function SelfEvaluationForm() {
                               value={answers[question.questionId] || ""}
                               onChange={(e) => handleAnswerChange(question.questionId, e.target.value)}
                             >
-                              {getScoreDescriptions(question.questionId).map((scoreOption) => (
+                              {getScoreDescriptions(question).map((scoreOption) => (
                                 <FormControlLabel
                                   key={scoreOption.score}
                                   value={scoreOption.score.toString()}
@@ -554,7 +373,11 @@ export default function SelfEvaluationForm() {
                                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                         Skor {scoreOption.score}: {scoreOption.label}
                                       </Typography>
-                                      <Typography variant="caption" color="text.secondary">
+                                      <Typography 
+                                        variant="caption" 
+                                        color="text.secondary"
+                                        sx={{ whiteSpace: 'pre-line' }}
+                                      >
                                         {scoreOption.description}
                                       </Typography>
                                     </Box>
@@ -582,41 +405,40 @@ export default function SelfEvaluationForm() {
                     ))}
                   </Stack>
 
-                  {/* Divider between Aspeks */}
                   {aspekIndex < groupQuestionsByAspek().length - 1 && (
                     <Divider sx={{ my: 4 }} />
                   )}
                 </Box>
               ))}
             </Stack>
-          </Paper>
+          </Stack>
+        </CardContent>
+      </Card>
 
-          {/* Submit Button */}
-          <Stack direction="row" justifyContent="flex-end" spacing={2}>
+      {/* Submit Button */}
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant="body1" fontWeight={600}>
+                Sedia untuk menghantar?
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Pastikan semua soalan telah dijawab sebelum menghantar.
+              </Typography>
+            </Box>
             <Button
-              variant="outlined"
-              onClick={() => navigate("/cerapan")}
-              disabled={submitting}
-            >
-              Batal
-            </Button>
-            <Button
-              type="submit"
               variant="contained"
               size="large"
-              disabled={submitting}
-              startIcon={submitting ? <CircularProgress size={20} /> : <Send size={20} />}
-              sx={{
-                bgcolor: theme.palette.success.main,
-                "&:hover": { bgcolor: theme.palette.success.dark },
-                px: 4,
-              }}
+              startIcon={<Send />}
+              onClick={handleSubmit}
+              disabled={submitting || progress < 100}
             >
               {submitting ? "Menghantar..." : "Hantar Penilaian"}
             </Button>
           </Stack>
-        </Stack>
-      </form>
+        </CardContent>
+      </Card>
     </Box>
   );
 }

@@ -1,0 +1,59 @@
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { TeachingAssignmentService } from './teaching-assignment.service';
+import { CreateTeachingAssignmentDto } from './dto/create-teaching-assignment.dto';
+import { UpdateTeachingAssignmentDto } from './dto/update-teaching-assignment.dto';
+import { JwtAuthGuard } from '../auth/jwt.strategy';
+
+type RequestWithUser = any;
+
+@Controller('teaching-assignments')
+@UseGuards(JwtAuthGuard)
+export class TeachingAssignmentController {
+  constructor(private readonly service: TeachingAssignmentService) {}
+
+
+  @Get('me')
+  async getMine(@Req() req: RequestWithUser, @Query('year') year?: string, @Query('term') term?: string) {
+    const teacherId = (req.user._id as any).toString();
+    const academicYear = year ? parseInt(year, 10) : undefined;
+    return this.service.getForTeacher(teacherId, academicYear, term);
+  }
+
+  @Get()
+  async list(
+    @Query('teacherId') teacherId?: string,
+    @Query('subject') subject?: string,
+    @Query('class') className?: string,
+    @Query('year') year?: string,
+    @Query('term') term?: string,
+    @Query('active') active?: string,
+  ) {
+    const filter: any = {};
+    if (teacherId) filter.teacherId = teacherId;
+    if (subject) filter.subject = subject;
+    if (className) filter.class = className;
+    if (year) filter.academicYear = parseInt(year, 10);
+    if (term) filter.term = term;
+    if (active !== undefined) filter.active = active === 'true';
+    return this.service.findAll(filter);
+  }
+
+  // Admin: create
+  @Post()
+  async create(@Body() dto: CreateTeachingAssignmentDto) {
+    return this.service.create(dto);
+  }
+
+  // Admin: update
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: UpdateTeachingAssignmentDto) {
+    return this.service.update(id, dto);
+  }
+
+  // Admin: delete
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.service.remove(id);
+    return { success: true };
+  }
+}

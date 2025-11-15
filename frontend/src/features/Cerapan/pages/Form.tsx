@@ -11,7 +11,7 @@ type AnswersState = {
 };
 
 export default function CerapanKendiri() {
-  const { id }_ = useParams<{ id: string }>(); // Get ID from URL
+  const { id } = useParams<{ id: string }>(); // Get ID from URL
   const navigate = useNavigate();
 
   const [task, setTask] = useState<CerapanRecord | null>(null);

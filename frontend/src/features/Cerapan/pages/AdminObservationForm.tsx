@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Card,
@@ -7,25 +7,27 @@ import {
   Button,
   Stack,
   useTheme,
-  TextField,
   CircularProgress,
   Alert,
   Paper,
-  Divider,
-  Chip,
   Grid,
-  Slider,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Divider,
 } from "@mui/material";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, Users, Calendar, Send, CheckCircle } from "lucide-react";
-import { getReportDetails, submitObservation1, submitObservation2 } from "../api/cerapanService";
-import type { CerapanRecord, SubmitObservationDto } from "../type";
+import { BookOpen, Users, Calendar, CheckCircle } from "lucide-react";
+import { getAdminEvaluationDetails, submitObservation1, submitObservation2 } from "../api/cerapanService";
+import { userApi } from "../../Users/api";
+import type { CerapanRecord, SubmitObservationDto, QuestionSnapshot, ScoreDescription } from "../type";
 import useAuth from "../../../hooks/useAuth";
 
 interface MarkForm {
   [questionId: string]: {
     mark: number;
-    comment: string;
   };
 }
 
@@ -39,111 +41,150 @@ export default function AdminObservationForm() {
   const observationType = parseInt(searchParams.get("type") || "1") as 1 | 2;
 
   const [task, setTask] = useState<CerapanRecord | null>(null);
-  const [marks, setMarks] = useState<MarkForm>({});
+  const [teacherName, setTeacherName] = useState<string | null>(null);
+  const [marks, setMarks] = useState<MarkForm>({} as MarkForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Derived totals
+  const totalMarks = Object.values(marks).reduce((sum, m) => sum + (m.mark || 0), 0);
+  const maxMarks = (task?.questions_snapshot || []).reduce((sum, q) => sum + (q.maxScore || 0), 0);
+  const percentage = maxMarks > 0 ? Math.round((totalMarks / maxMarks) * 100) : 0;
+
+  // Kendiri-like score descriptions
+  const getScoreDescriptions = (question: QuestionSnapshot): ScoreDescription[] => {
+    if (question.scoreDescriptions && question.scoreDescriptions.length > 0) return question.scoreDescriptions;
+    return [
+      { score: 4, label: "Cemerlang", description: "Sangat baik" },
+      { score: 3, label: "Baik", description: "Baik" },
+      { score: 2, label: "Sederhana", description: "Sederhana" },
+      { score: 1, label: "Lemah", description: "Lemah" },
+      { score: 0, label: "Tidak Memuaskan", description: "Tidak memuaskan" },
+    ];
+  };
+
+  // Group by Aspek like kendiri
+  const groupedAspek = useMemo(() => {
+    if (!task) return [] as Array<[string, { title: string; subtitle: string; questions: QuestionSnapshot[] }]>;
+    const aspekGroups: { [key: string]: { title: string; subtitle: string; questions: QuestionSnapshot[] } } = {};
+    task.questions_snapshot.forEach((question) => {
+      const parts = question.questionId.split(".");
+      const aspekKey = parts.length >= 2 ? `${parts[0]}.${parts[1]}` : parts[0];
+      if (!aspekGroups[aspekKey]) {
+        let title = "";
+        let subtitle = "";
+        switch (aspekKey) {
+          case "4.1":
+            title = "ASPEK 4.1: GURU SEBAGAI PERANCANG";
+            subtitle = "Perancangan pengajaran dan pembelajaran";
+            break;
+          case "4.2":
+            title = "ASPEK 4.2: GURU SEBAGAI PENYAMPAI";
+            subtitle = "Penyampaian pengajaran dan pembelajaran";
+            break;
+          case "4.3":
+            title = "ASPEK 4.3: GURU SEBAGAI PEMBIMBING";
+            subtitle = "Bimbingan kepada murid";
+            break;
+          case "4.4":
+            title = "ASPEK 4.4: GURU SEBAGAI PENTAKSIR";
+            subtitle = "Pentaksiran murid";
+            break;
+          case "4.5":
+            title = "ASPEK 4.5: GURU SEBAGAI PENTADBIR";
+            subtitle = "Pentadbiran bilik darjah";
+            break;
+          case "4.6":
+            title = "ASPEK 4.6: GURU SEBAGAI PROFESIONAL";
+            subtitle = "Profesionalisme dan etika";
+            break;
+          default:
+            title = `ASPEK ${aspekKey}`;
+            subtitle = "";
+        }
+        aspekGroups[aspekKey] = { title, subtitle, questions: [] };
+      }
+      aspekGroups[aspekKey].questions.push(question);
+    });
+    return Object.entries(aspekGroups).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+  }, [task]);
+
   useEffect(() => {
-    loadTaskDetails();
+    const load = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const data = await getAdminEvaluationDetails(id);
+        setTask(data);
+        const initialMarks: MarkForm = {} as MarkForm;
+        data.questions_snapshot.forEach((q) => {
+          initialMarks[q.questionId] = { mark: 0 };
+        });
+        setMarks(initialMarks);
+      } catch (err) {
+        console.error("Error loading task:", err);
+        setError("Gagal memuatkan data. Sila cuba lagi.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [id]);
 
-  const loadTaskDetails = async () => {
-    if (!id) return;
-
-    try {
-      setLoading(true);
-      const data = await getReportDetails(id);
-      setTask(data);
-
-      // Initialize marks object
-      const initialMarks: MarkForm = {};
-      data.questions_snapshot.forEach((q) => {
-        initialMarks[q.questionId] = {
-          mark: 0,
-          comment: "",
-        };
-      });
-      setMarks(initialMarks);
-    } catch (err) {
-      console.error("Error loading task:", err);
-      setError("Gagal memuatkan data. Sila cuba lagi.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch teacher name for header display
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      try {
+        if (task?.teacherId) {
+          const user = await userApi.getById(task.teacherId);
+          setTeacherName(user?.name || null);
+        } else {
+          setTeacherName(null);
+        }
+      } catch {
+        setTeacherName(null);
+      }
+    };
+    fetchTeacher();
+  }, [task?.teacherId]);
 
   const handleMarkChange = (questionId: string, mark: number) => {
-    setMarks((prev) => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        mark,
-      },
-    }));
-  };
-
-  const handleCommentChange = (questionId: string, comment: string) => {
-    setMarks((prev) => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        comment,
-      },
-    }));
+    setMarks((prev) => ({ ...prev, [questionId]: { ...prev[questionId], mark } }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!task || !id || !user?.id) return;
 
-    // Validate all questions have comments
-    const unanswered = task.questions_snapshot.filter(
-      (q) => !marks[q.questionId]?.comment || marks[q.questionId].comment.trim() === ""
-    );
-
-    if (unanswered.length > 0) {
-      setError("Sila berikan komen untuk semua soalan.");
-      return;
-    }
-
     try {
       setSubmitting(true);
       setError("");
-
       const payload: SubmitObservationDto = {
-        marks: Object.entries(marks).map(([questionId, data]) => ({
-          questionId,
-          mark: data.mark,
-          comment: data.comment,
-        })),
+        marks: Object.entries(marks).map(([questionId, data]) => ({ questionId, mark: data.mark })),
       };
-
+      
       if (observationType === 1) {
         await submitObservation1(id, payload);
       } else {
         await submitObservation2(id, payload);
       }
-
-      // Navigate back to admin dashboard
-      navigate("/cerapan/admin");
+      
+      // Successfully submitted, navigate to report
+      navigate(`/cerapan/results/${id}`);
     } catch (err: any) {
       console.error("Error submitting observation:", err);
-      setError(err.response?.data?.message || "Gagal menghantar. Sila cuba lagi.");
+      console.error("Error details:", err.response?.data);
+      const errorMsg = err.response?.data?.message || err.message || "Gagal menghantar. Sila cuba lagi.";
+      setError(errorMsg);
+    } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "60vh",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
         <CircularProgress />
       </Box>
     );
@@ -157,10 +198,6 @@ export default function AdminObservationForm() {
     );
   }
 
-  const totalMarks = Object.values(marks).reduce((sum, m) => sum + m.mark, 0);
-  const maxMarks = task.questions_snapshot.length * 5;
-  const percentage = maxMarks > 0 ? Math.round((totalMarks / maxMarks) * 100) : 0;
-
   return (
     <Box sx={{ p: 3, maxWidth: "lg", mx: "auto" }}>
       <form onSubmit={handleSubmit}>
@@ -171,60 +208,41 @@ export default function AdminObservationForm() {
               <Typography variant="h4" component="h1" sx={{ color: theme.palette.grey[900] }}>
                 Borang Cerapan {observationType}
               </Typography>
-              <Chip
-                label={observationType === 1 ? "Cerapan 1" : "Cerapan 2"}
-                sx={{
-                  bgcolor: observationType === 1 ? theme.palette.info.main : theme.palette.success.main,
-                  color: theme.palette.common.white,
-                  fontWeight: "bold",
-                }}
-              />
             </Stack>
-            <Typography color="text.secondary">
-              Sila berikan markah dan komen untuk setiap aspek penilaian
-            </Typography>
+            <Typography color="text.secondary">Sila berikan markah dan komen untuk setiap aspek penilaian</Typography>
           </Box>
 
           {/* Task Info Card */}
-          <Card raised>
+          <Card>
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Users size={20} style={{ color: theme.palette.primary.main }} />
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Guru ID
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {task.teacherId}
-                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Guru</Typography>
+                      <Typography variant="body1" fontWeight={600}>{teacherName || task.teacherId}</Typography>
+                      {teacherName && (
+                        <Typography variant="caption" color="text.secondary">ID: {task.teacherId}</Typography>
+                      )}
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <BookOpen size={20} style={{ color: theme.palette.primary.main }} />
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Subjek & Kelas
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {task.subject} - {task.class}
-                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Subjek & Kelas</Typography>
+                      <Typography variant="body1" fontWeight={600}>{task.subject} - {task.class}</Typography>
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Calendar size={20} style={{ color: theme.palette.primary.main }} />
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Tempoh
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600}>
-                        {task.period}
-                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Tempoh</Typography>
+                      <Typography variant="body1" fontWeight={600}>{task.period}</Typography>
                     </Box>
                   </Stack>
                 </Grid>
@@ -233,121 +251,91 @@ export default function AdminObservationForm() {
           </Card>
 
           {error && (
-            <Alert severity="error" onClose={() => setError("")}>
-              {error}
-            </Alert>
+            <Alert severity="error" onClose={() => setError("")}>{error}</Alert>
           )}
 
           {/* Score Summary */}
-          <Card
-            sx={{
-              bgcolor: theme.palette.primary.light + "20",
-              border: `1px solid ${theme.palette.primary.light}`,
-            }}
-          >
+          <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">Jumlah Markah Semasa</Typography>
                 <Stack direction="row" alignItems="baseline" spacing={1}>
-                  <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>
-                    {totalMarks}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    / {maxMarks} ({percentage}%)
-                  </Typography>
+                  <Typography variant="h4" sx={{ color: theme.palette.primary.main }}>{totalMarks}</Typography>
+                  <Typography variant="body1" color="text.secondary">/ {maxMarks} ({percentage}%)</Typography>
                 </Stack>
               </Stack>
             </CardContent>
           </Card>
 
-          {/* Teacher's Self Evaluation (for reference) */}
-          {task.self_evaluation.status === "submitted" && (
-            <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.grey[50] }}>
-              <Typography variant="h6" sx={{ mb: 2, color: theme.palette.info.dark }}>
-                Jawapan Cerapan Kendiri Guru (Rujukan)
-              </Typography>
-              <Stack spacing={2}>
-                {task.self_evaluation.answers?.map((answer, index) => {
-                  const question = task.questions_snapshot.find(
-                    (q) => q.questionId === answer.questionId
-                  );
-                  return (
-                    <Card key={answer.questionId} variant="outlined">
-                      <CardContent>
-                        <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>
-                          Soalan {index + 1}: {question?.text}
-                        </Typography>
-                        <Paper sx={{ p: 2, bgcolor: theme.palette.grey[100] }}>
-                          <Typography variant="body2">{answer.answer}</Typography>
-                        </Paper>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </Stack>
-            </Paper>
-          )}
-
-          {/* Marking Form */}
+          {/* Match kendiri layout */}
           <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.grey[50] }}>
             <Typography variant="h6" sx={{ mb: 3, color: theme.palette.primary.main }}>
               Penilaian Pentadbir
             </Typography>
 
-            <Stack spacing={3}>
-              {task.questions_snapshot.map((question, index) => (
-                <Box key={question.questionId}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>
-                        Aspek {index + 1}
-                      </Typography>
-                      <Typography variant="body1" sx={{ mb: 3, fontWeight: 500 }}>
-                        {question.text}
-                      </Typography>
+            <Stack spacing={4}>
+              {groupedAspek.map(([aspekKey, aspekData], aspekIndex) => (
+                <Box key={aspekKey}>
+                  <Paper elevation={2} sx={{ p: 2, mb: 2, bgcolor: theme.palette.primary.main, color: theme.palette.common.white }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>{aspekData.title}</Typography>
+                    {aspekData.subtitle && (
+                      <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.9 }}>{aspekData.subtitle}</Typography>
+                    )}
+                  </Paper>
 
-                      {/* Mark Slider */}
-                      <Box sx={{ mb: 3 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                          <Typography variant="body2" color="text.secondary">
-                            Markah (0-5)
-                          </Typography>
-                          <Chip
-                            label={`${marks[question.questionId]?.mark || 0} / 5`}
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.primary.main,
-                              color: theme.palette.common.white,
-                              fontWeight: "bold",
-                            }}
-                          />
-                        </Stack>
-                        <Slider
-                          value={marks[question.questionId]?.mark || 0}
-                          onChange={(_e, value) => handleMarkChange(question.questionId, value as number)}
-                          min={0}
-                          max={5}
-                          step={1}
-                          marks
-                          valueLabelDisplay="auto"
-                        />
-                      </Box>
+                  <Stack spacing={3}>
+                    {aspekData.questions.map((q) => {
+                      const selected = marks[q.questionId]?.mark ?? null;
+                      const valueStr = selected !== null ? String(selected) : "";
+                      return (
+                        <Card key={q.questionId} variant="outlined">
+                          <CardContent>
+                            <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>{q.questionId}</Typography>
+                            <Typography variant="body1" sx={{ mb: 3, fontWeight: 500 }}>{q.text}</Typography>
 
-                      {/* Comment Field */}
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={3}
-                        label="Komen & Cadangan Penambahbaikan"
-                        placeholder="Berikan komen terperinci mengenai aspek ini..."
-                        value={marks[question.questionId]?.comment || ""}
-                        onChange={(e) => handleCommentChange(question.questionId, e.target.value)}
-                        required
-                        variant="outlined"
-                      />
-                    </CardContent>
-                  </Card>
-                  {index < task.questions_snapshot.length - 1 && <Divider sx={{ my: 2 }} />}
+                            <FormControl component="fieldset" fullWidth required sx={{ mb: 2 }}>
+                              <FormLabel component="legend" sx={{ mb: 2, fontWeight: 600 }}>Pilih Skor:</FormLabel>
+                              <RadioGroup value={valueStr} onChange={(e) => handleMarkChange(q.questionId, parseInt(e.target.value, 10))}>
+                                {getScoreDescriptions(q)
+                                  .sort((a, b) => b.score - a.score)
+                                  .map((opt) => (
+                                    <FormControlLabel
+                                      key={opt.score}
+                                      value={String(opt.score)}
+                                      control={<Radio />}
+                                      label={
+                                        <Box sx={{ py: 0.5 }}>
+                                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                            Skor {opt.score}: {opt.label}
+                                          </Typography>
+                                          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+                                            {opt.description}
+                                          </Typography>
+                                        </Box>
+                                      }
+                                      sx={{
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        borderRadius: 1,
+                                        mb: 1,
+                                        px: 2,
+                                        py: 1,
+                                        '&:hover': { bgcolor: theme.palette.action.hover },
+                                        ...(valueStr === String(opt.score) && {
+                                          bgcolor: theme.palette.primary.light + '20',
+                                          borderColor: theme.palette.primary.main,
+                                        }),
+                                      }}
+                                    />
+                                  ))}
+                              </RadioGroup>
+                            </FormControl>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </Stack>
+
+                  {aspekIndex < groupedAspek.length - 1 && <Divider sx={{ my: 4 }} />}
                 </Box>
               ))}
             </Stack>
@@ -355,13 +343,7 @@ export default function AdminObservationForm() {
 
           {/* Submit Button */}
           <Stack direction="row" justifyContent="flex-end" spacing={2}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/cerapan/admin")}
-              disabled={submitting}
-            >
-              Batal
-            </Button>
+            <Button variant="outlined" onClick={() => navigate("/cerapan/admin")} disabled={submitting}>Batal</Button>
             <Button
               type="submit"
               variant="contained"
@@ -369,11 +351,9 @@ export default function AdminObservationForm() {
               disabled={submitting}
               startIcon={submitting ? <CircularProgress size={20} /> : <CheckCircle size={20} />}
               sx={{
-                bgcolor:
-                  observationType === 1 ? theme.palette.info.main : theme.palette.success.main,
+                bgcolor: observationType === 1 ? theme.palette.info.main : theme.palette.success.main,
                 "&:hover": {
-                  bgcolor:
-                    observationType === 1 ? theme.palette.info.dark : theme.palette.success.dark,
+                  bgcolor: observationType === 1 ? theme.palette.info.dark : theme.palette.success.dark,
                 },
                 px: 4,
               }}

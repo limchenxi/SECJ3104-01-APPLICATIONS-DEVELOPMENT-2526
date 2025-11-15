@@ -5,16 +5,17 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CerapanController } from './cerapan.controller';
 import { CerapanService } from './cerapan.service';
 import { Cerapan, CerapanSchema } from './cerapan.schema';
-import { QuestionModule } from '../question/question.module'; // <-- 1. IMPORT QuestionModule
+import { PentadbirModule } from '../pentadbir/pentadbir.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Cerapan.name, schema: CerapanSchema },
     ]),
-    QuestionModule, // <-- 2. ADD IT HERE
+    PentadbirModule,
   ],
   controllers: [CerapanController],
   providers: [CerapanService],
+  exports: [CerapanService],
 })
 export class CerapanModule {}

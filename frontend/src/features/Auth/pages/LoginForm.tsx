@@ -19,10 +19,16 @@ export default function Login() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await login(form.email, form.password);
-      navigate(redirectTo, { replace: true });
-    } catch (err) {
-      alert(err.response?.data?.msg || "Login failed");
+      const response = await login(form.email, form.password);
+      
+      // Role-based redirect
+      if (response?.user?.role === 'PENTADBIR') {
+        navigate('/pentadbir', { replace: true });
+      } else {
+        navigate(redirectTo, { replace: true });
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.msg || "Login failed");
     }
   };
 

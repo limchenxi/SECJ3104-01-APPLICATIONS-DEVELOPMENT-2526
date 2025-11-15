@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box,
   Card,
@@ -12,7 +12,7 @@ import {
   Grid,
   Chip,
 } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   CheckCircle,
   Calendar,
@@ -20,6 +20,7 @@ import {
   Users,
   Award,
   TrendingUp,
+  Clock,
 } from "lucide-react";
 import {
   BarChart,
@@ -35,17 +36,27 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
 } from "recharts";
-import { getReportDetails } from "../api/cerapanService";
-import type { CerapanRecord } from "../type";
+import { getReportSummary, getAdminReportSummary } from "../api/cerapanService";
+import type { CerapanRecord, ReportSummary } from "../type";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import useAuth from "../../../hooks/useAuth";
 
 export default function CerapanResults() {
   const theme = useTheme();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
   const [report, setReport] = useState<CerapanRecord | null>(null);
+  const [summary, setSummary] = useState<ReportSummary | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Determine if this is admin view
+  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/");
 
   useEffect(() => {
     loadReport();
@@ -56,8 +67,12 @@ export default function CerapanResults() {
 
     try {
       setLoading(true);
-      const data = await getReportDetails(id);
-      setReport(data);
+      // Use admin endpoint if admin, otherwise teacher endpoint
+      const data = isAdminView 
+        ? await getAdminReportSummary(id)
+        : await getReportSummary(id);
+      setReport(data.report);
+      setSummary(data.summary);
     } catch (err) {
       console.error("Error loading report:", err);
       setError("Gagal memuatkan laporan. Sila cuba lagi.");
@@ -66,32 +81,53 @@ export default function CerapanResults() {
     }
   };
 
-  // Calculate mock scores for visualization (replace with actual calculation logic)
-  const calculateScores = () => {
-    if (!report) return { categories: [], radar: [], total: 0, percentage: 0 };
+  const obs1Total10 = summary?.categories.totals.observation1Score10Sum ?? 0;
+  const obs2Total10 = summary?.categories.totals.observation2Score10Sum ?? 0;
+  const hasObs1 = (summary?.observation1.count ?? 0) > 0;
+  const hasObs2 = (summary?.observation2.count ?? 0) > 0;
 
-    // Mock data - in real scenario, you'd calculate based on answers
-    const categories = [
-      { name: "Perancangan Pengajaran", score: 88 },
-      { name: "Penyampaian", score: 85 },
-      { name: "Pengurusan Bilik Darjah", score: 89 },
-      { name: "Komunikasi", score: 92 },
-      { name: "Penggunaan BBM", score: 86 },
-    ];
+  const handleExportPdf = async () => {
+    try {
+      const input = exportRef.current;
+      if (!input) return;
 
-    const radar = categories.map((cat) => ({
-      category: cat.name.split(" ")[0], // Shortened name for radar
-      score: cat.score,
-      fullMark: 100,
-    }));
+      // Use a white background to avoid transparency issues
+      const canvas = await html2canvas(input, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
 
-    const total = categories.reduce((sum, cat) => sum + cat.score, 0);
-    const percentage = Math.round(total / categories.length);
+      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-    return { categories, radar, total, percentage };
+      const imgProps = {
+        width: pageWidth,
+        height: (canvas.height * pageWidth) / canvas.width,
+      };
+
+      let heightLeft = imgProps.height;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgProps.height;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `Laporan_Cerapan_${report?.subject || ''}_${report?.class || ''}.pdf`;
+      pdf.save(fileName.replace(/\s+/g, '_'));
+    } catch (e) {
+      console.error("PDF export failed", e);
+      setError("Gagal menjana PDF. Sila cuba lagi.");
+    }
   };
-
-  const scores = calculateScores();
 
   if (loading) {
     return (
@@ -119,7 +155,7 @@ export default function CerapanResults() {
   // const isCompleted = report.self_evaluation.status === "submitted";
 
   return (
-    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }} ref={exportRef}>
       <Stack spacing={4}>
         {/* Header */}
         <Box>
@@ -189,6 +225,122 @@ export default function CerapanResults() {
           </CardContent>
         </Card>
 
+        {/* Observation Status Card */}
+        <Card raised>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Status Cerapan
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={4}>
+                <Card variant="outlined" sx={{ bgcolor: theme.palette.success.light + '20', borderColor: theme.palette.success.main }}>
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                      <CheckCircle size={20} style={{ color: theme.palette.success.main }} />
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Kendiri (Self)
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary">
+                      {summary?.selfEvaluation.status === 'submitted' ? (
+                        <>
+                          <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
+                          {summary?.selfEvaluation.completionPercent.toFixed(0)}% lengkap
+                        </>
+                      ) : (
+                        <Chip label="Belum Selesai" size="small" color="default" />
+                      )}
+                    </Typography>
+                    {summary?.selfEvaluation.submittedAt && (
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                        Dihantar: {new Date(summary.selfEvaluation.submittedAt).toLocaleDateString('ms-MY')}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Card variant="outlined" sx={{ 
+                  bgcolor: hasObs1 ? theme.palette.success.light + '20' : theme.palette.grey[100], 
+                  borderColor: hasObs1 ? theme.palette.success.main : theme.palette.grey[300] 
+                }}>
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                      {hasObs1 ? (
+                        <CheckCircle size={20} style={{ color: theme.palette.success.main }} />
+                      ) : (
+                        <Clock size={20} style={{ color: theme.palette.grey[500] }} />
+                      )}
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Cerapan 1
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary">
+                      {hasObs1 ? (
+                        <>
+                          <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
+                          {summary?.observation1.percent.toFixed(0)}%
+                        </>
+                      ) : (
+                        <Chip label="Belum Selesai" size="small" color="default" />
+                      )}
+                    </Typography>
+                    {summary?.observation1.submittedAt && (
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                        Dihantar: {new Date(summary.observation1.submittedAt).toLocaleDateString('ms-MY')}
+                      </Typography>
+                    )}
+                    {hasObs1 && summary?.observation1.count > 0 && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Pentadbir: {report?.observation_1.administratorId || '-'}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Card variant="outlined" sx={{ 
+                  bgcolor: hasObs2 ? theme.palette.success.light + '20' : theme.palette.grey[100], 
+                  borderColor: hasObs2 ? theme.palette.success.main : theme.palette.grey[300] 
+                }}>
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                      {hasObs2 ? (
+                        <CheckCircle size={20} style={{ color: theme.palette.success.main }} />
+                      ) : (
+                        <Clock size={20} style={{ color: theme.palette.grey[500] }} />
+                      )}
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Cerapan 2
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary">
+                      {hasObs2 ? (
+                        <>
+                          <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
+                          {summary?.observation2.percent.toFixed(0)}%
+                        </>
+                      ) : (
+                        <Chip label="Belum Selesai" size="small" color="default" />
+                      )}
+                    </Typography>
+                    {summary?.observation2.submittedAt && (
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                        Dihantar: {new Date(summary.observation2.submittedAt).toLocaleDateString('ms-MY')}
+                      </Typography>
+                    )}
+                    {hasObs2 && summary?.observation2.count > 0 && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Pentadbir: {report?.observation_2.administratorId || '-'}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
         {/* Overall Score Card */}
         <Card
           raised
@@ -202,10 +354,10 @@ export default function CerapanResults() {
               <Box sx={{ textAlign: "center", minWidth: 200 }}>
                 <Award size={48} style={{ color: theme.palette.success.main, marginBottom: 16 }} />
                 <Typography variant="h2" sx={{ color: theme.palette.success.main, fontWeight: "bold" }}>
-                  {scores.percentage}%
+                  {hasObs1 || hasObs2 ? `${summary?.overall.percent ?? 0}%` : `${summary?.selfEvaluation.completionPercent ?? 0}%`}
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 1 }}>
-                  Skor Keseluruhan
+                  {hasObs1 || hasObs2 ? 'Skor Keseluruhan (Cerapan)' : 'Kadar Lengkap Kendiri'}
                 </Typography>
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} mt={2}>
                   <TrendingUp size={16} style={{ color: theme.palette.success.main }} />
@@ -219,71 +371,91 @@ export default function CerapanResults() {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Analisis Prestasi
                 </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Penilaian kendiri anda telah berjaya direkodkan. Pentadbir akan membuat cerapan untuk melengkapkan proses penilaian.
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Status: <strong>Menunggu Cerapan Pentadbir</strong>
-                </Typography>
+                {!(hasObs1 || hasObs2) ? (
+                  <>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      Penilaian kendiri anda telah berjaya direkodkan. Pentadbir akan membuat cerapan untuk melengkapkan proses penilaian.
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Status: <strong>Menunggu Cerapan Pentadbir</strong>
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Ringkasan: Purata peratus cerapan = <strong>{summary?.overall.percent ?? 0}%</strong>, Label = <strong>{summary?.overall.label ?? '-'}</strong>
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Jumlah skor normalisasi (0..10): {hasObs1 && <><strong>Obs1</strong>: {obs1Total10}</>} {hasObs2 && <> | <strong>Obs2</strong>: {obs2Total10}</>}
+                    </Typography>
+                  </>
+                )}
               </Box>
             </Stack>
           </CardContent>
         </Card>
 
-        {/* Charts Section */}
-        <Grid container spacing={3}>
-          {/* Bar Chart */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 3 }}>
-                  Skor Mengikut Kategori
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={scores.categories}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      style={{ fontSize: "12px" }}
-                    />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Bar dataKey="score" fill={theme.palette.primary.main} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Radar Chart */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 3 }}>
-                  Profil Kompetensi
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={scores.radar}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="category" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar
-                      name="Skor"
-                      dataKey="score"
-                      stroke={theme.palette.success.main}
-                      fill={theme.palette.success.main}
-                      fillOpacity={0.6}
-                    />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        {/* Per-subcategory breakdown table */}
+        {(summary?.categories.breakdown?.length ?? 0) > 0 && (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Skor Mengikut Subkategori (4.x.x)
+              </Typography>
+              <Box sx={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: 8 }}>Kod</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Full Mark</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Achieved</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri %</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Score/10</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Achieved</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 %</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Score/10</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Achieved</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 %</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Score/10</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary!.categories.breakdown.map((row) => (
+                      <tr key={row.code}>
+                        <td style={{ padding: 8 }}>{row.code}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percentSelf.toFixed(2)}%</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.score10_Self.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent1.toFixed(2)}%</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.score10_1.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent2.toFixed(2)}%</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.score10_2.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td style={{ padding: 8, fontWeight: 600 }}>Jumlah</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum.toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved.toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfPercent.toFixed(2)}%</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{(summary!.categories.totals.selfScore10Sum ?? 0).toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved.toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1Percent.toFixed(2)}%</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{obs1Total10.toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved.toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2Percent.toFixed(2)}%</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{obs2Total10.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
 
 
         {/* Action Buttons */}
@@ -291,16 +463,24 @@ export default function CerapanResults() {
           <Button
             variant="outlined"
             size="large"
-            onClick={() => navigate("/cerapan")}
+            onClick={() => navigate(isAdminView ? "/pentadbir/cerapan" : "/cerapan")}
           >
             Kembali ke Dashboard
           </Button>
           <Button
             variant="contained"
             size="large"
-            onClick={() => navigate("/cerapan/my-reports")}
+            onClick={() => navigate(isAdminView ? "/cerapan/admin" : "/cerapan/my-reports")}
           >
-            Lihat Semua Laporan
+            {isAdminView ? "Lihat Tugasan Pentadbir" : "Lihat Semua Laporan"}
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            onClick={handleExportPdf}
+          >
+            Muat Turun PDF
           </Button>
         </Stack>
       </Stack>

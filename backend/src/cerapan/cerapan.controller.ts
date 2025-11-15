@@ -11,6 +11,7 @@ import {
 import { CerapanService } from './cerapan.service';
 import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
+import { SelfStartEvaluationDto } from './dto/self-start-evaluation.dto';
 import { SubmitObservationDto } from './dto/submit-cerapan.dto';
 import { JwtAuthGuard } from '../auth/jwt.strategy';
 
@@ -19,50 +20,46 @@ import { JwtAuthGuard } from '../auth/jwt.strategy';
 export class CerapanController {
   constructor(private readonly cerapanService: CerapanService) {}
 
-  // ===============================================
-  // === 1. ADMIN ENDPOINTS (PENTADBIR) ===
-  // ===============================================
-
-  /**
-   * (ADMIN) Start a new evaluation for a teacher.
-   * POST /cerapan/start
-   */
   @Post('start')
   // @UseGuards(AdminAuthGuard) // You should protect this for Admins only
   createEvaluation(@Body() dto: CreateEvaluationDto) {
     // Body will contain { teacherId, templateId, period }
     return this.cerapanService.createEvaluation(dto);
   }
+  @Post('self-start')
+  startSelfEvaluation(
+    @Body() dto: SelfStartEvaluationDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const teacherId = (req.user._id as any).toString();
+    return this.cerapanService.createTeacherSelfEvaluation(teacherId, dto);
+  }
 
-  /**
-   * (ADMIN) Get the "To-Do" list for all admins.
-   * GET /cerapan/admin/tasks
-   */
   @Get('admin/tasks')
   // @UseGuards(AdminAuthGuard)
   getAdminPendingTasks() {
     return this.cerapanService.getAdminPendingTasks();
   }
 
-  /**
-   * (ADMIN) Submit marks for Observation 1.
-   * PUT /cerapan/observation-1/:id
-   */
+  @Get('admin/task/:id')
+  // @UseGuards(AdminAuthGuard)
+  getAdminTaskDetails(@Param('id') evaluationId: string) {
+    return this.cerapanService.getEvaluationByIdAdmin(evaluationId);
+  }
+
+  
   @Put('observation-1/:id')
   // @UseGuards(AdminAuthGuard)
   submitObservation1(
     @Param('id') evaluationId: string,
     @Body() dto: SubmitObservationDto,
-    /*@GetUser() admin: User*/
+    @Req() req: RequestWithUser,
   ) {
-    // ---- FAKE ADMIN ID (replace with real user from @GetUser()) ----
-    const fakeAdminId = 'Admin_Ahmad';
-    // ----
-    // return this.cerapanService.submitObservation1(evaluationId, dto, admin.id);
+    const adminId = req.user.name || (req.user._id as any).toString();
     return this.cerapanService.submitObservation1(
       evaluationId,
       dto,
-      fakeAdminId,
+      adminId,
     );
   }
 
@@ -75,27 +72,27 @@ export class CerapanController {
   submitObservation2(
     @Param('id') evaluationId: string,
     @Body() dto: SubmitObservationDto,
-    /*@GetUser() admin: User*/
+    @Req() req: RequestWithUser,
   ) {
-    // ---- FAKE ADMIN ID (replace with real user from @GetUser()) ----
-    const fakeAdminId = 'Admin_Halim';
-    // ----
-    // return this.cerapanService.submitObservation2(evaluationId, dto, admin.id);
+    const adminId = req.user.name || (req.user._id as any).toString();
     return this.cerapanService.submitObservation2(
       evaluationId,
       dto,
-      fakeAdminId,
+      adminId,
     );
   }
 
-  // ===============================================
-  // === 2. TEACHER ENDPOINTS (GURU) ===
-  // ===============================================
-
   /**
-   * (TEACHER) Get the list of pending "self-evaluation" tasks.
-   * GET /cerapan/my-tasks
+   * (ADMIN) Get full report with computed summary for any evaluation (no teacher restriction).
+   * GET /cerapan/admin/report/:id/summary
    */
+  @Get('admin/report/:id/summary')
+  // @UseGuards(AdminAuthGuard)
+  getAdminReportSummary(@Param('id') evaluationId: string) {
+    return this.cerapanService.getAdminReportWithSummary(evaluationId);
+  }
+
+ 
   @Get('my-tasks')
   getMyPendingTasks(@Req() req: RequestWithUser) {
     const teacherId = (req.user._id as any).toString();
@@ -115,10 +112,7 @@ export class CerapanController {
     return this.cerapanService.getEvaluationForTask(evaluationId, teacherId);
   }
 
-  /**
-   * (TEACHER) Submit the "self-evaluation" (cerapan kendiri) form.
-   * PUT /cerapan/self-evaluation/:id
-   */
+
   @Put('self-evaluation/:id')
   submitSelfEvaluation(
     @Param('id') evaluationId: string,
@@ -133,20 +127,14 @@ export class CerapanController {
     );
   }
 
-  /**
-   * (TEACHER) Get the list of all completed or in-progress reports.
-   * GET /cerapan/my-reports
-   */
+
   @Get('my-reports')
   getMyReportHistory(@Req() req: RequestWithUser) {
     const teacherId = (req.user._id as any).toString();
     return this.cerapanService.getMyReportHistory(teacherId);
   }
 
-  /**
-   * (TEACHER) Get the full details of ONE report (to see overall results).
-   * GET /cerapan/report/:id
-   */
+  
   @Get('report/:id')
   getReportDetails(
     @Param('id') evaluationId: string,
@@ -154,5 +142,18 @@ export class CerapanController {
   ) {
     const teacherId = (req.user._id as any).toString();
     return this.cerapanService.getCompletedReport(evaluationId, teacherId);
+  }
+
+  /**
+   * (TEACHER) Get full report with computed summary (scores/percentages).
+   * GET /cerapan/report/:id/summary
+   */
+  @Get('report/:id/summary')
+  getReportSummary(
+    @Param('id') evaluationId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    const teacherId = (req.user._id as any).toString();
+    return this.cerapanService.getReportWithSummary(evaluationId, teacherId);
   }
 }

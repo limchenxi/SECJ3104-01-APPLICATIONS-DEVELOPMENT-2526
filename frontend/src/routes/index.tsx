@@ -44,6 +44,30 @@ const QuizFlashcardPage = lazy(
 const RPHGeneratorPage = lazy(
   () => import("../features/RPH/pages/RPH_Generator")
 );
+
+// Pentadbir Pages
+const PentadbirLayout = lazy(
+  () => import("../features/Pentadbir/components/PentadbirLayout")
+);
+const PentadbirDashboard = lazy(
+  () => import("../features/Pentadbir/pages/PentadbirDashboard")
+);
+const PentadbirKedatangan = lazy(
+  () => import("../features/Pentadbir/pages/Kedatangan")
+);
+const PentadbirCerapan = lazy(
+  () => import("../features/Pentadbir/pages/Cerapan")
+);
+const PentadbirTemplateRubrik = lazy(
+  () => import("../features/Pentadbir/pages/TemplateRubrik")
+);
+const PentadbirTemplateRubrikDetail = lazy(
+  () => import("../features/Pentadbir/pages/TemplateRubrikDetail")
+);
+const PentadbirProfil = lazy(
+  () => import("../features/Pentadbir/pages/Profil")
+);
+
 const NotFound = lazy(() => import("./NotFound"));
 const ProtectedLayout = lazy(() => import("./ProtectedLayout"));
 
@@ -97,6 +121,19 @@ export default function AppRoutes() {
           <Route path="/rph" element={<RPHGeneratorPage />} />
           <Route path="/quiz" element={<QuizFlashcardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          
+          {/* Pentadbir Routes */}
+          <Route path="/pentadbir" element={<PentadbirLayout />}>
+            <Route index element={<PentadbirDashboard />} />
+            <Route path="kedatangan" element={<PentadbirKedatangan />} />
+            <Route path="cerapan" element={<PentadbirCerapan />} />
+            {/* Removed tugasan cerapan page */}
+            <Route path="observation/:id" element={<AdminObservationForm />} />
+            <Route path="template-rubrik" element={<PentadbirTemplateRubrik />} />
+            <Route path="template-rubrik/:templateId" element={<PentadbirTemplateRubrikDetail />} />
+            <Route path="profil" element={<PentadbirProfil />} />
+          </Route>
+          
           <Route path="/logout" element={<Logout />} />
         </Route>
         <Route path="*" element={<NotFound />} />

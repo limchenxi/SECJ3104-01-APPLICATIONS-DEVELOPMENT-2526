@@ -19,6 +19,11 @@ export const userApi = {
     return response.data;
   },
 
+  getMyAssignments: async (): Promise<{ subjects: string[]; classes: string[] }> => {
+    const response = await client().get<{ subjects: string[]; classes: string[] }>(`${basePath}/me/assignments`);
+    return response.data;
+  },
+
   getById: async (id: string | number): Promise<UserItem> => {
     const response = await client().get<UserItem>(`${basePath}/${id}`);
     return response.data;
