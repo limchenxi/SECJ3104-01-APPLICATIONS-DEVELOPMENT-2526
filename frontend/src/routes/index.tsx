@@ -24,9 +24,6 @@ const AdminCerapanDashboard = lazy(
 const AdminObservationForm = lazy(
   () => import("../features/Cerapan/pages/AdminObservationForm")
 );
-const PentadbirCerapanForm = lazy(
-  () => import("../features/Cerapan/pages/Cerapan")
-);
 
 const Dashboard = lazy(
   () => import("../features/Dashboard/pages/Dashboard")
@@ -117,7 +114,6 @@ export default function AppRoutes() {
           <Route path="/cerapan/results/:id" element={<CerapanResults />} />
           <Route path="/cerapan/admin" element={<AdminCerapanDashboard />} />
           <Route path="/cerapan/admin/observation/:id" element={<AdminObservationForm />} />
-          <Route path="/cerapan/old" element={<PentadbirCerapanForm />} />
           
           <Route path="/rph" element={<RPHGeneratorPage />} />
           <Route path="/quiz" element={<QuizFlashcardPage />} />
