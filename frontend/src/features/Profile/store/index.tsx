@@ -36,7 +36,7 @@ export const updateProfile = (partialData: Partial<Profile>) => {
 export async function loadProfile() {
   setProfileLoading(true);
   try {
-    const res = await backendClient().get("/users/me"); 
+    const res = await backendClient().get("/auth/me"); 
     setProfile(res.data);
   } catch (err) {
     console.error("Failed to load profile:", err);
