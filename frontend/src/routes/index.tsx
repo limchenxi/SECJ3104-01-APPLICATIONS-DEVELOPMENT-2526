@@ -38,7 +38,7 @@ const KedatanganPage = lazy(() =>
   }))
 );
 const ProfilePage = lazy(() =>
-  import("../features/Profile/pages/Profile")
+  import("../features/Profile/pages/ProfileV2")
 );
 const QuizFlashcardPage = lazy(
   () => import("../features/Quiz/pages/QuizGenerator")
@@ -72,9 +72,9 @@ const PentadbirTemplateRubrik = lazy(
 const PentadbirTemplateRubrikDetail = lazy(
   () => import("../features/Pentadbir/pages/TemplateRubrikDetail")
 );
-const PentadbirProfil = lazy(
-  () => import("../features/Pentadbir/pages/Profil")
-);
+// const PentadbirProfil = lazy(
+//   () => import("../features/Pentadbir/pages/Profil")
+// );
 
 const NotFound = lazy(() => import("./NotFound"));
 const ProtectedLayout = lazy(() => import("./ProtectedLayout"));
@@ -214,7 +214,11 @@ export default function AppRoutes() {
           /> */}
 
           {/* Pentadbir Routes */}
-          <Route path="/pentadbir" element={<PentadbirLayout />}>
+          <Route path="/pentadbir" element={
+            <RoleGuard roles={["DEVELOPER", "PENTADBIR"]}>
+              <PentadbirLayout />
+            </RoleGuard>
+          }>
             <Route index element={<PentadbirDashboard />} />
             <Route path="kedatangan" element={<PentadbirKedatangan />} />
             <Route path="cerapan" element={<PentadbirCerapan />} />
@@ -222,7 +226,7 @@ export default function AppRoutes() {
             <Route path="observation/:id" element={<AdminObservationForm />} />
             <Route path="template-rubrik" element={<PentadbirTemplateRubrik />} />
             <Route path="template-rubrik/:templateId" element={<PentadbirTemplateRubrikDetail />} />
-            <Route path="profil" element={<PentadbirProfil />} />
+            <Route path="profil" element={<ProfilePage />} />
           </Route>
           
           <Route path="/logout" element={<Logout />} />
