@@ -80,7 +80,7 @@ const useAuth = () => {
     isInitialized,
     isLoading,
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !isLoading && !!user,
     login,
     logout,
   };
