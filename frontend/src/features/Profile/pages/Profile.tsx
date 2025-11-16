@@ -19,12 +19,25 @@ import {
   Lock,
   School,
 } from "lucide-react";
+import { type Profile } from "../type";
+import { authService } from "../../Auth/api/authService";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   // Example usage of useRoleGuard
   // const { isInitialized, canAccessPage } = useRoleGuard(['DEVELOPER']); 
 
-  // useEffect(() => {}, []);
+  const [user, setUser] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const profile = await authService.getProfile();
+      setUser(profile);
+    };
+
+    loadUser();
+  })
+
 
   return (
     <Box sx={{ p: 4 }}>
@@ -54,10 +67,10 @@ export default function ProfilePage() {
 
           <Box sx={{ textAlign: { xs: "center", md: "left" }, flexGrow: 1 }}>
             <Typography variant="h5" color="primary.dark">
-              Cikgu Ahmad Abdullah
+              {user?.name}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              Guru
+              Guru 
             </Typography>
 
             <Box sx={{ display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" } }}>
