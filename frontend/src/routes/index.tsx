@@ -33,9 +33,10 @@ const Dashboard = lazy(
   () => import("../features/Dashboard/pages/Dashboard")
 );
 const KedatanganPage = lazy(() =>
-  import("../features/Kedatangan/pages/Kedatangan").then((module) => ({
-    default: module.KedatanganPage,
-  }))
+  // import("../features/Kedatangan/pages/Kedatangan").then((module) => ({
+  //   default: module.KedatanganPage,
+  // }))
+  import("../features/Kedatangan/pages/Kedatangan")
 );
 const ProfilePage = lazy(() =>
   import("../features/Profile/pages/ProfileV2")
