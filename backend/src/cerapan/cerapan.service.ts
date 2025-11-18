@@ -146,6 +146,32 @@ export class CerapanService {
     return evaluation.save();
   }
 
+  async updateSchedule(
+    evaluationId: string,
+    scheduleData: {
+      scheduledDate: string;
+      scheduledTime: string;
+      observerName: string;
+      templateRubric: string;
+      notes?: string;
+      observationType: string;
+    },
+  ): Promise<Cerapan> {
+    const evaluation = await this.cerapanModel.findById(evaluationId);
+    if (!evaluation) {
+      throw new NotFoundException('Evaluation not found');
+    }
+
+    evaluation.scheduledDate = scheduleData.scheduledDate;
+    evaluation.scheduledTime = scheduleData.scheduledTime;
+    evaluation.observerName = scheduleData.observerName;
+    evaluation.templateRubric = scheduleData.templateRubric;
+    evaluation.notes = scheduleData.notes || '';
+    evaluation.observationType = scheduleData.observationType;
+
+    return evaluation.save();
+  }
+
   async getMyReportHistory(teacherId: string): Promise<Cerapan[]> {
     return this.cerapanModel
       .find({
@@ -457,8 +483,19 @@ export class CerapanService {
       .find({
         status: { $in: ['pending_observation_1', 'pending_observation_2'] },
       })
-      .select('period teacherId status')
-      .sort({ status: 1 })
+      .select('period teacherId status subject class self_evaluation observation_1 observation_2 createdAt')
+      .sort({ status: 1, createdAt: -1 })
+      .exec();
+  }
+
+  /**
+   * Get all evaluations for admin overview (including completed).
+   */
+  async getAllEvaluationsForAdmin(): Promise<Cerapan[]> {
+    return this.cerapanModel
+      .find({})
+      .select('period teacherId status subject class self_evaluation observation_1 observation_2 createdAt scheduledDate scheduledTime observerName templateRubric notes observationType')
+      .sort({ createdAt: -1 })
       .exec();
   }
 
@@ -518,6 +555,15 @@ export class CerapanService {
     evaluation.observation_1.submittedAt = new Date();
     evaluation.observation_1.administratorId = adminId;
     evaluation.status = 'pending_observation_2';
+    
+    // Reset schedule fields for Cerapan 2
+    evaluation.scheduledDate = undefined;
+    evaluation.scheduledTime = undefined;
+    evaluation.observerName = undefined;
+    evaluation.templateRubric = undefined;
+    evaluation.notes = undefined;
+    evaluation.observationType = undefined;
+    
     try {
       return await evaluation.save();
     } catch (err: any) {

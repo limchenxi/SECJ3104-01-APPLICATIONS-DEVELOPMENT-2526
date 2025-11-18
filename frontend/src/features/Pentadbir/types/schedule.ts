@@ -15,6 +15,9 @@ export interface ObservationSchedule {
   teacherName: string;
   subject: string;
   class: string;
+  // UI-only: options available for the selected teacher
+  subjectOptions?: string[];
+  classOptions?: string[];
   observationType: ObservationType | null;
   scheduledDate: string | null;
   scheduledTime: string | null;

@@ -41,6 +41,12 @@ export class CerapanController {
     return this.cerapanService.getAdminPendingTasks();
   }
 
+  @Get('admin/all-evaluations')
+  // @UseGuards(AdminAuthGuard)
+  getAllEvaluationsForAdmin() {
+    return this.cerapanService.getAllEvaluationsForAdmin();
+  }
+
   @Get('admin/task/:id')
   // @UseGuards(AdminAuthGuard)
   getAdminTaskDetails(@Param('id') evaluationId: string) {
@@ -127,6 +133,20 @@ export class CerapanController {
     );
   }
 
+  @Put('schedule/:id')
+  updateSchedule(
+    @Param('id') evaluationId: string,
+    @Body() scheduleData: {
+      scheduledDate: string;
+      scheduledTime: string;
+      observerName: string;
+      templateRubric: string;
+      notes?: string;
+      observationType: string;
+    },
+  ) {
+    return this.cerapanService.updateSchedule(evaluationId, scheduleData);
+  }
 
   @Get('my-reports')
   getMyReportHistory(@Req() req: RequestWithUser) {

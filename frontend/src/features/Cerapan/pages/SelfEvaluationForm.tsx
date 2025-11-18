@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box,
   Card,
@@ -32,6 +32,8 @@ export default function SelfEvaluationForm() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTaskDetails();
@@ -163,6 +165,12 @@ export default function SelfEvaluationForm() {
 
     if (unanswered.length > 0) {
       setError(`Sila jawab semua soalan. ${unanswered.length} soalan belum dijawab.`);
+      const first = unanswered[0]?.questionId;
+      if (first && questionRefs.current[first]) {
+        questionRefs.current[first]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightId(first);
+        setTimeout(() => setHighlightId(null), 1500);
+      }
       return;
     }
 
@@ -346,7 +354,12 @@ export default function SelfEvaluationForm() {
                   {/* Questions in this Aspek */}
                   <Stack spacing={3}>
                     {aspekData.questions.map((question) => (
-                      <Card key={question.questionId} variant="outlined">
+                      <Card
+                        key={question.questionId}
+                        variant="outlined"
+                        ref={(el: HTMLDivElement | null) => { questionRefs.current[question.questionId] = el; }}
+                        sx={highlightId === question.questionId ? { borderColor: theme.palette.error.main, boxShadow: `${theme.palette.error.main}40 0 0 0 2px` } : undefined}
+                      >
                         <CardContent>
                           <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>
                             {question.questionId}
@@ -432,7 +445,7 @@ export default function SelfEvaluationForm() {
               size="large"
               startIcon={<Send />}
               onClick={handleSubmit}
-              disabled={submitting || progress < 100}
+              disabled={submitting}
             >
               {submitting ? "Menghantar..." : "Hantar Penilaian"}
             </Button>

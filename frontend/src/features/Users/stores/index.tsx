@@ -10,6 +10,9 @@ export interface UserItem {
   gender: string;
   phone?: string;
   profileImageUrl?: string;
+  // Optional teaching assignments
+  subjects?: string[];
+  classes?: string[];
 }
 
 export interface UsersState {

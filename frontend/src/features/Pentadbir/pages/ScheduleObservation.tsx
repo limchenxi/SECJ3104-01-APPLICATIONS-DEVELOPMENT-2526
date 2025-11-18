@@ -101,6 +101,8 @@ export default function ScheduleObservation() {
             teacherName: teacher.name,
             subject: teacherEval.subject || teacher.subjects?.[0] || "-",
             class: teacherEval.class || teacher.classes?.[0] || "-",
+            subjectOptions: Array.isArray(teacher.subjects) ? teacher.subjects : [],
+            classOptions: Array.isArray(teacher.classes) ? teacher.classes : [],
             observationType: observationType,
             scheduledDate: teacherEval.period || null,
             scheduledTime: null,
@@ -119,6 +121,8 @@ export default function ScheduleObservation() {
           teacherName: teacher.name,
           subject: teacher.subjects?.[0] || "-",
           class: teacher.classes?.[0] || "-",
+          subjectOptions: Array.isArray(teacher.subjects) ? teacher.subjects : [],
+          classOptions: Array.isArray(teacher.classes) ? teacher.classes : [],
           observationType: null,
           scheduledDate: null,
           scheduledTime: null,
@@ -362,6 +366,8 @@ export default function ScheduleObservation() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         teacherName={selectedTeacher?.teacherName || ""}
+        subjectOptions={selectedTeacher?.subjectOptions || []}
+        classOptions={selectedTeacher?.classOptions || []}
         initialData={selectedTeacher ? {
           observationType: selectedTeacher.observationType || "Cerapan 1",
           scheduledDate: selectedTeacher.scheduledDate || "",
