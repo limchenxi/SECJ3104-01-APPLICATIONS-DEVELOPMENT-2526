@@ -21,10 +21,7 @@ import {
 } from "@mui/material";
 import { ClipboardCheck, Clock, CheckCircle, BarChart3, Calendar, Eye } from "lucide-react";
 import { pentadbirService } from "../api/pentadbirService";
-import { getAdminTasks } from "../../Cerapan/api/cerapanService";
 import type { CerapanOverview } from "../type";
-import type { CerapanRecord } from "../../Cerapan/type";
-import { useNavigate } from "react-router-dom";
 import ScheduleObservation from "./ScheduleObservation";
 
 // Mock data for demonstrations
@@ -256,15 +253,13 @@ export default function Cerapan() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState(0);
-  const [tasks, setTasks] = useState<CerapanRecord[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(false);
-  const [tasksError, setTasksError] = useState("");
-  const navigate = useNavigate();
+  // const [tasks, setTasks] = useState<CerapanRecord[]>([]);
+  // const [tasksLoading, setTasksLoading] = useState(false);
+  // const [tasksError, setTasksError] = useState("");
+  // const navigate = useNavigate();
 
   useEffect(() => {
     loadCerapanOverview();
-    // Preload tasks; alternatively, could lazy load when opening tab 4
-    loadAdminTasks();
   }, []);
 
   const loadCerapanOverview = async () => {
@@ -278,26 +273,6 @@ export default function Cerapan() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadAdminTasks = async () => {
-    try {
-      setTasksLoading(true);
-      const list = await getAdminTasks();
-      setTasks(list);
-      setTasksError("");
-    } catch (err) {
-      console.error("Error loading admin tasks:", err);
-      setTasksError("Gagal memuatkan tugasan cerapan");
-    } finally {
-      setTasksLoading(false);
-    }
-  };
-
-  const statusInfo = (status: string) => {
-    if (status === "pending_observation_1") return { label: "Perlu Cerapan 1", color: "warning" as const, type: 1 };
-    if (status === "pending_observation_2") return { label: "Perlu Cerapan 2", color: "info" as const, type: 2 };
-    return { label: status, color: "default" as const, type: 1 };
   };
 
   if (loading) {

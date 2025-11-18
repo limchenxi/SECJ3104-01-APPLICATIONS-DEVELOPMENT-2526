@@ -22,20 +22,7 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-} from "recharts";
+// Charts removed - no longer used
 import { getReportSummary, getAdminReportSummary } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
 import jsPDF from "jspdf";
@@ -182,7 +169,7 @@ export default function CerapanResults() {
         <Card raised>
           <CardContent>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <BookOpen size={20} style={{ color: theme.palette.primary.main }} />
                   <Box>
@@ -195,7 +182,7 @@ export default function CerapanResults() {
                   </Box>
                 </Stack>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Users size={20} style={{ color: theme.palette.primary.main }} />
                   <Box>
@@ -208,7 +195,7 @@ export default function CerapanResults() {
                   </Box>
                 </Stack>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Calendar size={20} style={{ color: theme.palette.primary.main }} />
                   <Box>
@@ -232,7 +219,7 @@ export default function CerapanResults() {
               Status Cerapan
             </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Card variant="outlined" sx={{ bgcolor: theme.palette.success.light + '20', borderColor: theme.palette.success.main }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={1} mb={1}>
@@ -259,7 +246,7 @@ export default function CerapanResults() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Card variant="outlined" sx={{ 
                   bgcolor: hasObs1 ? theme.palette.success.light + '20' : theme.palette.grey[100], 
                   borderColor: hasObs1 ? theme.palette.success.main : theme.palette.grey[300] 
@@ -290,7 +277,7 @@ export default function CerapanResults() {
                         Dihantar: {new Date(summary.observation1.submittedAt).toLocaleDateString('ms-MY')}
                       </Typography>
                     )}
-                    {hasObs1 && summary?.observation1.count > 0 && (
+                    {hasObs1 && summary?.observation1?.count && summary.observation1.count > 0 && (
                       <Typography variant="caption" color="text.secondary" display="block">
                         Pentadbir: {report?.observation_1.administratorId || '-'}
                       </Typography>
@@ -298,7 +285,7 @@ export default function CerapanResults() {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <Card variant="outlined" sx={{ 
                   bgcolor: hasObs2 ? theme.palette.success.light + '20' : theme.palette.grey[100], 
                   borderColor: hasObs2 ? theme.palette.success.main : theme.palette.grey[300] 
@@ -329,7 +316,7 @@ export default function CerapanResults() {
                         Dihantar: {new Date(summary.observation2.submittedAt).toLocaleDateString('ms-MY')}
                       </Typography>
                     )}
-                    {hasObs2 && summary?.observation2.count > 0 && (
+                    {hasObs2 && summary?.observation2?.count && summary.observation2.count > 0 && (
                       <Typography variant="caption" color="text.secondary" display="block">
                         Pentadbir: {report?.observation_2.administratorId || '-'}
                       </Typography>
@@ -407,48 +394,51 @@ export default function CerapanResults() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', padding: 8 }}>Kod</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Weight</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Full Mark</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Achieved</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Kendiri %</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Score/10</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Weighted</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Achieved</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs1 %</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Score/10</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Weighted</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Achieved</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs2 %</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Score/10</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Weighted</th>
                     </tr>
                   </thead>
                   <tbody>
                     {summary!.categories.breakdown.map((row) => (
                       <tr key={row.code}>
                         <td style={{ padding: 8 }}>{row.code}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark.toFixed(2)}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf.toFixed(2)}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percentSelf.toFixed(2)}%</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.score10_Self.toFixed(2)}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1.toFixed(2)}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent1.toFixed(2)}%</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.score10_1.toFixed(2)}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2.toFixed(2)}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent2.toFixed(2)}%</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.score10_2.toFixed(2)}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weight?.toFixed(0) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percentSelf?.toFixed(2) ?? 0}%</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weightedSelf?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent1?.toFixed(2) ?? 0}%</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted1?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent2?.toFixed(2) ?? 0}%</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted2?.toFixed(2) ?? 0}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr>
                       <td style={{ padding: 8, fontWeight: 600 }}>Jumlah</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum.toFixed(2)}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved.toFixed(2)}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfPercent.toFixed(2)}%</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{(summary!.categories.totals.selfScore10Sum ?? 0).toFixed(2)}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved.toFixed(2)}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1Percent.toFixed(2)}%</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{obs1Total10.toFixed(2)}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved.toFixed(2)}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2Percent.toFixed(2)}%</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{obs2Total10.toFixed(2)}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>100</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfPercent?.toFixed(2) ?? 0}%</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedSelfTotal?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1Percent?.toFixed(2) ?? 0}%</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation1Total?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2Percent?.toFixed(2) ?? 0}%</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation2Total?.toFixed(2) ?? 0}</td>
                     </tr>
                   </tfoot>
                 </table>
