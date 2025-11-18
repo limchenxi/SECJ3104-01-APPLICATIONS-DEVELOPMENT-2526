@@ -5,6 +5,7 @@ import { resolveRedirectPath } from "../utils/navigation";
 import useAuth from "../hooks/useAuth";
 import Logout from "../components/Logout";
 import EditProfile from "../features/Profile/pages/EditProfile";
+import RoleGuard from "../components/RoleGuard";
 
 const Login = lazy(() => import("../features/Auth/pages/LoginForm"));
 
@@ -24,6 +25,9 @@ const AdminCerapanDashboard = lazy(
 const AdminObservationForm = lazy(
   () => import("../features/Cerapan/pages/AdminObservationForm")
 );
+const PentadbirCerapanForm = lazy(
+  () => import("../features/Cerapan/pages/sample/Cerapan")
+);
 
 const Dashboard = lazy(
   () => import("../features/Dashboard/pages/Dashboard")
@@ -41,6 +45,12 @@ const QuizFlashcardPage = lazy(
 );
 const RPHGeneratorPage = lazy(
   () => import("../features/RPH/pages/RPH_Generator")
+);
+const  TeachingAssignmentPage = lazy(
+  () => import("../features/TeachingAssignment/pages/Assignment")
+);
+const UserList= lazy(
+  () => import("../features/Users/pages/User")
 );
 
 // Pentadbir Pages
@@ -104,21 +114,105 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/" element={<ProtectedLayout />}>
+          {/* DASHBOARD - all roles */}
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/kedatangan" element={<KedatanganPage />} />
+          
+          {/* Kedatangan - DEV + GURU */}
+          <Route
+            path="/kedatangan"
+            element={
+              <RoleGuard roles={["DEVELOPER", "GURU"]}>
+                <KedatanganPage />
+              </RoleGuard>
+            }
+          />
           
           {/* Cerapan Routes */}
-          <Route path="/cerapan" element={<TeacherCerapanKendiri />} />
-          <Route path="/cerapan/task/:id" element={<SelfEvaluationForm />} />
+          {/* Cerapan - GURU + DEV */}
+          <Route
+            path="/cerapan"
+            element={
+              <RoleGuard roles={["DEVELOPER", "GURU"]}>
+                <TeacherCerapanKendiri />
+              </RoleGuard>
+            }
+          />
+          <Route 
+            path="/cerapan/task/:id" 
+            element={
+              <RoleGuard roles={["DEVELOPER", "GURU"]}>
+                <SelfEvaluationForm />
+              </RoleGuard>
+            } 
+          />
           <Route path="/cerapan/results/:id" element={<CerapanResults />} />
-          <Route path="/cerapan/admin" element={<AdminCerapanDashboard />} />
-          <Route path="/cerapan/admin/observation/:id" element={<AdminObservationForm />} />
+          <Route 
+            path="/cerapan/admin" 
+            element={
+              <RoleGuard roles={["DEVELOPER", "PENTADBIR"]}>
+                <AdminCerapanDashboard />
+              </RoleGuard>
+            } 
+          />
+          <Route 
+            path="/cerapan/admin/observation/:id" 
+            element={
+              <RoleGuard roles={["DEVELOPER", "PENTADBIR"]}>
+                <AdminObservationForm />
+              </RoleGuard>
+            } 
+          />
+          <Route 
+            path="/cerapan/old" 
+            element={
+              <RoleGuard roles={["DEVELOPER", "PENTADBIR"]}>
+                <PentadbirCerapanForm />
+              </RoleGuard>
+            } 
+          />
           
-          <Route path="/rph" element={<RPHGeneratorPage />} />
-          <Route path="/quiz" element={<QuizFlashcardPage />} />
+          {/* RPH - DEV + GURU */}
+          <Route
+            path="/rph"
+            element={
+              <RoleGuard roles={["DEVELOPER", "GURU"]}>
+                <RPHGeneratorPage />
+              </RoleGuard>
+            }
+          />
+          {/* Quiz - DEV + GURU */}
+          <Route
+            path="/quiz"
+            element={
+              <RoleGuard roles={["DEVELOPER", "GURU"]}>
+                <QuizFlashcardPage />
+              </RoleGuard>
+            }
+          />
+          <Route path="/teaching-assignment" element={<TeachingAssignmentPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           
+          {/* UserList - DEV only */}
+          <Route
+            path="/users"
+            element={
+              <RoleGuard roles={["DEVELOPER"]}>
+                <UserList />
+              </RoleGuard>
+            }
+          />
+          {/* AIManagement - DEV only */}
+          {/* <Route
+            path="/ai"
+            element={
+              <RoleGuard roles={["DEVELOPER"]}>
+                <AIManagement/>
+              </RoleGuard>
+            }
+          /> */}
+
           {/* Pentadbir Routes */}
           <Route path="/pentadbir" element={<PentadbirLayout />}>
             <Route index element={<PentadbirDashboard />} />
