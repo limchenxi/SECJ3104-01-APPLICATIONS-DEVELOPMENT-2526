@@ -23,37 +23,43 @@ interface ScheduleObservationModalProps {
   open: boolean;
   onClose: () => void;
   teacherName: string;
+  subjectOptions?: string[];
+  classOptions?: string[];
+  evaluationId?: string;
   initialData?: Partial<ScheduleFormData>;
   onSave: (data: ScheduleFormData) => void;
+  evaluationData?: {
+    subject: string;
+    class: string;
+    obs1Status: string;
+  };
 }
-
-// Mock data for dropdowns
-const mockSubjects = [
-  "Matematik", "Bahasa Melayu", "English", "Sains", "Sejarah", 
-  "Geografi", "Pendidikan Islam", "Pendidikan Moral", "Bahasa Cina", "Bahasa Tamil"
-];
-
-const mockClasses = [
-  "1A", "1B", "1C", "2A", "2B", "2C", "3A", "3B", "3C",
-  "4A", "4B", "4C", "5A", "5B", "5C", "6A", "6B", "6C"
-];
 
 export default function ScheduleObservationModal({
   open,
   onClose,
   teacherName,
+  subjectOptions = [],
+  classOptions = [],
+  evaluationId,
   initialData,
   onSave,
+  evaluationData,
 }: ScheduleObservationModalProps) {
   const { user } = useAuth();
   const observerName = user?.name || "Pentadbir"; // Pentadbir is the observer
   
+  // Auto-detect observation type based on evaluation status
+  const autoObservationType: ObservationType = evaluationData?.obs1Status === 'submitted' ? "Cerapan 2" : "Cerapan 1";
+  const autoSubject = evaluationData?.subject || "";
+  const autoClass = evaluationData?.class || "";
+  
   const [formData, setFormData] = useState<ScheduleFormData>({
-    observationType: "Cerapan 1",
+    observationType: autoObservationType,
     scheduledDate: "",
     scheduledTime: "",
-    subject: "",
-    class: "",
+    subject: autoSubject,
+    class: autoClass,
     observerName: observerName, // Auto-set to logged-in pentadbir
     templateRubric: "",
     notes: "",
@@ -86,6 +92,21 @@ export default function ScheduleObservationModal({
     setErrors([]);
   };
 
+  useEffect(() => {
+    if (!open) return;
+    // Reset form with auto-detected values when modal opens
+    setFormData({
+      observationType: autoObservationType,
+      scheduledDate: "",
+      scheduledTime: "",
+      subject: autoSubject,
+      class: autoClass,
+      observerName: observerName,
+      templateRubric: "",
+      notes: "",
+    });
+  }, [open, autoObservationType, autoSubject, autoClass, observerName]);
+
   const validateForm = (): boolean => {
     const newErrors: string[] = [];
 
@@ -112,10 +133,36 @@ export default function ScheduleObservationModal({
     return newErrors.length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      console.log('Saving schedule with evaluationId:', evaluationId);
+      console.log('Form data:', formData);
+      
+      // If evaluationId exists, save to backend
+      if (evaluationId) {
+        const response = await pentadbirService.updateSchedule(evaluationId, {
+          scheduledDate: formData.scheduledDate,
+          scheduledTime: formData.scheduledTime,
+          observerName: formData.observerName,
+          templateRubric: formData.templateRubric,
+          notes: formData.notes,
+          observationType: formData.observationType,
+        });
+        console.log('Schedule saved successfully:', response);
+      } else {
+        console.warn('No evaluationId provided, skipping backend save');
+      }
+      
       onSave(formData);
       handleClose();
+    } catch (error: any) {
+      console.error('Failed to save schedule:', error);
+      console.error('Error response:', error.response?.data);
+      setErrors([`Gagal menyimpan jadual: ${error.response?.data?.message || error.message}`]);
     }
   };
 
@@ -126,7 +173,7 @@ export default function ScheduleObservationModal({
       scheduledTime: "",
       subject: "",
       class: "",
-      observerName: observerName, // Reset to pentadbir's name
+      observerName: observerName, 
       templateRubric: "",
       notes: "",
       ...initialData,
@@ -150,22 +197,14 @@ export default function ScheduleObservationModal({
             </Alert>
           )}
 
+          {/* Auto-detected info display */}
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <strong>Jenis Cerapan:</strong> {formData.observationType} • 
+            <strong>Subjek:</strong> {formData.subject} • 
+            <strong>Kelas:</strong> {formData.class}
+          </Alert>
+
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Jenis Cerapan</InputLabel>
-                <Select
-                  value={formData.observationType}
-                  label="Jenis Cerapan"
-                  onChange={(e) =>
-                    handleChange("observationType", e.target.value as ObservationType)
-                  }
-                >
-                  <MenuItem value="Cerapan 1">Cerapan 1</MenuItem>
-                  <MenuItem value="Cerapan 2">Cerapan 2</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
@@ -193,36 +232,6 @@ export default function ScheduleObservationModal({
                   startAdornment: <Clock size={20} style={{ marginRight: 8 }} />,
                 }}
               />
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Subjek</InputLabel>
-                <Select
-                  value={formData.subject}
-                  label="Subjek"
-                  onChange={(e) => handleChange("subject", e.target.value)}
-                >
-                  {mockSubjects.map((subject) => (
-                    <MenuItem key={subject} value={subject}>{subject}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Kelas</InputLabel>
-                <Select
-                  value={formData.class}
-                  label="Kelas"
-                  onChange={(e) => handleChange("class", e.target.value)}
-                >
-                  {mockClasses.map((className) => (
-                    <MenuItem key={className} value={className}>{className}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
             </Grid>
 
             <Grid size={{ xs: 12 }}>

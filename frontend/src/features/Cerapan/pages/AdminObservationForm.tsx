@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Box,
   Card,
@@ -46,6 +46,8 @@ export default function AdminObservationForm() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   // Derived totals
   const totalMarks = Object.values(marks).reduce((sum, m) => sum + (m.mark || 0), 0);
@@ -117,11 +119,7 @@ export default function AdminObservationForm() {
         setLoading(true);
         const data = await getAdminEvaluationDetails(id);
         setTask(data);
-        const initialMarks: MarkForm = {} as MarkForm;
-        data.questions_snapshot.forEach((q) => {
-          initialMarks[q.questionId] = { mark: 0 };
-        });
-        setMarks(initialMarks);
+        setMarks({} as MarkForm);
       } catch (err) {
         console.error("Error loading task:", err);
         setError("Gagal memuatkan data. Sila cuba lagi.");
@@ -160,6 +158,22 @@ export default function AdminObservationForm() {
     try {
       setSubmitting(true);
       setError("");
+
+      // Validate that all questions have an explicit score selected
+      const missing = (task.questions_snapshot || []).filter(
+        (q) => marks[q.questionId] === undefined || marks[q.questionId].mark === undefined
+      );
+      if (missing.length > 0) {
+        setSubmitting(false);
+        setError(`Sila pilih skor untuk semua soalan. Baki belum dipilih: ${missing.length}`);
+        const firstMissing = missing[0]?.questionId;
+        if (firstMissing && questionRefs.current[firstMissing]) {
+          questionRefs.current[firstMissing]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setHighlightId(firstMissing);
+          setTimeout(() => setHighlightId(null), 1500);
+        }
+        return;
+      }
       const payload: SubmitObservationDto = {
         marks: Object.entries(marks).map(([questionId, data]) => ({ questionId, mark: data.mark })),
       };
@@ -288,7 +302,12 @@ export default function AdminObservationForm() {
                       const selected = marks[q.questionId]?.mark ?? null;
                       const valueStr = selected !== null ? String(selected) : "";
                       return (
-                        <Card key={q.questionId} variant="outlined">
+                        <Card
+                          key={q.questionId}
+                          variant="outlined"
+                          ref={(el: HTMLDivElement | null) => { questionRefs.current[q.questionId] = el; }}
+                          sx={highlightId === q.questionId ? { borderColor: theme.palette.error.main, boxShadow: `${theme.palette.error.main}40 0 0 0 2px` } : undefined}
+                        >
                           <CardContent>
                             <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>{q.questionId}</Typography>
                             <Typography variant="body1" sx={{ mb: 3, fontWeight: 500 }}>{q.text}</Typography>

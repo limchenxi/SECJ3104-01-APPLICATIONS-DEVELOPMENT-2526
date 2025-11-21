@@ -73,9 +73,12 @@ const PentadbirTemplateRubrik = lazy(
 const PentadbirTemplateRubrikDetail = lazy(
   () => import("../features/Pentadbir/pages/TemplateRubrikDetail")
 );
-// const PentadbirProfil = lazy(
-//   () => import("../features/Pentadbir/pages/Profil")
-// );
+const PentadbirProfil = lazy(
+  () => import("../features/Pentadbir/pages/Profil")
+);
+const PentadbirCerapanReport = lazy(
+  () => import("../features/Pentadbir/pages/CerapanReport")
+);
 
 const NotFound = lazy(() => import("./NotFound"));
 const ProtectedLayout = lazy(() => import("./ProtectedLayout"));
@@ -223,6 +226,7 @@ export default function AppRoutes() {
             <Route index element={<PentadbirDashboard />} />
             <Route path="kedatangan" element={<PentadbirKedatangan />} />
             <Route path="cerapan" element={<PentadbirCerapan />} />
+            <Route path="cerapan/report/:id" element={<PentadbirCerapanReport />} />
             {/* Removed tugasan cerapan page */}
             <Route path="observation/:id" element={<AdminObservationForm />} />
             <Route path="template-rubrik" element={<PentadbirTemplateRubrik />} />

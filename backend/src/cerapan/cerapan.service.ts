@@ -11,6 +11,23 @@ import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { PentadbirService } from '../pentadbir/pentadbir.service';
 import { SubmitObservationDto } from './dto/submit-cerapan.dto';
 
+// -------------------------------------------------------------
+// WEIGHT MAP FOR SUBCATEGORY CODES (TOTAL 100)
+// Each entry: subCategoryCode => weight (points contribution when full mark achieved)
+// Formula per subcategory: (achieved / fullMark) * weight
+// Provided weights:
+// 4.1.1: 10, 4.2.1: 10, 4.2.2: 5, 4.3.1: 15, 4.4.1: 25, 4.4.2: 5, 4.5.1: 10, 4.6.1: 20 (sum = 100)
+const SUBCATEGORY_WEIGHT_MAP: Record<string, number> = {
+  '4.1.1': 10,
+  '4.2.1': 10,
+  '4.2.2': 5,
+  '4.3.1': 15,
+  '4.4.1': 25,
+  '4.4.2': 5,
+  '4.5.1': 10,
+  '4.6.1': 20,
+};
+
 @Injectable()
 export class CerapanService {
   constructor(
@@ -129,6 +146,32 @@ export class CerapanService {
     return evaluation.save();
   }
 
+  async updateSchedule(
+    evaluationId: string,
+    scheduleData: {
+      scheduledDate: string;
+      scheduledTime: string;
+      observerName: string;
+      templateRubric: string;
+      notes?: string;
+      observationType: string;
+    },
+  ): Promise<Cerapan> {
+    const evaluation = await this.cerapanModel.findById(evaluationId);
+    if (!evaluation) {
+      throw new NotFoundException('Evaluation not found');
+    }
+
+    evaluation.scheduledDate = scheduleData.scheduledDate;
+    evaluation.scheduledTime = scheduleData.scheduledTime;
+    evaluation.observerName = scheduleData.observerName;
+    evaluation.templateRubric = scheduleData.templateRubric;
+    evaluation.notes = scheduleData.notes || '';
+    evaluation.observationType = scheduleData.observationType;
+
+    return evaluation.save();
+  }
+
   async getMyReportHistory(teacherId: string): Promise<Cerapan[]> {
     return this.cerapanModel
       .find({
@@ -199,7 +242,7 @@ export class CerapanService {
     const obs1 = aggregateObservation(evaluation.observation_1);
     const obs2 = aggregateObservation(evaluation.observation_2);
 
-    type CatAgg = { code: string; fullMark: number; achievedSelf: number; score10_Self: number; percentSelf: number; achieved1: number; score10_1: number; percent1: number; achieved2: number; score10_2: number; percent2: number };
+    type CatAgg = { code: string; fullMark: number; achievedSelf: number; weightedSelf: number; percentSelf: number; achieved1: number; weighted1: number; percent1: number; achieved2: number; weighted2: number; percent2: number; weight: number };
     const groupBySubCat: Record<string, { fullMark: number; qIds: string[] }> = {};
     for (const q of evaluation.questions_snapshot) {
       const code = q.subCategoryCode || 'UNKNOWN';
@@ -239,40 +282,54 @@ export class CerapanService {
       const aSelf = sumSelfFor(evaluation.self_evaluation?.answers || [], info.qIds);
       const a1 = sumMarksFor(evaluation.observation_1?.marks || [], info.qIds);
       const a2 = sumMarksFor(evaluation.observation_2?.marks || [], info.qIds);
-      const sSelf = full > 0 ? +(((aSelf / full) * 10)).toFixed(2) : 0; // 0..10 scale
-      const s1 = full > 0 ? +(((a1 / full) * 10)).toFixed(2) : 0; // 0..10 scale
-      const s2 = full > 0 ? +(((a2 / full) * 10)).toFixed(2) : 0;
       const pSelf = full > 0 ? +(((aSelf / full) * 100)).toFixed(2) : 0;
       const p1 = full > 0 ? +(((a1 / full) * 100)).toFixed(2) : 0;
       const p2 = full > 0 ? +(((a2 / full) * 100)).toFixed(2) : 0;
+      const weight = SUBCATEGORY_WEIGHT_MAP[code] ?? 0;
+      const weightedSelf = full > 0 ? +(((aSelf / full) * weight)).toFixed(2) : 0;
+      const weighted1 = full > 0 ? +(((a1 / full) * weight)).toFixed(2) : 0;
+      const weighted2 = full > 0 ? +(((a2 / full) * weight)).toFixed(2) : 0;
       return {
         code,
         fullMark: +full.toFixed(2),
         achievedSelf: +aSelf.toFixed(2),
-        score10_Self: sSelf,
+        weightedSelf,
         percentSelf: pSelf,
         achieved1: +a1.toFixed(2),
-        score10_1: s1,
+        weighted1,
         percent1: p1,
         achieved2: +a2.toFixed(2),
-        score10_2: s2,
+        weighted2,
         percent2: p2,
+        weight,
       };
     }).sort((a, b) => a.code.localeCompare(b.code));
 
-    const totalScore10_Self = +catBreakdown.reduce((s, x) => s + x.score10_Self, 0).toFixed(2);
-    const totalScore10_1 = +catBreakdown.reduce((s, x) => s + x.score10_1, 0).toFixed(2);
-    const totalScore10_2 = +catBreakdown.reduce((s, x) => s + x.score10_2, 0).toFixed(2);
     const totalRawAchievedSelf = +catBreakdown.reduce((s, x) => s + x.achievedSelf, 0).toFixed(2);
     const totalRawAchieved1 = +catBreakdown.reduce((s, x) => s + x.achieved1, 0).toFixed(2);
     const totalRawAchieved2 = +catBreakdown.reduce((s, x) => s + x.achieved2, 0).toFixed(2);
     const totalFullMarks = +catBreakdown.reduce((s, x) => s + x.fullMark, 0).toFixed(2);
+
+    // Weighted totals (out of 100) per section
+    const totalWeightedSelf = +catBreakdown.reduce((s, x) => s + x.weightedSelf, 0).toFixed(2);
+    const totalWeighted1 = +catBreakdown.reduce((s, x) => s + x.weighted1, 0).toFixed(2);
+    const totalWeighted2 = +catBreakdown.reduce((s, x) => s + x.weighted2, 0).toFixed(2);
 
     // Overall percent: mean of available observation percents (ignore empty)
     const observedPercents = [obs1, obs2].filter(x => x.count > 0).map(x => x.percent);
     const overallPercent = observedPercents.length
       ? +(observedPercents.reduce((a, b) => a + b, 0) / observedPercents.length).toFixed(2)
       : 0;
+
+    // New overall weighted observation percent (summing weighted contributions of obs1 & obs2)
+    const overallWeightedObservation = +(totalWeighted1 + totalWeighted2).toFixed(2);
+    // Individual 0..100 scales for each section (already weighted by subcategory weights)
+    const weightedSelf = totalWeightedSelf; // 0..100
+    const weightedObs1 = totalWeighted1;    // 0..100
+    const weightedObs2 = totalWeighted2;    // 0..100
+    // Average across the three sections (excluding those with 0 if desired)
+    const presentWeighted = [weightedSelf, weightedObs1, weightedObs2].filter(v => v > 0);
+    const triAverageWeighted = presentWeighted.length ? +(presentWeighted.reduce((a,b)=>a+b,0) / presentWeighted.length).toFixed(2) : 0;
 
     const scale = (() => {
       // Try to infer scale from first question
@@ -281,13 +338,17 @@ export class CerapanService {
     })();
 
     const overallAvgScore = scale > 0 ? +((overallPercent / 100) * scale).toFixed(2) : 0;
+    // Label based on weighted observation total (fallback to previous if zero)
+    // Performance basis now uses tri-section average if available, else combined observations, else raw percent
+    const performanceBasis = triAverageWeighted > 0 ? triAverageWeighted : (overallWeightedObservation > 0 ? overallWeightedObservation : overallPercent);
 
     // Label mapping based on average score on 0..scale
     const label = (() => {
-      if (overallAvgScore >= scale * 0.875) return 'Cemerlang';
-      if (overallAvgScore >= scale * 0.625) return 'Baik';
-      if (overallAvgScore >= scale * 0.375) return 'Sederhana';
-      if (overallAvgScore > 0) return 'Lemah';
+      // If weighted observation basis used, treat 0..100 similar thresholds (customizable)
+      if (performanceBasis >= 85) return 'Cemerlang';
+      if (performanceBasis >= 65) return 'Baik';
+      if (performanceBasis >= 40) return 'Sederhana';
+      if (performanceBasis > 0) return 'Lemah';
       return 'Tidak Dinilai';
     })();
 
@@ -316,24 +377,29 @@ export class CerapanService {
       categories: {
         breakdown: catBreakdown,
         totals: {
-          // Sum of per-subcategory 0..10 scores; matches examples like 82.05
-          selfScore10Sum: totalScore10_Self,
-          observation1Score10Sum: totalScore10_1,
-          observation2Score10Sum: totalScore10_2,
           selfRawAchieved: totalRawAchievedSelf,
           observation1RawAchieved: totalRawAchieved1,
           observation2RawAchieved: totalRawAchieved2,
           fullMarkSum: totalFullMarks,
-          // Overall percentages by raw marks
           selfPercent: totalFullMarks > 0 ? +((totalRawAchievedSelf / totalFullMarks) * 100).toFixed(2) : 0,
           observation1Percent: totalFullMarks > 0 ? +((totalRawAchieved1 / totalFullMarks) * 100).toFixed(2) : 0,
           observation2Percent: totalFullMarks > 0 ? +((totalRawAchieved2 / totalFullMarks) * 100).toFixed(2) : 0,
+          // New weighted totals (out of 100 if all weights sum to 100)
+          weightedSelfTotal: totalWeightedSelf,
+          weightedObservation1Total: totalWeighted1,
+          weightedObservation2Total: totalWeighted2,
+          weightedObservationCombined: overallWeightedObservation,
         },
       },
       overall: {
         percent: overallPercent,
         avgScore: overallAvgScore,
         label,
+        weightedObservation: overallWeightedObservation,
+        weightedSelf,
+        weightedObservation1: weightedObs1,
+        weightedObservation2: weightedObs2,
+        triAverageWeighted,
       },
     };
   }
@@ -417,8 +483,19 @@ export class CerapanService {
       .find({
         status: { $in: ['pending_observation_1', 'pending_observation_2'] },
       })
-      .select('period teacherId status')
-      .sort({ status: 1 })
+      .select('period teacherId status subject class self_evaluation observation_1 observation_2 createdAt')
+      .sort({ status: 1, createdAt: -1 })
+      .exec();
+  }
+
+  /**
+   * Get all evaluations for admin overview (including completed).
+   */
+  async getAllEvaluationsForAdmin(): Promise<Cerapan[]> {
+    return this.cerapanModel
+      .find({})
+      .select('period teacherId status subject class self_evaluation observation_1 observation_2 createdAt scheduledDate scheduledTime observerName templateRubric notes observationType')
+      .sort({ createdAt: -1 })
       .exec();
   }
 
@@ -478,6 +555,15 @@ export class CerapanService {
     evaluation.observation_1.submittedAt = new Date();
     evaluation.observation_1.administratorId = adminId;
     evaluation.status = 'pending_observation_2';
+    
+    // Reset schedule fields for Cerapan 2
+    evaluation.scheduledDate = undefined;
+    evaluation.scheduledTime = undefined;
+    evaluation.observerName = undefined;
+    evaluation.templateRubric = undefined;
+    evaluation.notes = undefined;
+    evaluation.observationType = undefined;
+    
     try {
       return await evaluation.save();
     } catch (err: any) {

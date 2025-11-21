@@ -38,7 +38,7 @@ export default function ObservationTasks() {
     try {
       const users = await userApi.getAll();
       const map: Record<string, string> = {};
-      users.forEach(u => { map[u.id] = u.name; });
+      users.forEach(u => { if (u.id) map[u.id] = u.name; });
       setUserMap(map);
     } catch (err) {
       console.error("Error loading users:", err);

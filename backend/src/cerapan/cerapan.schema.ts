@@ -99,6 +99,25 @@ export class Cerapan extends Document {
   @Prop({ type: [QuestionSnapshotSchema], required: true })
   questions_snapshot: QuestionSnapshot[];
   
+  // Schedule information
+  @Prop({ type: String, default: null })
+  scheduledDate?: string;
+  
+  @Prop({ type: String, default: null })
+  scheduledTime?: string;
+  
+  @Prop({ type: String, default: null })
+  observerName?: string;
+  
+  @Prop({ type: String, default: null })
+  templateRubric?: string;
+  
+  @Prop({ type: String, default: null })
+  notes?: string;
+  
+  @Prop({ type: String, default: null })
+  observationType?: string; // 'Cerapan 1' or 'Cerapan 2'
+  
   // The 3 observation objects
   @Prop({ type: ObservationSectionSchema, required: true })
   self_evaluation: ObservationSection;
