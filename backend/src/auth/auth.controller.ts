@@ -25,6 +25,14 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Get("checkip")
+  async checkIP() {
+    const response = await fetch("https://api.ipify.org");
+    const ip = await response.text();
+
+    return {"ip": ip};
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Req() req: RequestWithUser) {
