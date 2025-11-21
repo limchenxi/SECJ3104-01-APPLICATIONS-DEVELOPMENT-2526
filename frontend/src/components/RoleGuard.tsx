@@ -9,9 +9,9 @@ export default function RoleGuard({
   roles: UserRole[];
   children: ReactNode;
 }) {
-  const { isInitialized, canAccessPage } = useRoleGuard(roles);
+  const { isInitialized, canAccessPage, isLoading } = useRoleGuard(roles);
 
-  if (!isInitialized) return <div>Loading...</div>;
+  if (!isInitialized || isLoading) return <div>Loading...</div>;
   if (!canAccessPage) return <div>Unauthorized</div>;
 
   return <>{children}</>;

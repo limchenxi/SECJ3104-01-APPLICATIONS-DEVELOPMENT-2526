@@ -3,10 +3,10 @@ import useAuth from "./useAuth";
 import type { UserRole } from "../features/Auth/type";
 
 export default function useRoleGuard(roles: UserRole[]) {
-  const { isInitialized, user } = useAuth();
+  const { isInitialized, user, isLoading } = useAuth();
 
   const canAccessPage = useMemo(() => {
-    if (!isInitialized) {
+    if (!isInitialized || isLoading) {
       return false;
     }
 
@@ -16,10 +16,11 @@ export default function useRoleGuard(roles: UserRole[]) {
     }
 
     return roles.includes(user.role);
-  }, [isInitialized, user])
+  }, [isInitialized, user, isLoading])
 
   return {
     isInitialized,
+    isLoading,
     canAccessPage,
   };
 }

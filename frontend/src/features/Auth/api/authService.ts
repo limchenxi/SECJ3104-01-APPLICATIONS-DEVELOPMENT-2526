@@ -1,5 +1,6 @@
 import { setAuthToken } from "../../../utils/auth";
 import { backendClient } from "../../../utils/axios-client";
+import type { Profile } from "../../Profile/type";
 import type { UserRole } from "../type";
 
 export const authService = {
@@ -20,13 +21,7 @@ export const authService = {
   },
   getProfile: async () => {
     const client = backendClient();
-    const res = await client.get<{
-      // TODO: Add profile type
-      email: string;
-      role: UserRole;
-      name: string;
-      id: string;
-    }>("/auth/me");
+    const res = await client.get<Profile>("/auth/me");
     return res.data;
   },
 };

@@ -3,9 +3,11 @@ import { User, Mail, Phone, Briefcase, Calendar, Edit, Lock, School } from "luci
 import { loadProfile, profileStore } from "../store";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useStore } from "@tanstack/react-store";
 
 export default function Profile() {
-  const { data: profile, isLoading } = profileStore.state;
+  const profileState = useStore(profileStore);
+  const { data: profile, isLoading } = profileState;
   const navigate = useNavigate();
 
    useEffect(() => {
