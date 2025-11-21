@@ -18,22 +18,14 @@ export class User extends Document {
   @Prop({ required: true, enum: ['Male', 'Female'] })
   gender: 'Male' | 'Female';
 
-  @Prop({ required: true, enum: ['GURU', 'PENTADBIR', 'DEVELOPER'] })
-  role: 'GURU' | 'PENTADBIR' | 'DEVELOPER';
+  @Prop({ required: true, enum: ['GURU', 'PENTADBIR', 'SUPERADMIN'] })
+  role: 'GURU' | 'PENTADBIR' | 'SUPERADMIN';
 
   @Prop({ required: false })
   contactNumber?: string;
 
   @Prop({ required: false })
   profilePicture?: string;
-
-  // List of subjects the teacher teaches (only relevant when role === 'GURU')
-  @Prop({ type: [String], default: [] })
-  subjects?: string[];
-
-  // List of classes the teacher teaches (only relevant when role === 'GURU')
-  @Prop({ type: [String], default: [] })
-  classes?: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

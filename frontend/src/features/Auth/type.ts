@@ -1,4 +1,4 @@
-export type UserRole = "GURU" | "PENTADBIR" | "DEVELOPER";
+export type UserRole = "GURU" | "PENTADBIR" | "SUPERADMIN";
 
 export interface AuthUser {
   id?: string;

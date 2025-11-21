@@ -9,8 +9,8 @@ import {
   Grid,
 } from "@mui/material";
 import { Users, ClipboardCheck, AlertCircle, BookOpen } from "lucide-react";
-import { pentadbirService } from "../api/pentadbirService";
-import type { DashboardStats } from "../type";
+import { pentadbirService } from "../../Pentadbir/api/pentadbirService";
+import type { DashboardStats } from "../../Pentadbir/type";
 
 export default function PentadbirDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);

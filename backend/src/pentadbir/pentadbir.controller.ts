@@ -30,8 +30,10 @@ export class PentadbirController {
 
   // Check if user can access templates (PENTADBIR or GURU)
   private checkTemplateAccess(req: RequestWithUser) {
-    if (!['PENTADBIR', 'GURU', 'DEVELOPER'].includes(req.user.role)) {
-      throw new ForbiddenException('Access denied. PENTADBIR or GURU role required.');
+    if (!['PENTADBIR', 'GURU', 'SUPERADMIN'].includes(req.user.role)) {
+      throw new ForbiddenException(
+        'Access denied. PENTADBIR or GURU role required.',
+      );
     }
   }
 
@@ -67,13 +69,20 @@ export class PentadbirController {
   }
 
   @Post('templates')
-  async createTemplate(@Req() req: RequestWithUser, @Body() createTemplateDto: CreateTemplateDto) {
+  async createTemplate(
+    @Req() req: RequestWithUser,
+    @Body() createTemplateDto: CreateTemplateDto,
+  ) {
     this.checkPentadbirRole(req);
     return this.pentadbirService.createTemplate(createTemplateDto);
   }
 
   @Put('templates/:id')
-  async updateTemplate(@Req() req: RequestWithUser, @Param('id') id: string, @Body() updateTemplateDto: UpdateTemplateDto) {
+  async updateTemplate(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() updateTemplateDto: UpdateTemplateDto,
+  ) {
     this.checkPentadbirRole(req);
     return this.pentadbirService.updateTemplate(id, updateTemplateDto);
   }
@@ -87,7 +96,11 @@ export class PentadbirController {
 
   // Category Management Routes
   @Post('templates/:templateId/categories')
-  async addCategory(@Req() req: RequestWithUser, @Param('templateId') templateId: string, @Body() categoryData: any) {
+  async addCategory(
+    @Req() req: RequestWithUser,
+    @Param('templateId') templateId: string,
+    @Body() categoryData: any,
+  ) {
     this.checkPentadbirRole(req);
     return this.pentadbirService.addCategory(templateId, categoryData);
   }
@@ -97,17 +110,21 @@ export class PentadbirController {
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
-    @Body() categoryData: any
+    @Body() categoryData: any,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.updateCategory(templateId, categoryId, categoryData);
+    return this.pentadbirService.updateCategory(
+      templateId,
+      categoryId,
+      categoryData,
+    );
   }
 
   @Delete('templates/:templateId/categories/:categoryId')
   async deleteCategory(
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
-    @Param('categoryId') categoryId: string
+    @Param('categoryId') categoryId: string,
   ) {
     this.checkPentadbirRole(req);
     return this.pentadbirService.deleteCategory(templateId, categoryId);
@@ -119,70 +136,109 @@ export class PentadbirController {
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
-    @Body() subCategoryData: any
+    @Body() subCategoryData: any,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.addSubCategory(templateId, categoryId, subCategoryData);
+    return this.pentadbirService.addSubCategory(
+      templateId,
+      categoryId,
+      subCategoryData,
+    );
   }
 
-  @Put('templates/:templateId/categories/:categoryId/subcategories/:subCategoryId')
+  @Put(
+    'templates/:templateId/categories/:categoryId/subcategories/:subCategoryId',
+  )
   async updateSubCategory(
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
     @Param('subCategoryId') subCategoryId: string,
-    @Body() subCategoryData: any
+    @Body() subCategoryData: any,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.updateSubCategory(templateId, categoryId, subCategoryId, subCategoryData);
+    return this.pentadbirService.updateSubCategory(
+      templateId,
+      categoryId,
+      subCategoryId,
+      subCategoryData,
+    );
   }
 
-  @Delete('templates/:templateId/categories/:categoryId/subcategories/:subCategoryId')
+  @Delete(
+    'templates/:templateId/categories/:categoryId/subcategories/:subCategoryId',
+  )
   async deleteSubCategory(
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
-    @Param('subCategoryId') subCategoryId: string
+    @Param('subCategoryId') subCategoryId: string,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.deleteSubCategory(templateId, categoryId, subCategoryId);
+    return this.pentadbirService.deleteSubCategory(
+      templateId,
+      categoryId,
+      subCategoryId,
+    );
   }
 
   // Item Management Routes
-  @Post('templates/:templateId/categories/:categoryId/subcategories/:subCategoryId/items')
+  @Post(
+    'templates/:templateId/categories/:categoryId/subcategories/:subCategoryId/items',
+  )
   async addItem(
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
     @Param('subCategoryId') subCategoryId: string,
-    @Body() itemData: any
+    @Body() itemData: any,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.addItem(templateId, categoryId, subCategoryId, itemData);
+    return this.pentadbirService.addItem(
+      templateId,
+      categoryId,
+      subCategoryId,
+      itemData,
+    );
   }
 
-  @Put('templates/:templateId/categories/:categoryId/subcategories/:subCategoryId/items/:itemId')
+  @Put(
+    'templates/:templateId/categories/:categoryId/subcategories/:subCategoryId/items/:itemId',
+  )
   async updateItem(
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
     @Param('subCategoryId') subCategoryId: string,
     @Param('itemId') itemId: string,
-    @Body() itemData: any
+    @Body() itemData: any,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.updateItem(templateId, categoryId, subCategoryId, itemId, itemData);
+    return this.pentadbirService.updateItem(
+      templateId,
+      categoryId,
+      subCategoryId,
+      itemId,
+      itemData,
+    );
   }
 
-  @Delete('templates/:templateId/categories/:categoryId/subcategories/:subCategoryId/items/:itemId')
+  @Delete(
+    'templates/:templateId/categories/:categoryId/subcategories/:subCategoryId/items/:itemId',
+  )
   async deleteItem(
     @Req() req: RequestWithUser,
     @Param('templateId') templateId: string,
     @Param('categoryId') categoryId: string,
     @Param('subCategoryId') subCategoryId: string,
-    @Param('itemId') itemId: string
+    @Param('itemId') itemId: string,
   ) {
     this.checkPentadbirRole(req);
-    return this.pentadbirService.deleteItem(templateId, categoryId, subCategoryId, itemId);
+    return this.pentadbirService.deleteItem(
+      templateId,
+      categoryId,
+      subCategoryId,
+      itemId,
+    );
   }
 }

@@ -70,7 +70,7 @@ const sampleRPH = {
 };
 
 // --- MAIN COMPONENT ---
-export default function RPHGeneratorPage() { // Changed to default export for stability
+export default function RPHGenerator() { // Changed to default export for stability
   const theme = useTheme();
   const [rphGenerated, setRphGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);

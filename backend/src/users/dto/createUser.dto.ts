@@ -1,4 +1,10 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsArray } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsArray,
+} from 'class-validator';
 
 export enum Gender {
   Male = 'Male',
@@ -8,7 +14,7 @@ export enum Gender {
 export enum Role {
   GURU = 'GURU',
   PENTADBIR = 'PENTADBIR',
-  DEVELOPER = 'DEVELOPER',
+  SUPERADMIN = 'SUPERADMIN',
 }
 
 export class CreateUserDto {
@@ -37,14 +43,4 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   profilePicture?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  subjects?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  classes?: string[];
 }

@@ -10,7 +10,7 @@ export const authService = {
       token: string;
       user: {
         name: string;
-        role: "GURU" | "PENTADBIR" | "DEVELOPER";
+        role: "GURU" | "PENTADBIR" | "SUPERADMIN";
       };
     }>("/auth/login", { email, password });
     setAuthToken(res.data.token);

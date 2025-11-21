@@ -5,6 +5,6 @@ export interface Profile {
   gender: "Male" | "Female";
   ic: string;
   contactNumber?: string;
-  role: "GURU" | "PENTADBIR" | "DEVELOPER";
+  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
   profilePicture?: string;
 }

@@ -60,7 +60,7 @@ export default function Profile() {
               <Button
                 variant="contained"
                 startIcon={<Edit />}
-                onClick={() => navigate("/edit-profile")}
+                onClick={() => navigate("/profile/edit")}
               >
                 Edit Profil
               </Button>

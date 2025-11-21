@@ -8,7 +8,7 @@ interface Activity {
   date: string;
 }
 
-export default function Dashboard() {
+export default function GuruDashboard() {
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     // const [attendanceRate, setAttendanceRate] = useState<number>(0);
     // const [cerapanCount, setCerapanCount] = useState<number>(0);

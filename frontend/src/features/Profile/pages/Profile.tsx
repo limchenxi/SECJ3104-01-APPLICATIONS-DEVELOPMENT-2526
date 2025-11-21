@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   // Example usage of useRoleGuard
-  // const { isInitialized, canAccessPage } = useRoleGuard(['DEVELOPER']); 
+  // const { isInitialized, canAccessPage } = useRoleGuard(['SUPERADMIN']); 
 
   const [user, setUser] = useState<Profile | null>(null);
 

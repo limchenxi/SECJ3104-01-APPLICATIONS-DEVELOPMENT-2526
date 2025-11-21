@@ -1,6 +1,5 @@
 import { Store } from "@tanstack/react-store";
 import type { Profile } from "../type";
-import { backendClient } from "../../../utils/axios-client";
 
 export interface ProfileState {
   data?: Profile;
@@ -26,20 +25,3 @@ export const setProfileError = (error?: string) => {
   profileStore.setState((prev) => ({ ...prev, isLoading: false, error }));
 };
 
-export const updateProfile = (partialData: Partial<Profile>) => {
-  profileStore.setState((prev) => ({
-    ...prev,
-    data: prev.data ? { ...prev.data, ...partialData } : prev.data,
-  }));
-};
-
-export async function loadProfile() {
-  setProfileLoading(true);
-  try {
-    const res = await backendClient().get("/auth/me"); 
-    setProfile(res.data);
-  } catch (err) {
-    console.error("Failed to load profile:", err);
-    setProfileError("Failed to load profile");
-  }
-}
