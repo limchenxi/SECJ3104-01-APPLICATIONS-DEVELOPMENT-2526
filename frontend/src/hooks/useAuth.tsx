@@ -61,6 +61,7 @@ const useAuth = () => {
     const res = await authService.login(email, password);
     store.setState((prev) => ({
       ...prev,
+      isInitialized: true,
       user: res.user as AuthUser,
     }));
     return res; 

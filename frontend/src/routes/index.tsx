@@ -62,7 +62,7 @@ const UserList= lazy(
   () => import("../features/Users/pages/User")
 );
 const AIList= lazy(
-  () => import("../features/AI/pages/AIList")
+  () => import("../features/AI/pages/List")
 );
   
 // Cerapan Pages
@@ -90,13 +90,21 @@ const ProtectedLayout = lazy(() => import("./ProtectedLayout"));
 const LoginRoute = () => {
   const [searchParams] = useSearchParams();
   const redirectTo = resolveRedirectPath(searchParams.get("redirect"), "/");
-  const { isAuthenticated, isInitialized, isLoading } = useAuth();
+  const { user, isAuthenticated, isInitialized, isLoading } = useAuth();
 
   if (!isInitialized || isLoading) {
     return <SuspenseFallback />;
   }
 
   if (isAuthenticated) {
+    // const role = user?.role;
+
+    // const defaultPath =
+    //   role === "GURU"
+    //     ? "/dashboard/guru"
+    //     : role === "PENTADBIR"
+    //     ? "/dashboard/pentadbir"
+    //     : "/superadmin/dashboard";
     return <Navigate to={redirectTo} replace />;
   }
 
@@ -206,7 +214,7 @@ export default function AppRoutes() {
           
           {/* Pentadbir Routes */}
           <Route
-            path="/pentadbir/dashboard"
+            path="/dashboard/pentadbir"
             element={
               <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
                 <PentadbirDashboard />
@@ -267,7 +275,7 @@ export default function AppRoutes() {
             path="/ai"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
-                <AIList/>
+                <AIList items={[]}/>
               </RoleGuard>
             }
           />
