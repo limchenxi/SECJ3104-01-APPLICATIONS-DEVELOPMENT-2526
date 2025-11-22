@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-import { enqueueSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import { useStore } from "@tanstack/react-store";
 import { profileStore } from "../store";
 import { loadProfile, updateProfile } from "../api";
@@ -31,6 +31,7 @@ export default function EditProfile() {
   });
 
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // Load profile
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function EditProfile() {
     enqueueSnackbar("Profil berjaya dikemas kini!", { variant: "success" });
     navigate("/profile");
 
-  } catch (error) {
+  } catch {
     enqueueSnackbar("Gagal menyimpan perubahan", { variant: "error" });
   }
 };

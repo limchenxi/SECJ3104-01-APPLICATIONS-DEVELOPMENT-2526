@@ -5,7 +5,8 @@ import type { Profile } from "../type";
 export async function loadProfile() {
   try {
     setProfileLoading(true);
-    const res = await backendClient().get("/users/me");  
+  // backend exposes the current user's profile at /auth/me
+  const res = await backendClient().get("/auth/me");  
     setProfile(res.data);
     return res.data;
   } catch (err) {
