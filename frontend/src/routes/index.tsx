@@ -22,7 +22,7 @@ const PentadbirDashboard = lazy(
   () => import("../features/Dashboard/pages/PentadbirDashboard")
 );
 const SuperAdminDashboard = lazy(
-  () => import("../features/Dashboard/pages/SuperadminDashboard")
+  () => import("../features/Dashboard/pages/SuperAdminDashboard")
 );
 
 const  TeachingAssignmentPage = lazy(
@@ -61,8 +61,17 @@ const PentadbirCerapanReport = lazy(
 const UserList= lazy(
   () => import("../features/Users/pages/User")
 );
+const AIManagementIndex= lazy(
+  () => import("../features/AI/pages/index")
+);
 const AIList= lazy(
-  () => import("../features/AI/pages/List")
+  () => import("../features/AI/pages/model/ai-list")
+);
+const AiUsageAnalytics= lazy(
+  () => import("../features/AI/pages/usage/ai-usage")
+);
+const AiModuleSettings= lazy(
+  () => import("../features/AI/pages/default/ai-default")
 );
   
 // Cerapan Pages
@@ -264,7 +273,7 @@ export default function AppRoutes() {
           />
           {/* Super Admin */}
           <Route
-            path="/superadmin/dashboard"
+            path="/dashboard/superadmin"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <SuperAdminDashboard />
@@ -275,10 +284,33 @@ export default function AppRoutes() {
             path="/ai"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
-                <AIList items={[]}/>
+                <AIManagementIndex/>
               </RoleGuard>
             }
           />
+          <Route
+            path="/ai/list"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AIList items={[]}/>
+              </RoleGuard>
+            }
+          /><Route
+            path="/ai/usage"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AiUsageAnalytics/>
+              </RoleGuard>
+            }
+          /><Route
+            path="/ai/default"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AiModuleSettings moduleId={""}/>
+              </RoleGuard>
+            }
+          />
+
           <Route
             path="/users"
             element={

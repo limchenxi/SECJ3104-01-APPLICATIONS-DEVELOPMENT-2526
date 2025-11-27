@@ -21,6 +21,7 @@ import { TeachingAssignmentModule } from './teaching-assignment/teaching-assignm
       isGlobal: true,
     }),
     MongooseModule.forRoot('mongodb://localhost:27017/teacher_system'),
+    AiModule,
     AuthModule,
     CerapanModule,
     //KedatanganModule,
