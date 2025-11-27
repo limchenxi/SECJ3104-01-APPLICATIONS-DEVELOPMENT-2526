@@ -1,8 +1,19 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Req, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  Patch,
+  Param,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/createUser.dto';
 import { FindByEmailDto } from './dto/findUser.dto';
 import { JwtAuthGuard } from '../auth/jwt.strategy';
+import { ProfileDto } from './dto/profile.dto';
 type RequestWithUser = any; // keep consistent with other controllers
 
 @Controller('users')
@@ -26,11 +37,20 @@ export class UsersController {
   }
 
   // Return the subjects and classes assigned to the logged-in teacher
+  // @UseGuards(JwtAuthGuard)
+  // @Get('me')
+  // getMyAssignments(@Req() req: RequestWithUser) {
+  //   // const userId = req.user._id.toString();
+  //   return this.userService.findById(req.user._id);
+  // }
+
   @UseGuards(JwtAuthGuard)
-  @Get('me/assignments')
-  getMyAssignments(@Req() req: RequestWithUser) {
-    const userId = (req.user._id as any).toString();
-    return this.userService.getAssignments(userId);
+  @Patch('me')
+  async updateMyProfile(
+    @Req() req: RequestWithUser,
+    @Body() updateDto: Partial<ProfileDto>,
+  ) {
+    return this.userService.updateUser(req.user._id, updateDto);
   }
 
   // Get all users (for admin)
@@ -46,13 +66,17 @@ export class UsersController {
   }
 
   // Update teacher assignments (subjects & classes)
-  @Patch(':id/assignments')
-  updateAssignments(
-    @Param('id') userId: string,
-    @Body() body: { subjects: string[]; classes: string[] },
-  ) {
-    return this.userService.updateAssignments(userId, body.subjects, body.classes);
-  }
+  // @Patch(':id/assignments')
+  // updateAssignments(
+  //   @Param('id') userId: string,
+  //   @Body() body: { subjects: string[]; classes: string[] },
+  // ) {
+  //   return this.userService.updateAssignments(
+  //     userId,
+  //     body.subjects,
+  //     body.classes,
+  //   );
+  // }
 
   // @UseGuards(JwtAuthGuard)
   // @Get('profile')

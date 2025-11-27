@@ -1,6 +1,7 @@
 import { Avatar, Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, Typography } from "@mui/material";
 import { User, Mail, Phone, Briefcase, Calendar, Edit, Lock, School } from "lucide-react";
-import { loadProfile, profileStore } from "../store";
+import { profileStore } from "../store";
+import { loadProfile } from "../api";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@tanstack/react-store";
@@ -60,7 +61,7 @@ export default function Profile() {
               <Button
                 variant="contained"
                 startIcon={<Edit />}
-                onClick={() => navigate("/edit-profile")}
+                onClick={() => navigate("/profile/edit")}
               >
                 Edit Profil
               </Button>

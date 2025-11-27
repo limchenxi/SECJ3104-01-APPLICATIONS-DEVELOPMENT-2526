@@ -7,10 +7,16 @@ import {
   Req,
   NotFoundException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt.strategy';
 import { UsersService } from 'src/users/users.service';
+import { User } from 'src/users/schemas/user.schema';
+
+interface RequestWithUser extends Request {
+  user: User;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -25,12 +31,12 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Get("checkip")
+  @Get('checkip')
   async checkIP() {
-    const response = await fetch("https://api.ipify.org");
+    const response = await fetch('https://api.ipify.org');
     const ip = await response.text();
 
-    return {"ip": ip};
+    return { ip: ip };
   }
 
   @UseGuards(JwtAuthGuard)

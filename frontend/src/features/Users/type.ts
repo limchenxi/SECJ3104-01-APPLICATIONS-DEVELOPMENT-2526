@@ -5,7 +5,7 @@ export interface User {
   gender: "female" | "male";
   ic: string;
   phone?: string;
-  role: "guru" | "pentadbir" | "developer";
+  role: "guru" | "pentadbir" | "superadmin";
   profilePicture?: string;
 
   // additional User fields

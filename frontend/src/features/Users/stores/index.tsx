@@ -5,14 +5,14 @@ export interface UserItem {
   _id?: string; // for Datagrid
   name: string;
   email: string;
-  role: "GURU" | "PENTADBIR" | "DEVELOPER";
+  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
   ic: string;
   gender: string;
   phone?: string;
   profileImageUrl?: string;
   // Optional teaching assignments
-  subjects?: string[];
-  classes?: string[];
+  // subjects?: string[];
+  // classes?: string[];
 }
 
 export interface UsersState {

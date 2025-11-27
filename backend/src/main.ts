@@ -5,7 +5,6 @@ import { UsersService } from './users/users.service';
 import { PentadbirService } from './pentadbir/pentadbir.service';
 
 const ensureAdminUser = async (usersService: UsersService) => {
-
   const guruEmail = process.env.DEFAULT_ADMIN_EMAIL ?? 'admin@app.local';
   const existingGuru = await usersService.findByEmail(guruEmail);
   if (!existingGuru) {
@@ -15,7 +14,11 @@ const ensureAdminUser = async (usersService: UsersService) => {
     const ic = process.env.DEFAULT_ADMIN_IC ?? '000000000000';
     const genderEnv = process.env.DEFAULT_ADMIN_GENDER?.toLowerCase();
     const gender =
-      genderEnv === 'female' ? 'Female' : genderEnv === 'male' ? 'Male' : 'Male';
+      genderEnv === 'female'
+        ? 'Female'
+        : genderEnv === 'male'
+          ? 'Male'
+          : 'Male';
     const contactNumber = process.env.DEFAULT_ADMIN_CONTACT_NUMBER;
     const profilePicture = process.env.DEFAULT_ADMIN_PROFILE_PICTURE;
 
@@ -28,18 +31,18 @@ const ensureAdminUser = async (usersService: UsersService) => {
       gender,
       contactNumber,
       profilePicture,
-      subjects: ['Matematik', 'Bahasa Melayu'],
-      classes: ['5 Amanah', '5 Bestari'],
+      // subjects: ['Matematik', 'Bahasa Melayu'],
+      // classes: ['5 Amanah', '5 Bestari'],
     });
     Logger.log(`Default GURU user ensured: ${guruEmail}`, 'Bootstrap');
   }
   // If guru exists but no assignments, optionally patch them (idempotent)
-  else if (!existingGuru.subjects || existingGuru.subjects.length === 0) {
-    existingGuru.subjects = ['Matematik', 'Bahasa Melayu'];
-    existingGuru.classes = ['5 Amanah', '5 Bestari'];
-    await existingGuru.save();
-    Logger.log(`Default GURU assignments patched`, 'Bootstrap');
-  }
+  // else if (!existingGuru.subjects || existingGuru.subjects.length === 0) {
+  //   existingGuru.subjects = ['Matematik', 'Bahasa Melayu'];
+  //   existingGuru.classes = ['5 Amanah', '5 Bestari'];
+  //   await existingGuru.save();
+  //   Logger.log(`Default GURU assignments patched`, 'Bootstrap');
+  // }
 
   // Default PENTADBIR user
   const pentadbirEmail = 'pentadbir@app.local';
@@ -54,10 +57,12 @@ const ensureAdminUser = async (usersService: UsersService) => {
       gender: 'Male',
       contactNumber: '0123456789',
     });
-    Logger.log(`Default PENTADBIR user ensured: ${pentadbirEmail}`, 'Bootstrap');
+    Logger.log(
+      `Default PENTADBIR user ensured: ${pentadbirEmail}`,
+      'Bootstrap',
+    );
   }
 };
-
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

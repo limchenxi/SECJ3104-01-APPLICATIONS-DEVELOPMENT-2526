@@ -12,91 +12,55 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { NavLink } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
-import type { ReactNode } from "react";
 
-interface SidebarItem {
-  label: string;
-  to: string;
-}
+// Import menu config
+import { SidebarItem } from "./SidebarItem";
 
-interface SidebarProps {
-  items?: SidebarItem[];
-  header?: ReactNode;
-  footer?: ReactNode;
-  width?: number;
-}
-
-const guruSidebarItems: SidebarItem[] = [
-  { label: "Dashboard", to: "/dashboard" },
-  { label: "Cerapan Kendiri", to: "/cerapan" },
-  { label: "Kedatangan", to: "/kedatangan" },
-  { label: "RPH Generator", to: "/rph" },
-  { label: "AI Quiz", to: "/quiz" },
-  { label: "Profile", to: "/profile" },
-];
-
-const pentadbirSidebarItems: SidebarItem[] = [
-  { label: "Halaman Utama", to: "/pentadbir" },
-  { label: "Kedatangan", to: "/pentadbir/kedatangan" },
-  { label: "Cerapan", to: "/pentadbir/cerapan" },
-  { label: "Template Rubrik", to: "/pentadbir/template-rubrik" },
-  { label: "Profil", to: "/pentadbir/profil" },
-];
-
-const devSidebarItems: SidebarItem[] = [
-  { label: "AI Management", to: "/ai" },
-  { label: "User List", to: "/users" },
-];
-
-export default function Sidebar({
-  header,
-  footer,
-  width = 240,
-}: SidebarProps) {
+export default function Sidebar() {
   const { user } = useAuth();
   const role = user?.role;
 
+  const menu = SidebarItem[role] || [];
+
   const headerTitle =
-    role === "DEVELOPER"
-      ? "Developer Panel"
+    role === "SUPERADMIN"
+      ? "Super Admin Panel"
       : role === "PENTADBIR"
       ? "Panel Pentadbir"
       : "Panel Guru";
 
-  // ----------------------------------------------------------
-  // NORMAL USER (guru/pentadbir)
-  // ----------------------------------------------------------
-  if (role !== "DEVELOPER") {
-    const items =
-      role === "PENTADBIR" ? pentadbirSidebarItems : guruSidebarItems;
+  const width = 260;
 
-    return (
-      <Box
-        component="nav"
-        sx={{
-          width,
-          minHeight: "100vh",
-          borderRight: 1,
-          borderColor: "divider",
-          display: "flex",
-          flexDirection: "column",
-          bgcolor: "background.paper",
-        }}
-      >
-        {/* Header */}
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {headerTitle}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {user?.name}
-          </Typography>
-        </Box>
+  return (
+    <Box
+      component="nav"
+      sx={{
+        width,
+        minHeight: "100vh",
+        borderRight: 1,
+        borderColor: "divider",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.paper",
+        overflow: "hidden",
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {headerTitle}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {user?.name}
+        </Typography>
+      </Box>
 
-        <Divider />
+      <Divider />
 
+      {/* NORMAL ROLES: Guru / Pentadbir */}
+      {role !== "SUPERADMIN" && (
         <List sx={{ flexGrow: 1 }}>
-          {items.map((item) => (
+          {menu.map((item) => (
             <ListItemButton
               key={item.to}
               component={NavLink}
@@ -112,53 +76,40 @@ export default function Sidebar({
             </ListItemButton>
           ))}
         </List>
+      )}
 
-        <ListItemButton component={NavLink} to="/logout">
-          <ListItemText primary="Logout" />
-        </ListItemButton>
-      </Box>
-    );
-  }
-
-  // ----------------------------------------------------------
-  // DEVELOPER SIDEBAR (with accordion)
-  // ----------------------------------------------------------
-  return (
-    <Box
-      component="nav"
-      sx={{
-        width,
-        minHeight: "100vh",
-        borderRight: 1,
-        borderColor: "divider",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "background.paper",
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Developer Panel
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {user?.name}
-        </Typography>
-      </Box>
-      <Divider />
-
-      <List sx={{ flexGrow: 1 }}>
-        {/* Guru Accordion */}
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={600}>Guru Module</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            {guruSidebarItems.map((item) => (
+      {/* SUPERADMIN ROLE: with accordions */}
+      {role === "SUPERADMIN" && (
+        <List sx={{ flexGrow: 1 }}>
+          {menu.map((item, idx) =>
+            item.children ? (
+              <Accordion key={idx} disableGutters elevation={0}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography fontWeight={600}>{item.label}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {item.children.map((c, i) => (
+                    <ListItemButton
+                      key={i}
+                      component={NavLink}
+                      to={c.to}
+                      sx={{
+                        "&.active": {
+                          bgcolor: "primary.main",
+                          color: "primary.contrastText",
+                        },
+                      }}
+                    >
+                      <ListItemText primary={c.label} />
+                    </ListItemButton>
+                  ))}
+                </AccordionDetails>
+              </Accordion>
+            ) : (
               <ListItemButton
+                key={idx}
                 component={NavLink}
                 to={item.to}
-                key={item.to}
                 sx={{
                   "&.active": {
                     bgcolor: "primary.main",
@@ -168,61 +119,15 @@ export default function Sidebar({
               >
                 <ListItemText primary={item.label} />
               </ListItemButton>
-            ))}
-          </AccordionDetails>
-        </Accordion>
+            )
+          )}
+        </List>
+      )}
 
-        {/* Pentadbir Accordion */}
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={600}>Pentadbir Module</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            {pentadbirSidebarItems.map((item) => (
-              <ListItemButton
-                component={NavLink}
-                to={item.to}
-                key={item.to}
-                sx={{
-                  "&.active": {
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                  },
-                }}
-              >
-                <ListItemText primary={item.label} />
-              </ListItemButton>
-            ))}
-          </AccordionDetails>
-        </Accordion>
-
-        {/* Dev Tools */}
-        <Divider sx={{ my: 1 }} />
-
-        <Typography px={2} py={1} fontWeight={600} fontSize={14}>
-          Developer Tools
-        </Typography>
-
-        {devSidebarItems.map((item) => (
-          <ListItemButton
-            component={NavLink}
-            to={item.to}
-            key={item.to}
-            sx={{
-              "&.active": {
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-              },
-            }}
-          >
-            <ListItemText primary={item.label} />
-          </ListItemButton>
-        ))}
-      </List>
-
-      <ListItemButton component={NavLink} to="/logout">
+      {/* Logout */}
+      {/* <ListItemButton component={NavLink} to="/logout">
         <ListItemText primary="Logout" />
-      </ListItemButton>
+      </ListItemButton> */}
     </Box>
   );
 }

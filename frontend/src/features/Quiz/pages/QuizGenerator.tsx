@@ -93,7 +93,7 @@ function CustomTabPanel(props) {
   );
 }
 
-export default function QuizFlashcardPage() {
+export default function QuizGenerator() {
   const theme = useTheme();
   const [tabValue, setTabValue] = useState(0); // 0: Quiz, 1: Flashcards, 2: Video
   const [quizGenerated, setQuizGenerated] = useState(false);

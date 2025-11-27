@@ -10,11 +10,15 @@ import {
   MenuItem,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { loadProfile, profileStore, updateProfile } from "../store";
-import { enqueueSnackbar } from "notistack";
+
+import { useSnackbar } from "notistack";
+import { useStore } from "@tanstack/react-store";
+import { profileStore } from "../store";
+import { loadProfile, updateProfile } from "../api";
 
 export default function EditProfile() {
-  const { data: profile, isLoading } = profileStore.state;
+  const profileState = useStore(profileStore);
+  const { data: profile, isLoading } = profileState;
 
   const [form, setForm] = useState({
     name: "",
@@ -27,6 +31,7 @@ export default function EditProfile() {
   });
 
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // Load profile
   useEffect(() => {
@@ -61,14 +66,14 @@ export default function EditProfile() {
       gender: form.gender as "Male" | "Female",
       ic: form.ic,
       contactNumber: form.contactNumber,
-      role: form.role as "GURU" | "PENTADBIR" | "DEVELOPER",
+      role: form.role as "GURU" | "PENTADBIR" | "SUPERADMIN",
       profilePicture: form.profilePicture,
     });
 
     enqueueSnackbar("Profil berjaya dikemas kini!", { variant: "success" });
     navigate("/profile");
 
-  } catch (error) {
+  } catch {
     enqueueSnackbar("Gagal menyimpan perubahan", { variant: "error" });
   }
 };

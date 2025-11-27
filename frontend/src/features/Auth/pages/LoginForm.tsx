@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Box, Button, TextField, Typography, Paper } from "@mui/material";
+import axios, { AxiosError } from "axios";
 import { resolveRedirectPath } from "../../../utils/navigation";
 import useAuth from "../../../hooks/useAuth";
 
@@ -23,7 +24,11 @@ export default function Login() {
       
       // Role-based redirect
       if (response?.user?.role === 'PENTADBIR') {
-        navigate('/pentadbir', { replace: true });
+        navigate('/dashboard/pentadbir', { replace: true });
+      } else if (response?.user?.role === 'GURU') {
+        navigate('/dashboard/guru', { replace: true });
+      } else if (response?.user?.role === 'SUPERADMIN') {
+        navigate('/superadmin/dashboard', { replace: true });
       } else {
         navigate(redirectTo, { replace: true });
       }
