@@ -51,31 +51,43 @@ export default function RPH() {
   }
 
   return (
-    <Box sx={{ display: "flex", gap: 3 }}>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Box>
+        <Typography variant="h4" sx={{ mb: 0.5 }}>
+          🧠 eRPH - Penjana Rancangan Pengajaran
+        </Typography>
+        <Typography color="text.secondary">
+          Jana Rancangan Pengajaran Harian (RPH) dengan bantuan kecerdasan buatan
+        </Typography>
+        <br /><br />
+      </Box>
+      
+      <Box sx={{ display: "flex", gap: 3 }}>
 
-      {/* left：History */}
-      <History
-        ref={historyRef}
-        onSelect={(item) => {
-          navigate(`/rph?id=${item._id}`);
-        }}
-        onDelete={handleDelete}
-      />
+        {/* left：History */}
+        <History
+          ref={historyRef}
+          onSelect={(item) => {
+            navigate(`/rph?id=${item._id}`);
+          }}
+          onDelete={handleDelete}
+        />
 
-      {/* right：Display */}
-      <Box sx={{ flex: 1 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Typography variant="h5">Editor RPH</Typography>
+        {/* right：Display */}
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Typography variant="h5">Editor RPH</Typography>
 
-          <Button
-            variant="contained"
-            onClick={() => navigate("/rph/new")}
-          >
-            + RPH Baharu
-          </Button>
+            <Button
+              variant="contained"
+              onClick={() => navigate("/rph/new")}
+            >
+              + RPH Baharu
+            </Button>
+          </Box>
+
+          <Display data={selected} onSave={handleSave} />
         </Box>
-
-        <Display data={selected} onSave={handleSave} />
       </Box>
     </Box>
   );
