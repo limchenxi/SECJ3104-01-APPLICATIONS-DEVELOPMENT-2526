@@ -1,11 +1,16 @@
-import { useState } from "react";
-import { Box, Card, CardContent, Typography, Divider } from "@mui/material";
-import type { RPHRequest, RPHResponse } from "../type";
+import { useState, useRef } from "react";
+import { Box, Typography } from "@mui/material";
+import type { RPHRequest, RPHResponse, RPH } from "../type";
 import RPHForm from "./Form";
+import History from "./History";
+import Display from "./Display";
 
 export default function RPHGenerator() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RPHResponse | null>(null);
+
+  // 用来刷新 History
+  const historyRef = useRef<{ refresh: () => void } | null>(null);
 
   async function handleGenerate(values: RPHRequest) {
     setLoading(true);
@@ -20,6 +25,9 @@ export default function RPHGenerator() {
 
       const data = await res.json();
       setResult(data);
+
+      // new record created → refresh history
+      historyRef.current?.refresh();
     } catch (error) {
       console.error("Failed to generate RPH", error);
       alert("Error generating RPH");
@@ -28,49 +36,51 @@ export default function RPHGenerator() {
     setLoading(false);
   }
 
+  // ---- When user edits inside Display and clicks SAVE ----
+  async function handleSave(updated: RPH) {
+    const res = await fetch(`/api/rph/${updated._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    });
+
+    const saved = await res.json();
+    setResult(saved);
+
+    // refresh history because title/date may change
+    historyRef.current?.refresh();
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Padam RPH ini?")) return;
+
+    await fetch(`/api/rph/${id}`, { method: "DELETE" });
+
+    setResult(null);
+    historyRef.current?.refresh();
+  }
+
   return (
     <Box sx={{ display: "flex", gap: 3 }}>
+      {/* History */}
+      <History
+        ref={historyRef}
+        onSelect={(item) => setResult(item)}
+        onDelete={handleDelete}
+      />
+
       {/* FORM */}
       <Box sx={{ width: "400px" }}>
         <Typography variant="h5" gutterBottom>
           Generator RPH
         </Typography>
 
-        <RPHForm
-          isSubmitting={loading}
-          onSubmit={handleGenerate}
-        />
+        <RPHForm isSubmitting={loading} onSubmit={handleGenerate} />
       </Box>
 
-      {/* RESULT */}
+      {/* Display (View + Edit + PDF Export) */}
       <Box sx={{ flex: 1 }}>
-        {result ? (
-          <Card variant="outlined" sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Typography variant="h6">{result.title}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {result.date} • {result.duration}
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
-
-              {result.sections.map((sec, index) => (
-                <Box key={index} sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {sec.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                    {sec.content}
-                  </Typography>
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
-        ) : (
-          <Typography color="text.secondary">
-            Hasil RPH akan dipaparkan di sini...
-          </Typography>
-        )}
+        <Display data={result} onSave={handleSave} />
       </Box>
     </Box>
   );

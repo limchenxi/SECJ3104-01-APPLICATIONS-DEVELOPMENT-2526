@@ -13,8 +13,12 @@ import {
 } from "@mui/material";
 import type { RPHRequest } from "../type";
 
+interface RPHDocument extends RPHRequest {
+    _id?: string; // Add ID for edit mode
+}
+
 interface RPHFormProps {
-  initialValues?: RPHRequest;
+  initialValues?: RPHRequest | RPHDocument;
   isSubmitting?: boolean;
   onSubmit: (values: RPHRequest) => void | Promise<void>;
 }
@@ -29,15 +33,15 @@ const defaultValues: RPHRequest = {
 };
 
 export default function RPHForm({
-  initialValues = defaultValues,
+  initialValues,
   isSubmitting = false,
   onSubmit,
 }: RPHFormProps) {
-  const [form, setForm] = useState<RPHRequest>(initialValues);
+  const [form, setForm] = useState<RPHRequest>(initialValues|| defaultValues);
 
   // Reset form when initialValues changes (for Edit mode)
   useEffect(() => {
-    setForm(initialValues);
+    setForm(initialValues || defaultValues);
   }, [initialValues]);
 
   const handleChange = (
@@ -52,6 +56,9 @@ export default function RPHForm({
     event.preventDefault();
     await onSubmit(form);
   };
+
+  const isEditMode = !!(form as RPHDocument)?._id;
+
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
@@ -71,6 +78,7 @@ export default function RPHForm({
             <MenuItem value="Sains">Sains</MenuItem>
             <MenuItem value="Bahasa Melayu">Bahasa Melayu</MenuItem>
             <MenuItem value="Bahasa Inggeris">Bahasa Inggeris</MenuItem>
+            <MenuItem value="Sejarah">Sejarah</MenuItem>
           </Select>
         </FormControl>
 
@@ -138,8 +146,8 @@ export default function RPHForm({
           </Grid>
         </Grid>
 
-        <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-          {isSubmitting ? "Menjana..." : "Jana RPH"}
+        <Button type="submit" variant="contained" size="large" disabled={isSubmitting|| !form.subject || !form.level || !form.topic || !form.objectives}>
+          {isSubmitting ? "Memproses..." : (isEditMode ? "Simpan Perubahan" : "Jana & Simpan RPH")}
         </Button>
       </Stack>
     </Box>

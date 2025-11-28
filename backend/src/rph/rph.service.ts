@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -10,7 +11,7 @@ import { CreateRphDto } from './dto/create-rph.dto';
 import { UpdateRphDto } from './dto/update-rph.dto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RequestRphDto } from './dto/request-rph.dto';
-
+import { RPHResponseDto } from './dto/response-rph.dto';
 @Injectable()
 export class RphService {
   private model;
@@ -75,10 +76,10 @@ Hasilkan STRICT JSON tanpa ayat tambahan:
 
 {
   "title": "",
-  "date": "",
-  "duration": "",
+  "date": "Tarikh: ${new Date().toLocaleDateString('ms-MY')}",
+  "duration": "${dto.duration || '60 Minit'}",
   "sections": [
-    { "title": "", "content": "" }
+    { "title": "Set Induksi (5 minit)", "content": "" }
   ]
 }
 `;
@@ -94,14 +95,29 @@ Hasilkan STRICT JSON tanpa ayat tambahan:
 
       if (start === -1 || end === -1) {
         console.error('❌ Gemini returned non-JSON:', raw);
-        throw new InternalServerErrorException('AI returned invalid JSON');
+        throw new BadRequestException('AI returned invalid JSON format');
       }
 
       const jsonString = raw.slice(start, end);
+      const aiResult: RPHResponseDto = JSON.parse(jsonString);
+      const simulatedUserId = 'SimulatedTeacherId123';
 
-      return JSON.parse(jsonString);
+      const fullDocument: Omit<CreateRphDto, '_id'> = {
+        ...dto, // User input fields
+        ...aiResult, // AI generated fields (title, date, sections)
+        userId: simulatedUserId,
+        createdAt: Date.now(),
+      };
+
+      // 4. Save the complete document
+      const savedDoc = await this.rphModel.create(fullDocument);
+      return savedDoc;
+      // return JSON.parse(jsonString);
     } catch (err) {
       console.error('❌ generateRPH ERROR:', err);
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
       throw new InternalServerErrorException('Failed to generate RPH');
     }
   }

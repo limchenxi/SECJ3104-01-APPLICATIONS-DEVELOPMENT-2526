@@ -1,6 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsString, IsArray, ValidateNested, IsNumber } from 'class-validator';
-import { RequestRphDto } from './request-rph.dto';
+import { IsString, IsArray, ValidateNested } from 'class-validator';
 
 class SectionDto {
   @IsString()
@@ -10,7 +9,7 @@ class SectionDto {
   content: string;
 }
 
-export class CreateRphDto extends RequestRphDto {
+export class RPHResponseDto {
   @IsString()
   title: string;
 
@@ -18,10 +17,7 @@ export class CreateRphDto extends RequestRphDto {
   date: string;
 
   @IsString()
-  userId: string; // Mandatory for tracking who created it
-
-  @IsNumber()
-  createdAt: number; // Use number for sorting
+  duration: string;
 
   @IsArray()
   @ValidateNested({ each: true })

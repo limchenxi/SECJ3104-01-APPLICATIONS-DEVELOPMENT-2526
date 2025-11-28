@@ -30,9 +30,6 @@ export class RPH {
   @Prop({ required: true })
   date: string;
 
-  @Prop()
-  generatedAt: string;
-
   @Prop({
     type: [
       {
@@ -45,6 +42,13 @@ export class RPH {
     title: string;
     content: string;
   }>;
+
+  // --- Tracking/History Fields ---
+  @Prop({ required: true })
+  userId: string;
+
+  @Prop({ required: true, type: Number })
+  createdAt: number; // Unix timestamp for easy sorting
 }
 
 export const RphSchema = SchemaFactory.createForClass(RPH);
