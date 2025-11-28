@@ -60,29 +60,29 @@ export class RphService {
 
   async generateRPH(dto: RequestRphDto) {
     const prompt = `
-Anda adalah guru pakar pendidikan Malaysia.
-Jana sebuah Rancangan Pengajaran Harian (RPH) berdasarkan maklumat berikut:
+    Anda adalah guru pakar pendidikan Malaysia.
+    Jana sebuah Rancangan Pengajaran Harian (RPH) berdasarkan maklumat berikut:
 
-Subjek: ${dto.subject}
-Tahun: ${dto.level}
-Topik: ${dto.topic}
-Objektif Pembelajaran:
-${dto.objectives}
+    Subjek: ${dto.subject}
+    Tahun: ${dto.level}
+    Topik: ${dto.topic}
+    Objektif Pembelajaran:
+    ${dto.objectives}
 
-Tempoh Masa: ${dto.duration}
-BBM: ${dto.materials}
+    Tempoh Masa: ${dto.duration}
+    BBM: ${dto.materials}
 
-Hasilkan STRICT JSON tanpa ayat tambahan:
+    Hasilkan STRICT JSON tanpa ayat tambahan:
 
-{
-  "title": "",
-  "date": "Tarikh: ${new Date().toLocaleDateString('ms-MY')}",
-  "duration": "${dto.duration || '60 Minit'}",
-  "sections": [
-    { "title": "Set Induksi (5 minit)", "content": "" }
-  ]
-}
-`;
+    {
+      "title": "",
+      "date": "Tarikh: ${new Date().toLocaleDateString('ms-MY')}",
+      "duration": "${dto.duration || '60 Minit'}",
+      "sections": [
+        { "title": "Set Induksi (5 minit)", "content": "" }
+      ]
+    }
+    `;
 
     try {
       const result = await this.model.generateContent(prompt);

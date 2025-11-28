@@ -78,7 +78,6 @@ export default function RPHForm({
             <MenuItem value="Sains">Sains</MenuItem>
             <MenuItem value="Bahasa Melayu">Bahasa Melayu</MenuItem>
             <MenuItem value="Bahasa Inggeris">Bahasa Inggeris</MenuItem>
-            <MenuItem value="Sejarah">Sejarah</MenuItem>
           </Select>
         </FormControl>
 

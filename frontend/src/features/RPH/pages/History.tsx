@@ -8,7 +8,6 @@ import {
   Divider,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import type { RPH } from "../type";
 
 interface Props {

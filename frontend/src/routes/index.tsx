@@ -36,8 +36,9 @@ const KedatanganPage = lazy(() =>
 // }))
 import("../features/Kedatangan/pages/Kedatangan")
 );
+const RPH = lazy(() => import("../features/RPH/pages/index"));
 const RPHGenerator = lazy(
-  () => import("../features/RPH/pages/RPH_Generator")
+  () => import("../features/RPH/pages/New")
 );
 const QuizGenerator = lazy(
   () => import("../features/Quiz/pages/QuizGenerator")
@@ -164,6 +165,14 @@ export default function AppRoutes() {
           />
           <Route
             path="/rph"
+            element={
+              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
+                <RPH />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/rph/new"
             element={
               <RoleGuard roles={["SUPERADMIN", "GURU"]}>
                 <RPHGenerator />

@@ -9,7 +9,6 @@ export default function RPHGenerator() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RPHResponse | null>(null);
 
-  // 用来刷新 History
   const historyRef = useRef<{ refresh: () => void } | null>(null);
 
   async function handleGenerate(values: RPHRequest) {
