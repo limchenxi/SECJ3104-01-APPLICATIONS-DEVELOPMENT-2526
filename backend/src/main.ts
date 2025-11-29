@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { UsersService } from './users/users.service';
 import { PentadbirService } from './pentadbir/pentadbir.service';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const ensureAdminUser = async (usersService: UsersService) => {
   const guruEmail = process.env.DEFAULT_ADMIN_EMAIL ?? 'admin@app.local';

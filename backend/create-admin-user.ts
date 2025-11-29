@@ -8,7 +8,7 @@ import { User, UserSchema } from './src/users/schemas/user.schema';
 @Module({
   imports: [
     MongooseModule.forRoot('mongodb://localhost:27017/your-app-db'),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   providers: [UsersService],
 })
@@ -28,14 +28,14 @@ async function createAdminUser() {
       ic: '123456789012',
       gender: 'Male',
       role: 'PENTADBIR',
-      contactNumber: '0123456789'
+      contactNumber: '0123456789',
     });
 
     console.log('✅ Admin user created successfully!');
     console.log('📧 Email: admin@pentadbir.edu.my');
     console.log('🔒 Password: admin123');
     console.log('👤 Role: PENTADBIR');
-    
+
     await app.close();
   } catch (error) {
     if (error.message?.includes('already exists')) {
