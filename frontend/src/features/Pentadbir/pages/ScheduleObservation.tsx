@@ -166,41 +166,70 @@ export default function ScheduleObservation() {
         return;
       }
 
-      // Create evaluation using the API
-      const record = await startEvaluation({
-        teacherId: selectedTeacher.teacherId,
-        templateId: template._id,
-        period: `${formData.scheduledDate} ${formData.scheduledTime}`,
-        subject: formData.subject,
-        class: formData.class,
-      });
-
-      // Update local state
-      setSchedules((prev) =>
-        prev.map((s) =>
-          s.id === selectedTeacher.id
-            ? {
-                ...s,
-                evaluationId: record._id,
-                observationType: formData.observationType,
-                scheduledDate: formData.scheduledDate,
-                scheduledTime: formData.scheduledTime,
-                subject: formData.subject,
-                class: formData.class,
-                observerName: formData.observerName,
-                templateRubric: formData.templateRubric,
-                notes: formData.notes,
-                status: "Dijadualkan",
-                updatedAt: new Date().toISOString(),
-              }
-            : s
-        )
-      );
+      if (selectedTeacher.evaluationId) {
+        // Update schedule for existing evaluation
+        await client.put(`/cerapan/schedule/${selectedTeacher.evaluationId}`, {
+          scheduledDate: formData.scheduledDate,
+          scheduledTime: formData.scheduledTime,
+          observerName: formData.observerName,
+          templateRubric: formData.templateRubric,
+          notes: formData.notes,
+          observationType: formData.observationType,
+        });
+        setSchedules((prev) =>
+          prev.map((s) =>
+            s.id === selectedTeacher.id
+              ? {
+                  ...s,
+                  observationType: formData.observationType,
+                  scheduledDate: formData.scheduledDate,
+                  scheduledTime: formData.scheduledTime,
+                  subject: formData.subject,
+                  class: formData.class,
+                  observerName: formData.observerName,
+                  templateRubric: formData.templateRubric,
+                  notes: formData.notes,
+                  status: "Dijadualkan",
+                  updatedAt: new Date().toISOString(),
+                }
+              : s
+          )
+        );
+      } else {
+        // Create evaluation using the API
+        const record = await startEvaluation({
+          teacherId: selectedTeacher.teacherId,
+          templateId: template._id,
+          period: `${formData.scheduledDate} ${formData.scheduledTime}`,
+          subject: formData.subject,
+          class: formData.class,
+        });
+        setSchedules((prev) =>
+          prev.map((s) =>
+            s.id === selectedTeacher.id
+              ? {
+                  ...s,
+                  evaluationId: record._id,
+                  observationType: formData.observationType,
+                  scheduledDate: formData.scheduledDate,
+                  scheduledTime: formData.scheduledTime,
+                  subject: formData.subject,
+                  class: formData.class,
+                  observerName: formData.observerName,
+                  templateRubric: formData.templateRubric,
+                  notes: formData.notes,
+                  status: "Dijadualkan",
+                  updatedAt: new Date().toISOString(),
+                }
+              : s
+          )
+        );
+      }
 
       setModalOpen(false);
       setError("");
     } catch (err) {
-      console.error("Error creating evaluation:", err);
+      console.error("Error creating/updating evaluation:", err);
       setError("Gagal menjadualkan cerapan. Sila cuba lagi.");
     }
   };

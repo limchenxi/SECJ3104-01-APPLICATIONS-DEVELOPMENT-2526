@@ -4,12 +4,15 @@ import { Model } from 'mongoose';
 import { TeachingAssignment } from './teaching-assignment.schema';
 import { CreateTeachingAssignmentDto } from './dto/create-teaching-assignment.dto';
 import { UpdateTeachingAssignmentDto } from './dto/update-teaching-assignment.dto';
+import { Cerapan } from '../cerapan/cerapan.schema';
 
 @Injectable()
 export class TeachingAssignmentService {
   constructor(
     @InjectModel(TeachingAssignment.name)
     private readonly assignmentModel: Model<TeachingAssignment>,
+    @InjectModel(Cerapan.name)
+    private readonly cerapanModel: Model<Cerapan>,
   ) {}
 
   async create(dto: CreateTeachingAssignmentDto): Promise<TeachingAssignment> {
@@ -19,8 +22,6 @@ export class TeachingAssignmentService {
 
   async findAll(
     filter: Partial<{
-      academicYear: number;
-      term: string;
       teacherId: string;
       subject: string;
       class: string;
@@ -54,14 +55,42 @@ export class TeachingAssignmentService {
 
   async getForTeacher(
     teacherId: string,
-    academicYear?: number,
-    term?: string,
   ): Promise<TeachingAssignment[]> {
     const query: any = { teacherId, active: true };
 
-    if (academicYear) query.academicYear = academicYear;
-    if (term) query.term = term;
-
     return this.assignmentModel.find(query).sort({ subject: 1, class: 1 }).exec();
+  }
+
+  async getAvailableForCerapan(
+    teacherId: string,
+    period: string,
+  ): Promise<{ subject: string; class: string }[]> {
+    // Get all active teaching assignments for the teacher
+    const assignments = await this.assignmentModel
+      .find({ teacherId, active: true })
+      .select('subject class')
+      .exec();
+
+    // Get all completed cerapan for this teacher in this period
+    const completedCerapan = await this.cerapanModel
+      .find({
+        teacherId,
+        period,
+        'self_evaluation.status': 'submitted',
+      })
+      .select('subject class')
+      .exec();
+
+    // Create a set of completed combinations
+    const completedSet = new Set(
+      completedCerapan.map((c) => `${c.subject}|${c.class}`),
+    );
+
+    // Filter out completed assignments
+    const available = assignments
+      .filter((a) => !completedSet.has(`${a.subject}|${a.class}`))
+      .map((a) => ({ subject: a.subject, class: a.class }));
+
+    return available;
   }
 }

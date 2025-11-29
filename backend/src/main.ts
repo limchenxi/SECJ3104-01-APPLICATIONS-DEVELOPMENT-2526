@@ -74,7 +74,12 @@ async function bootstrap() {
   const pentadbirService = app.get(PentadbirService);
   await pentadbirService.ensureDefaultTapakTemplate();
   const port = process.env.PORT ?? 3000;
-  app.enableCors();
+  app.enableCors({
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"], // add your frontend URLs here
+    credentials: true,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: "Content-Type,Authorization",
+  });
   await app.listen(port);
   Logger.log(`App running on port ${port}`);
 }

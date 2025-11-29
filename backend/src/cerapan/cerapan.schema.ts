@@ -128,3 +128,4 @@ export class Cerapan extends Document {
 }
 
 export const CerapanSchema = SchemaFactory.createForClass(Cerapan);
+CerapanSchema.index({ teacherId: 1, subject: 1, class: 1 }, { unique: true });

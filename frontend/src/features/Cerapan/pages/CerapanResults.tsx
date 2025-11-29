@@ -397,13 +397,10 @@ export default function CerapanResults() {
                       <th style={{ textAlign: 'right', padding: 8 }}>Weight</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Full Mark</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri %</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Weighted</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 %</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Weighted</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 %</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Weighted</th>
                     </tr>
                   </thead>
@@ -414,13 +411,10 @@ export default function CerapanResults() {
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weight?.toFixed(0) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark?.toFixed(2) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percentSelf?.toFixed(2) ?? 0}%</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weightedSelf?.toFixed(2) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent1?.toFixed(2) ?? 0}%</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted1?.toFixed(2) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent2?.toFixed(2) ?? 0}%</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted2?.toFixed(2) ?? 0}</td>
                       </tr>
                     ))}
@@ -431,13 +425,10 @@ export default function CerapanResults() {
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>100</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum?.toFixed(2) ?? 0}</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfPercent?.toFixed(2) ?? 0}%</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedSelfTotal?.toFixed(2) ?? 0}</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1Percent?.toFixed(2) ?? 0}%</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation1Total?.toFixed(2) ?? 0}</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2Percent?.toFixed(2) ?? 0}%</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation2Total?.toFixed(2) ?? 0}</td>
                     </tr>
                   </tfoot>

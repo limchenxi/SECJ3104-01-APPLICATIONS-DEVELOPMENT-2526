@@ -30,6 +30,37 @@ const SUBCATEGORY_WEIGHT_MAP: Record<string, number> = {
 
 @Injectable()
 export class CerapanService {
+    /**
+     * Admin: Start Cerapan 1 for an evaluation (set status and prepare observation_1)
+     */
+    async startObservation1ByAdmin(evaluationId: string): Promise<Cerapan> {
+      const evaluation = await this.cerapanModel.findById(evaluationId);
+      if (!evaluation) {
+        throw new NotFoundException('Evaluation not found');
+      }
+      // Only allow if status is pending_self_evaluation or pending_observation_1
+      if (evaluation.status !== 'pending_self_evaluation' && evaluation.status !== 'pending_observation_1') {
+        throw new BadRequestException(`Evaluation is not ready for Cerapan 1. Current status: ${evaluation.status}`);
+      }
+      // Set status to pending_observation_1 and prepare observation_1
+      evaluation.status = 'pending_observation_1';
+      if (!evaluation.observation_1) {
+        evaluation.observation_1 = {
+          status: 'pending',
+          marks: [],
+          submittedAt: new Date(0),
+          answers: [],
+          administratorId: undefined,
+        };
+      } else {
+        evaluation.observation_1.status = 'pending';
+        evaluation.observation_1.submittedAt = new Date(0);
+        evaluation.observation_1.answers = [];
+        evaluation.observation_1.administratorId = undefined;
+      }
+      await evaluation.save();
+      return evaluation;
+    }
   constructor(
     @InjectModel(Cerapan.name) private cerapanModel: Model<Cerapan>,
     private readonly pentadbirService: PentadbirService,
@@ -38,6 +69,20 @@ export class CerapanService {
 
 
   async createEvaluation(dto: CreateEvaluationDto): Promise<Cerapan> {
+    // Check if cerapan already exists for this teacher, subject, class, and period
+    const existing = await this.cerapanModel.findOne({
+      teacherId: dto.teacherId,
+      period: dto.period,
+      subject: dto.subject,
+      class: dto.class,
+    });
+
+    if (existing) {
+      throw new BadRequestException(
+        `Cerapan untuk ${dto.subject} - ${dto.class} dalam tempoh ${dto.period} sudah wujud.`,
+      );
+    }
+
     const template = await this.pentadbirService.getTemplateById(dto.templateId);
     if (!template) {
       throw new NotFoundException('Template rubric not found');
@@ -58,7 +103,7 @@ export class CerapanService {
           });
         }
       }
-    }
+3    }
 
     const newEvaluation = new this.cerapanModel({
       teacherId: dto.teacherId,

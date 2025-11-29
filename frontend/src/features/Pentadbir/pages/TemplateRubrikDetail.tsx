@@ -261,14 +261,13 @@ export default function TemplateRubrikDetail() {
   const handleAddItem = (category: RubricCategory, subCategory: RubricSubCategory) => {
     setSelectedCategory(category);
     setSelectedSubCategory(subCategory);
-    const defaultScoreDescriptions: ScoreDescription[] = [
-      { score: 4, label: "Cemerlang", description: "" },
-      { score: 3, label: "Baik", description: "" },
-      { score: 2, label: "Sederhana", description: "" },
-      { score: 1, label: "Lemah", description: "" },
-      { score: 0, label: "Tidak Memuaskan", description: "" },
-    ];
-    setItemForm({ id: "", text: "", maxScore: template?.scaleSkor || 4, scoreDescriptions: defaultScoreDescriptions });
+    const scale = template?.scaleSkor || 4;
+    const defaultScoreDescriptions: ScoreDescription[] = Array.from({ length: scale + 1 }, (_, i) => ({
+      score: scale - i,
+      label: scale - i === scale ? "Cemerlang" : scale - i === scale - 1 ? "Baik" : scale - i === scale - 2 ? "Sederhana" : scale - i === 1 ? "Lemah" : "Tidak Memuaskan",
+      description: ""
+    })).sort((a, b) => b.score - a.score);
+    setItemForm({ id: "", text: "", maxScore: scale, scoreDescriptions: defaultScoreDescriptions });
     setEditingItem(null);
     setOpenItemDialog(true);
   };
@@ -276,18 +275,17 @@ export default function TemplateRubrikDetail() {
   const handleEditItem = (category: RubricCategory, subCategory: RubricSubCategory, item: RubricItem) => {
     setSelectedCategory(category);
     setSelectedSubCategory(subCategory);
-    const defaultScoreDescriptions: ScoreDescription[] = [
-      { score: 4, label: "Cemerlang", description: "" },
-      { score: 3, label: "Baik", description: "" },
-      { score: 2, label: "Sederhana", description: "" },
-      { score: 1, label: "Lemah", description: "" },
-      { score: 0, label: "Tidak Memuaskan", description: "" },
-    ];
+    const scale = template?.scaleSkor || 4;
+    const defaultScoreDescriptions: ScoreDescription[] = Array.from({ length: scale + 1 }, (_, i) => ({
+      score: scale - i,
+      label: scale - i === scale ? "Cemerlang" : scale - i === scale - 1 ? "Baik" : scale - i === scale - 2 ? "Sederhana" : scale - i === 1 ? "Lemah" : "Tidak Memuaskan",
+      description: ""
+    })).sort((a, b) => b.score - a.score);
     setItemForm({
       id: item.id,
       text: item.text,
       maxScore: item.maxScore,
-      scoreDescriptions: item.scoreDescriptions || defaultScoreDescriptions
+      scoreDescriptions: item.scoreDescriptions && item.scoreDescriptions.length === scale + 1 ? item.scoreDescriptions : defaultScoreDescriptions
     });
     setEditingItem(item);
     setOpenItemDialog(true);
@@ -706,15 +704,7 @@ export default function TemplateRubrikDetail() {
               onChange={(e) => setItemForm(prev => ({ ...prev, text: e.target.value }))}
               placeholder="contoh: Menyediakan RPH yang mengandungi objektif yang boleh diukur dan aktiviti pembelajaran yang sesuai"
             />
-            <TextField
-              label="Markah Maksimum"
-              type="number"
-              fullWidth
-              value={itemForm.maxScore}
-              onChange={(e) => setItemForm(prev => ({ ...prev, maxScore: parseInt(e.target.value) || 0 }))}
-              inputProps={{ min: 1, max: template.scaleSkor }}
-              helperText={`Nilai antara 1 hingga ${template.scaleSkor}`}
-            />
+            {/* Removed Markah Maksimum field */}
             
             {/* Score Descriptions Section */}
             <Box>

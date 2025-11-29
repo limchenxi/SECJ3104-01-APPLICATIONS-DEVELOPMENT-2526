@@ -5,7 +5,6 @@ export const SidebarItem = {
     { label: "eRPH", to: "/rph" },
     { label: "AI Quiz", to: "/quiz" },
     { label: "Cerapan Kendiri", to: "/cerapan" },
-    { label: "Teaching Assignment", to: "/teaching-assignment" },
     { label: "Profile", to: "/profile" },
   ],
 

@@ -10,12 +10,7 @@ export class CreateTeachingAssignmentDto {
   @IsString()
   class: string;
 
-  @IsInt()
-  @Min(2000)
-  academicYear: number;
-
-  @IsString()
-  term: string;
+  // Removed academicYear and term
 
   @IsOptional()
   @IsBoolean()

@@ -1,3 +1,4 @@
+
 import {
   Controller,
   Get,
@@ -7,6 +8,8 @@ import {
   Body,
   UseGuards,
   Req,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { CerapanService } from './cerapan.service';
 import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
@@ -20,11 +23,27 @@ import { JwtAuthGuard } from '../auth/jwt.strategy';
 export class CerapanController {
   constructor(private readonly cerapanService: CerapanService) {}
 
+  // Pentadbir: Start Cerapan 1 after schedule is set
+  @Put('admin/start-observation-1/:id')
+  async startObservation1(@Param('id') evaluationId: string) {
+    return this.cerapanService.startObservation1ByAdmin(evaluationId);
+  }
+
   @Post('start')
   // @UseGuards(AdminAuthGuard) // You should protect this for Admins only
-  createEvaluation(@Body() dto: CreateEvaluationDto) {
+  async createEvaluation(@Body() dto: CreateEvaluationDto) {
     // Body will contain { teacherId, templateId, period }
-    return this.cerapanService.createEvaluation(dto);
+    try {
+      return await this.cerapanService.createEvaluation(dto);
+    } catch (err: any) {
+      if (err.code === 11000) {
+        throw new HttpException(
+          'Cerapan untuk guru, subjek dan kelas ini sudah wujud.',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      throw err;
+    }
   }
   @Post('self-start')
   startSelfEvaluation(

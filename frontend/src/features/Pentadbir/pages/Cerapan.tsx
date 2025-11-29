@@ -60,7 +60,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-function OverviewTab({ evaluations, teachers }: { evaluations: EvaluationRow[], teachers: UserItem[] }) {
+function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluations: EvaluationRow[], teachers: UserItem[], teachingAssignments: any[] }) {
   const navigate = useNavigate();
   
   const getStatusColor = (status: string) => {
@@ -96,33 +96,36 @@ function OverviewTab({ evaluations, teachers }: { evaluations: EvaluationRow[], 
     // Get all GURU teachers
     const guruTeachers = teachers.filter(t => t.role === 'GURU');
 
+    // Use teachingAssignments for subject/class lists
+    // teachingAssignments must be available in this scope
+    // @ts-ignore: teachingAssignments is available in parent scope
     guruTeachers.forEach(teacher => {
-      const subjects = Array.isArray(teacher.subjects) && teacher.subjects.length > 0 
-        ? teacher.subjects 
-        : ['-'];
-      const classes = Array.isArray(teacher.classes) && teacher.classes.length > 0 
-        ? teacher.classes 
-        : ['-'];
-
-      // Create a row for each subject-class combination
-      subjects.forEach(subject => {
-        classes.forEach(className => {
-          // Find matching evaluation
+      // @ts-ignore
+      const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
+      if (assignments.length === 0) {
+        rows.push({
+          id: `${teacher._id}-none-none`,
+          teacherName: teacher.name,
+          subject: '-',
+          class: '-',
+          evaluation: undefined
+        });
+      } else {
+        assignments.forEach((assignment: { subject: string; class: string; teacherId: string; active: boolean }) => {
           const evaluation = evaluations.find(e => 
             e.teacherId === teacher._id && 
-            e.subject === subject && 
-            e.class === className
+            e.subject === assignment.subject && 
+            e.class === assignment.class
           );
-
           rows.push({
-            id: `${teacher._id}-${subject}-${className}`,
+            id: `${teacher._id}-${assignment.subject}-${assignment.class}`,
             teacherName: teacher.name,
-            subject,
-            class: className,
+            subject: assignment.subject,
+            class: assignment.class,
             evaluation
           });
         });
-      });
+      }
     });
 
     return rows;
@@ -274,7 +277,7 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {row.obs1Status === 'pending' && title.includes('Cerapan 1') && (
+                      {row.obs1Status === 'pending' && title.includes('Cerapan 1') && row.scheduledDate && row.scheduledTime && (
                         <Button 
                           size="small" 
                           variant="contained"
@@ -284,7 +287,7 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                           Mula Cerapan 1
                         </Button>
                       )}
-                      {row.obs2Status === 'pending' && title.includes('Cerapan 2') && (
+                      {row.obs2Status === 'pending' && title.includes('Cerapan 2') && row.obs1Status === 'submitted' && row.scheduledDate && row.scheduledTime && (
                         <Button 
                           size="small" 
                           variant="contained"
@@ -294,7 +297,7 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                           Mula Cerapan 2
                         </Button>
                       )}
-                      <Button size="small" startIcon={<Eye size={16} />} onClick={() => handleViewReport(row.id)}>
+                      <Button size="small" startIcon={<Eye size={16} />} onClick={() => navigate(`/pentadbir/cerapan/report/${row.id}`)}>
                         Lihat
                       </Button>
                     </Box>
@@ -313,6 +316,7 @@ export default function Cerapan() {
   const navigate = useNavigate();
   const [evaluations, setEvaluations] = useState<EvaluationRow[]>([]);
   const [teachers, setTeachers] = useState<UserItem[]>([]);
+  const [teachingAssignments, setTeachingAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState(0);
@@ -338,12 +342,13 @@ export default function Cerapan() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [evaluationsData, teachersData] = await Promise.all([
+      const [evaluationsData, teachersData, assignmentsData] = await Promise.all([
         pentadbirService.getAllEvaluations(),
         userApi.getAll(),
+        import("../../TeachingAssignment/api").then(m => m.TeachingAssignmentAPI.getAll()),
       ]);
       setTeachers(teachersData);
-      
+      setTeachingAssignments(assignmentsData);
       // Map evaluations with teacher names
       const teacherMap = new Map(teachersData.map(t => [t._id, t]));
       const mappedEvaluations = evaluationsData.map(e => ({
@@ -365,7 +370,6 @@ export default function Cerapan() {
         notes: e.notes,
         observationType: e.observationType,
       }));
-      
       setEvaluations(mappedEvaluations);
     } catch (err) {
       console.error("Error loading cerapan data:", err);
@@ -403,7 +407,7 @@ export default function Cerapan() {
       </Box>
 
       <TabPanel value={activeTab} index={0}>
-        <OverviewTab evaluations={evaluations} teachers={teachers} />
+        <OverviewTab evaluations={evaluations} teachers={teachers} teachingAssignments={teachingAssignments} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
@@ -453,31 +457,34 @@ export default function Cerapan() {
                   const guruTeachers = teachers.filter(t => t.role === 'GURU');
 
                   guruTeachers.forEach(teacher => {
-                    const subjects = Array.isArray(teacher.subjects) && teacher.subjects.length > 0 
-                      ? teacher.subjects 
-                      : ['-'];
-                    const classes = Array.isArray(teacher.classes) && teacher.classes.length > 0 
-                      ? teacher.classes 
-                      : ['-'];
-
-                    subjects.forEach(subject => {
-                      classes.forEach(className => {
+                    // Get assignments for this teacher
+                    const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
+                    if (assignments.length === 0) {
+                      allRows.push({
+                        id: `${teacher._id}-none-none`,
+                        teacherName: teacher.name,
+                        teacherId: teacher._id || '',
+                        subject: '-',
+                        class: '-',
+                        evaluation: undefined
+                      });
+                    } else {
+                      assignments.forEach(assignment => {
                         const evaluation = evaluations.find(e => 
                           e.teacherId === teacher._id && 
-                          e.subject === subject && 
-                          e.class === className
+                          e.subject === assignment.subject && 
+                          e.class === assignment.class
                         );
-
                         allRows.push({
-                          id: `${teacher._id}-${subject}-${className}`,
+                          id: `${teacher._id}-${assignment.subject}-${assignment.class}`,
                           teacherName: teacher.name,
                           teacherId: teacher._id || '',
-                          subject,
-                          class: className,
+                          subject: assignment.subject,
+                          class: assignment.class,
                           evaluation
                         });
                       });
-                    });
+                    }
                   });
 
                   // Apply filter based on scheduleFilter
@@ -542,11 +549,15 @@ export default function Cerapan() {
                             console.log('Evaluation:', row.evaluation);
                             console.log('Evaluation ID:', row.evaluation?.id);
                             if (teacher && teacher._id && row.evaluation) {
+                              // Get subjects/classes from assignments
+                              const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
+                              const subjects = [...new Set(assignments.map(a => a.subject))];
+                              const classes = [...new Set(assignments.map(a => a.class))];
                               setSelectedTeacher({
                                 id: teacher._id,
                                 name: teacher.name,
-                                subjects: teacher.subjects || [],
-                                classes: teacher.classes || [],
+                                subjects,
+                                classes,
                                 evaluationId: row.evaluation?.id,
                                 evaluationData: {
                                   subject: row.subject,

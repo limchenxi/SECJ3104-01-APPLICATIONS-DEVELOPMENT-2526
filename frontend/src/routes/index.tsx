@@ -142,9 +142,24 @@ export default function AppRoutes() {
         <Route path="/" element={<ProtectedLayout />}>
           {/* <Route index element={<Dashboard />} /> */}
 
-          <Route path="/teaching-assignment" element={<TeachingAssignmentPage />} />
+          <Route 
+            path="/teaching-assignment" 
+            element={
+              <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
+                <TeachingAssignmentPage />
+              </RoleGuard>
+            } 
+          />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfile />} />
+              <Route
+                path="/pentadbir/cerapan/report/:id"
+                element={
+                  <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
+                    <PentadbirCerapanReport />
+                  </RoleGuard>
+                }
+              />
 
           {/* GURU ROUTES */}
           <Route

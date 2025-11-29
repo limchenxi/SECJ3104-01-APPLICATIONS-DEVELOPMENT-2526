@@ -9,14 +9,7 @@ export class UpdateTeachingAssignmentDto {
   @IsString()
   class?: string;
 
-  @IsOptional()
-  @IsInt()
-  @Min(2000)
-  academicYear?: number;
-
-  @IsOptional()
-  @IsString()
-  term?: string;
+  // Removed academicYear and term
 
   @IsOptional()
   @IsBoolean()

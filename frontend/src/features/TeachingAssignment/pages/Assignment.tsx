@@ -1,147 +1,347 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Chip,
+  Stack,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+
+import { Edit, Trash2, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import type { User } from "../../Users/type";
-import type { Class } from "../../Class/type";
-import type { Subject } from "../../Subject/type";
 
+import {
+  TeachingAssignmentAPI,
+  type TeachingAssignment,
+  type CreateTeachingAssignmentPayload,
+} from "../api";
 
+import { userApi } from "../../Users/api";
+import type { UserItem } from "../../Users/stores";
+
+// ---------------------------------------------------------------
+// Clean, organized subjects list
+// ---------------------------------------------------------------
+const subjects = [
+  "Matematik",
+  "Sains",
+  "Bahasa Melayu",
+  "Bahasa Inggeris",
+  "Sejarah",
+  "Geografi",
+  "Pendidikan Islam",
+  "Pendidikan Moral",
+];
+
+// ---------------------------------------------------------------
+// Main Page Component
+// ---------------------------------------------------------------
 export default function TeachingAssignmentPage() {
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [assignments, setAssignments] = useState<TeachingAssignment[]>([]);
+  const [teachers, setTeachers] = useState<UserItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedTeacher, setSelectedTeacher] = useState<User | null>(null);
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editing, setEditing] = useState<TeachingAssignment | null>(null);
+  const [error, setError] = useState("");
 
+  const [form, setForm] = useState<CreateTeachingAssignmentPayload>({
+    teacherId: "",
+    subject: "",
+    class: "",
+    active: true,
+  });
+
+  // -------------------------------------------------------------
+  // Load data
+  // -------------------------------------------------------------
   useEffect(() => {
-    // mock fetch – replace with API call later
-    setTeachers([
-      {
-        _id: "1",
-        name: "Cikgu A",
-        email: "a@example.com",
-        gender: "male",
-        ic: "12345",
-        role: "guru",
-      },
-      {
-        _id: "2",
-        name: "Cikgu B",
-        email: "b@example.com",
-        gender: "female",
-        ic: "54321",
-        role: "guru",
-      },
-    ]);
-
-    setClasses([
-      { _id: "c1", name: "1 Amanah", level: 1, year: 2024 },
-      { _id: "c2", name: "2 Bestari", level: 2, year: 2024 },
-    ]);
-
-    setSubjects([
-      { _id: "s1", name: "Matematik", code: "MATH" },
-      { _id: "s2", name: "Sains", code: "SCI" },
-    ]);
+    loadAll();
   }, []);
 
-  const handleSubmit = () => {
-    if (!selectedTeacher || !selectedClass || !selectedSubject) {
-      alert("Sila pilih semua data.");
+  const loadAll = async () => {
+    try {
+      setLoading(true);
+
+      const [assign, teacherList] = await Promise.all([
+        TeachingAssignmentAPI.getAll(),
+        userApi.getAll(),
+      ]);
+
+      setAssignments(assign);
+      setTeachers(teacherList.filter((t) => t.role === "GURU"));
+    } catch {
+      setError("Gagal memuat data. Sila cuba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------
+  const isDuplicate = (teacherId: string, subject: string, className: string) =>
+    assignments.some(
+      (a) =>
+        a.teacherId === teacherId &&
+        a.subject === subject &&
+        a.class === className
+    );
+
+  const teacherName = (id: string) =>
+    teachers.find((t) => t._id === id)?.name ?? id;
+
+  // -------------------------------------------------------------
+  // Dialog Open & Close
+  // -------------------------------------------------------------
+  const openForm = (item?: TeachingAssignment) => {
+    if (item) {
+      setEditing(item);
+      setForm({
+        teacherId: item.teacherId,
+        subject: item.subject,
+        class: item.class,
+        active: item.active,
+      });
+    } else {
+      setEditing(null);
+      setForm({
+        teacherId: "",
+        subject: "",
+        class: "",
+        active: true,
+      });
+    }
+    setError("");
+    setOpenDialog(true);
+  };
+
+  const closeForm = () => {
+    setOpenDialog(false);
+    setEditing(null);
+    setError("");
+  };
+
+  // -------------------------------------------------------------
+  // Save Handler
+  // -------------------------------------------------------------
+  const handleSubmit = async () => {
+    const { teacherId, subject, class: className } = form;
+
+    if (!teacherId || !subject || !className) {
+      setError("Sila lengkapkan semua maklumat.");
       return;
     }
 
-    const payload = {
-      teacherId: selectedTeacher,
-      classId: selectedClass,
-      subjectId: selectedSubject,
-      year: new Date().getFullYear(),
-    };
+    if (!editing && isDuplicate(teacherId, subject, className)) {
+      setError("Tugasan tersebut sudah wujud.");
+      return;
+    }
 
-    console.log("Teaching Assignment:", payload);
+    try {
+      editing
+        ? await TeachingAssignmentAPI.update(editing._id, form)
+        : await TeachingAssignmentAPI.create(form);
+
+      closeForm();
+      loadAll();
+    } catch {
+      setError("Gagal menyimpan tugasan.");
+    }
   };
 
+  // -------------------------------------------------------------
+  // Delete handler
+  // -------------------------------------------------------------
+  const handleDelete = async (id: string) => {
+    if (!confirm("Padam tugasan ini?")) return;
+
+    try {
+      await TeachingAssignmentAPI.delete(id);
+      loadAll();
+    } catch {
+      alert("Gagal memadam tugasan.");
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Loading State
+  // -------------------------------------------------------------
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "60vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Render UI
+  // -------------------------------------------------------------
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="p-8 grid place-items-center"
-    >
-      <Card className="w-full max-w-xl shadow-lg rounded-2xl">
-        <CardContent className="p-6 space-y-6">
-          <h2 className="text-2xl font-bold">Create Teaching Assignment</h2>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: "2rem" }}>
+      {/* Top Bar */}
+      <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h4">Pengurusan Tugasan Mengajar</Typography>
 
-          {/* Teacher Select */}
-          <FormControl fullWidth>
-            <InputLabel>Guru</InputLabel>
-            <Select
-              label="Guru"
-              value={selectedTeacher?._id || ""}
-              onChange={(e) =>
-                setSelectedTeacher(
-                  teachers.find((t) => t._id === e.target.value) || null
-                )
-              }
-            >
-              {teachers.map((t) => (
-                <MenuItem key={t._id} value={t._id}>
-                  {t.name}
-                </MenuItem>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={18} />}
+          onClick={() => openForm()}
+        >
+          Tambah
+        </Button>
+      </Box>
+
+      {/* Table */}
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 2 }}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ bgcolor: "primary.main" }}>
+              {["Guru", "Subjek", "Kelas", "Status", "Tindakan"].map((h) => (
+                <TableCell key={h} sx={{ color: "white", fontWeight: "bold" }}>
+                  {h}
+                </TableCell>
               ))}
-            </Select>
-          </FormControl>
+            </TableRow>
+          </TableHead>
 
-          {/* Class Select */}
-          <FormControl fullWidth>
-            <InputLabel>Kelas</InputLabel>
-            <Select
+          <TableBody>
+            {assignments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  Tiada tugasan.
+                </TableCell>
+              </TableRow>
+            ) : (
+              assignments.map((a) => (
+                <TableRow key={a._id} hover>
+                  <TableCell>{teacherName(a.teacherId)}</TableCell>
+                  <TableCell>{a.subject}</TableCell>
+                  <TableCell>{a.class}</TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={a.active ? "Aktif" : "Tidak Aktif"}
+                      color={a.active ? "success" : "default"}
+                      size="small"
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <IconButton color="primary" onClick={() => openForm(a)}>
+                        <Edit size={18} />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDelete(a._id)}>
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Dialog */}
+      <Dialog open={openDialog} onClose={closeForm} fullWidth maxWidth="sm">
+        <DialogTitle>{editing ? "Edit Tugasan" : "Tambah Tugasan"}</DialogTitle>
+
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {error && <Alert severity="error">{error}</Alert>}
+
+            {/* Teacher */}
+            <FormControl fullWidth required>
+              <InputLabel>Guru</InputLabel>
+              <Select
+                label="Guru"
+                value={form.teacherId}
+                onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
+              >
+                {teachers.map((t) => (
+                  <MenuItem key={t._id} value={t._id}>
+                    {t.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Subject */}
+            <FormControl fullWidth required>
+              <InputLabel>Subjek</InputLabel>
+              <Select
+                label="Subjek"
+                value={form.subject}
+                onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              >
+                {subjects.map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {s}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Class */}
+            <TextField
+              fullWidth
               label="Kelas"
-              value={selectedClass?._id || ""}
-              onChange={(e) =>
-                setSelectedClass(
-                  classes.find((c) => c._id === e.target.value) || null
-                )
-              }
-            >
-              {classes.map((c) => (
-                <MenuItem key={c._id} value={c._id}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              placeholder="Contoh: 5 Amanah"
+              value={form.class}
+              onChange={(e) => setForm({ ...form, class: e.target.value })}
+            />
 
-          {/* Subject Select */}
-          <FormControl fullWidth>
-            <InputLabel>Subjek</InputLabel>
-            <Select
-              label="Subjek"
-              value={selectedSubject?._id || ""}
-              onChange={(e) =>
-                setSelectedSubject(
-                  subjects.find((s) => s._id === e.target.value) || null
-                )
-              }
-            >
-              {subjects.map((s) => (
-                <MenuItem key={s._id} value={s._id}>
-                  {s.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+            {/* Status */}
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={String(form.active)}
+                label="Status"
+                onChange={(e) => setForm({ ...form, active: e.target.value === "true" })}
+              >
+                <MenuItem value="true">Aktif</MenuItem>
+                <MenuItem value="false">Tidak Aktif</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
 
-          <Button
-            variant="contained"
-            className="w-full mt-4 rounded-2xl"
-            onClick={handleSubmit}
-          >
-            Simpan Tugasan
+        <DialogActions>
+          <Button onClick={closeForm}>Batal</Button>
+          <Button variant="contained" onClick={handleSubmit}>
+            {editing ? "Simpan" : "Tambah"}
           </Button>
-        </CardContent>
-      </Card>
+        </DialogActions>
+      </Dialog>
     </motion.div>
   );
 }

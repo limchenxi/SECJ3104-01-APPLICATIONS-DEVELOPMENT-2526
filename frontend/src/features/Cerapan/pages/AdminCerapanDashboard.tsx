@@ -47,6 +47,7 @@ export default function AdminCerapanDashboard() {
 
   const [tabValue, setTabValue] = useState(0);
   const [tasks, setTasks] = useState<CerapanRecord[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, ReportSummary>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -59,6 +60,21 @@ export default function AdminCerapanDashboard() {
       setLoading(true);
       const data = await getAdminTasks();
       setTasks(data);
+      // Fetch summaries for each task
+      const summaryResults: Record<string, ReportSummary> = {};
+      await Promise.all(
+        data.map(async (task) => {
+          try {
+            const res = await import("../api/cerapanService");
+            const { getAdminReportSummary } = res;
+            const result = await getAdminReportSummary(task._id);
+            summaryResults[task._id] = result.summary;
+          } catch (e) {
+            // Ignore errors for individual tasks
+          }
+        })
+      );
+      setSummaries(summaryResults);
     } catch (err) {
       console.error("Error loading tasks:", err);
       setError("Gagal memuatkan tugasan. Sila cuba lagi.");
@@ -209,6 +225,15 @@ export default function AdminCerapanDashboard() {
                               Tempoh: {task.period}
                             </Typography>
                           </Stack>
+                          {/* Show computed status from summary */}
+                          {summaries[task._id] && (
+                            <Chip
+                              label={summaries[task._id].selfEvaluation.status === "submitted" ? "Kendiri Selesai" : "Kendiri Belum"}
+                              size="small"
+                              color={summaries[task._id].selfEvaluation.status === "submitted" ? "success" : "default"}
+                              sx={{ width: "fit-content" }}
+                            />
+                          )}
                         </Stack>
                       </Grid>
                       <Grid item xs={12} md={4} sx={{ textAlign: "right" }}>

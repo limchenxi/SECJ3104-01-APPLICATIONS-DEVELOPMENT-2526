@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -16,223 +16,214 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Divider,
+  IconButton,
 } from "@mui/material";
-import { Calendar, BookOpen, Users } from "lucide-react";
+import { Calendar, BookOpen, Users, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { startSelfEvaluation, getMyTasks } from "../api/cerapanService";
 import { getTemplates } from "../../Pentadbir/api/templateService";
-import { userApi } from "../../Users/api";
+import { TeachingAssignmentAPI } from "../../TeachingAssignment/api";
+import type { AvailableCerapanAssignment } from "../../TeachingAssignment/api";
 import type { CerapanRecord } from "../type";
 import type { TemplateRubric } from "../../Pentadbir/type";
 import useAuth from "../../../hooks/useAuth";
-
-// Subjects & Classes will be loaded from API based on logged-in teacher assignments
 
 export default function TeacherCerapanKendiri() {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const [openDialog, setOpenDialog] = useState(false);
+
+  // Add missing currentPeriod definition
+  const currentPeriod = useMemo(
+    () => ({ name: "Semester 1, 2025", deadline: "31 Mac 2025", status: "active" }),
+    []
+  );
+
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [assignments, setAssignments] = useState<AvailableCerapanAssignment[]>([]);
+  const [pendingTasks, setPendingTasks] = useState<CerapanRecord[]>([]);
+  const [tapakTemplate, setTapakTemplate] = useState<TemplateRubric | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // dialog
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [pendingTasks, setPendingTasks] = useState<CerapanRecord[]>([]);
-  const [loadingTasks, setLoadingTasks] = useState(true);
-  const [tapakTemplate, setTapakTemplate] = useState<TemplateRubric | null>(null);
-  const [tapakTemplateLoading, setTapakTemplateLoading] = useState(true);
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [classes, setClasses] = useState<string[]>([]);
-  const [loadingAssignments, setLoadingAssignments] = useState(true);
 
-  // Current evaluation period - you can fetch this from backend
-  const currentPeriod = {
-    name: "Semester 1, 2025",
-    deadline: "31 Mac 2025",
-    status: "active", // active, completed
-  };
+  // Derived options
+  const subjects = useMemo(
+    () => [...new Set(assignments.map((a) => a.subject))].sort(),
+    [assignments]
+  );
 
-  // Fetch pending tasks and assignments on load
+  const classesForSelectedSubject = useMemo(
+    () =>
+      assignments
+        .filter((a) => a.subject === selectedSubject)
+        .map((a) => a.class),
+    [assignments, selectedSubject]
+  );
+
+  // Load templates, assignments, tasks
   useEffect(() => {
-    loadPendingTasks();
-    loadAssignments();
-    loadTapakTemplate();
-  }, []);
+    let mounted = true;
 
-  const loadTapakTemplate = async () => {
-    try {
-      setTapakTemplateLoading(true);
-      const templates = await getTemplates();
-      const tapak = templates.find(t => t.name.includes("TAPAK STANDARD 4") || t.name.includes("TAPAK"));
-      if (tapak) {
-        setTapakTemplate(tapak);
+    const loadAll = async () => {
+      setLoading(true);
+      try {
+        const [templates, assignmentList, myTasks] = await Promise.all([
+          getTemplates().catch(() => []),
+          TeachingAssignmentAPI.getAvailableForCerapan(currentPeriod.name).catch(() => []),
+          getMyTasks().catch(() => []),
+        ]);
+
+        if (!mounted) return;
+
+        const foundTapak =
+          templates?.find((t: TemplateRubric) =>
+            (t.name || "").toUpperCase().includes("TAPAK")
+          ) ?? null;
+
+        setTapakTemplate(foundTapak);
+        setAssignments(assignmentList || []);
+        setPendingTasks(myTasks || []);
+      } catch {
+        setError("Gagal memuat data. Sila cuba lagi.");
+      } finally {
+        if (mounted) setLoading(false);
       }
-    } catch (err) {
-      console.error("Error loading TAPAK template:", err);
-    } finally {
-      setTapakTemplateLoading(false);
-    }
-  };
+    };
 
-  const loadAssignments = async () => {
-    try {
-      setLoadingAssignments(true);
-      const data = await userApi.getMyAssignments();
-      setSubjects(data.subjects);
-      setClasses(data.classes);
-    } catch (err) {
-      console.error("Error loading assignments", err);
-      setError("Gagal memuat senarai mata pelajaran dan kelas.");
-    } finally {
-      setLoadingAssignments(false);
-    }
-  };
+    loadAll();
+    return () => {
+      mounted = false;
+    };
+  }, [currentPeriod.name]);
 
-  const loadPendingTasks = async () => {
-    try {
-      setLoadingTasks(true);
-      const tasks = await getMyTasks();
-      setPendingTasks(tasks);
-    } catch (err) {
-      console.error("Error loading tasks:", err);
-    } finally {
-      setLoadingTasks(false);
-    }
-  };
-
-  const handleStartEvaluation = () => {
-    setOpenDialog(true);
-    setError("");
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  // Dialog handlers
+  const openSelection = () => {
     setSelectedSubject("");
     setSelectedClass("");
-    setError("");
+    setError(null);
+    setDialogOpen(true);
+  };
+  const closeSelection = () => {
+    setDialogOpen(false);
+    setError(null);
   };
 
-  const handleSubmitSelection = async () => {
-    if (!selectedSubject || !selectedClass) {
-      setError("Sila pilih Mata Pelajaran dan Kelas");
-      return;
-    }
+  // Start evaluation
+  const handleStart = async () => {
+    if (!selectedSubject || !selectedClass)
+      return setError("Sila pilih mata pelajaran dan kelas.");
 
-    if (!user?.id) {
-      setError("User tidak dijumpai. Sila log masuk semula.");
-      return;
-    }
+    const exists = assignments.some(
+      (a) => a.subject === selectedSubject && a.class === selectedClass
+    );
+    if (!exists) return setError("Kombinasi ini tidak tersedia atau sudah dinilai.");
 
-    // Ensure template loaded
-    if (tapakTemplateLoading) {
-      setError("Sedang memuat template TAPAK. Sila tunggu sebentar.");
-      return;
-    }
-    if (!tapakTemplate) {
-      // Attempt a refetch once (silent)
-      try {
-        await loadTapakTemplate();
-      } catch (e) {
-        /* ignore */
-      }
-      if (!tapakTemplate) {
-        setError("Template TAPAK tidak dijumpai. Sila hubungi pentadbir untuk mencipta atau aktifkan template.");
-        return;
-      }
-    }
+    if (!user?.id) return setError("Sila log masuk semula.");
+    if (!tapakTemplate) return setError("Template TAPAK tidak dijumpai.");
+
+    setSubmitting(true);
+    setError(null);
 
     try {
-      setLoading(true);
-      setError("");
-      
-      const templateId = tapakTemplate.id;
-
       const payload = {
-        templateId: templateId,
+        templateId: tapakTemplate.id,
         period: currentPeriod.name,
         subject: selectedSubject,
         class: selectedClass,
       };
 
-      const newEvaluation = await startSelfEvaluation(payload);
-      
-      // Navigate to the evaluation form
-      navigate(`/cerapan/task/${newEvaluation._id}`);
-    } catch (err: any) {
-      console.error("Error starting evaluation:", err);
-      setError(err.response?.data?.message || "Gagal memulakan penilaian. Sila cuba lagi.");
-      setLoading(false);
+      const newTask = await startSelfEvaluation(payload);
+      navigate(`/cerapan/task/${newTask._id}`);
+    } catch (e: any) {
+      if (e?.response?.status === 400 && e?.response?.data?.message)
+        setError(e.response.data.message);
+      else setError("Gagal memulakan penilaian.");
+
+      setSubmitting(false);
     }
   };
 
-  const handleContinueTask = (taskId: string) => {
-    navigate(`/cerapan/task/${taskId}`);
-  };
+  if (loading)
+    return (
+      <Box sx={{ minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+    <Box sx={{ maxWidth: "xl", mx: "auto", p: { xs: 2, md: 4 } }}>
       <Stack spacing={4}>
-        {/* Page Header */}
+        {/* Header */}
         <Box>
-          <Typography variant="h4" component="h1" sx={{ color: theme.palette.grey[900], mb: 0.5 }}>
-            Cerapan Guru – Penilaian Kendiri
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            Cerapan Guru — Penilaian Kendiri
           </Typography>
           <Typography color="text.secondary">
-            Sistem penilaian prestasi dan pembangunan profesional guru
+            Penilaian prestasi & pembangunan profesional
           </Typography>
         </Box>
 
-        {/* Evaluation Period Card */}
+        {/* Period card */}
         <Card
-          raised
+          elevation={0}
           sx={{
-            border: `1px solid ${theme.palette.info.light}`,
-            background: `linear-gradient(to right, ${theme.palette.info.light} 5%, ${theme.palette.common.white} 100%)`,
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            background: "transparent",
           }}
         >
           <CardContent>
             <Stack
               direction={{ xs: "column", md: "row" }}
-              alignItems={{ xs: "flex-start", md: "center" }}
+              alignItems="center"
               justifyContent="space-between"
               spacing={2}
             >
-              <Box>
-                <Stack direction="row" alignItems="center" spacing={2} mb={1}>
-                  <Typography variant="h6" sx={{ color: theme.palette.grey[900] }}>
-                    Tempoh Penilaian Semasa
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Tempoh Penilaian
                   </Typography>
                   <Chip
-                    label={pendingTasks.length > 0 ? "Belum Selesai" : "Selesai"}
-                    sx={{
-                      bgcolor: pendingTasks.length > 0 ? theme.palette.warning.main : theme.palette.success.main,
-                      color: theme.palette.common.white,
-                      fontWeight: "bold",
-                    }}
+                    label={pendingTasks.length ? "Belum Selesai" : "Selesai"}
                     size="small"
+                    sx={{
+                      bgcolor: pendingTasks.length
+                        ? theme.palette.warning.main
+                        : theme.palette.success.main,
+                      color: "white",
+                      fontWeight: 600,
+                    }}
                   />
                 </Stack>
-                <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                  <Calendar size={18} style={{ color: theme.palette.info.main }} />
-                  <Typography sx={{ color: theme.palette.grey[800] }}>
-                    {currentPeriod.name}
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Calendar size={16} />
+                  <Typography variant="body2" color="text.secondary">
+                    {currentPeriod.name} • Tarikh Akhir: {currentPeriod.deadline}
                   </Typography>
                 </Stack>
-                <Typography variant="body2" color="text.disabled">
-                  Tarikh Akhir: {currentPeriod.deadline}
-                </Typography>
-              </Box>
+              </Stack>
 
               <Button
-                onClick={handleStartEvaluation}
                 variant="contained"
-                size="large"
+                onClick={openSelection}
                 sx={{
-                  bgcolor: theme.palette.info.main,
-                  "&:hover": { bgcolor: theme.palette.info.dark },
-                  px: 4,
-                  py: 1.5,
+                  px: 3,
+                  bgcolor: theme.palette.common.white,
+                  color: theme.palette.text.primary,
+                  border: `1px solid ${theme.palette.divider}`,
+                  boxShadow: "none",
+                  "&:hover": {
+                    boxShadow: "none",
+                    bgcolor: theme.palette.grey[50],
+                  },
                 }}
               >
                 Mula Penilaian Kendiri
@@ -241,130 +232,122 @@ export default function TeacherCerapanKendiri() {
           </CardContent>
         </Card>
 
-        {/* Pending Tasks Section */}
-        {loadingTasks ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : pendingTasks.length > 0 ? (
-          <Box>
-            <Typography variant="h6" sx={{ mb: 2, color: theme.palette.grey[900] }}>
+        <Divider />
+
+        {/* Pending tasks */}
+        {pendingTasks.length > 0 ? (
+          <Stack spacing={2}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Penilaian Belum Selesai
             </Typography>
-            <Stack spacing={2}>
-              {pendingTasks.map((task) => (
-                <Card key={task._id} variant="outlined">
-                  <CardContent>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-                          <BookOpen size={18} style={{ color: theme.palette.primary.main }} />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            {task.subject}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                          <Users size={16} style={{ color: theme.palette.grey[600] }} />
-                          <Typography variant="body2" color="text.secondary">
-                            Kelas: {task.class}
-                          </Typography>
-                        </Stack>
-                        <Typography variant="body2" color="text.disabled">
-                          Tempoh: {task.period}
+
+            {pendingTasks.map((t) => (
+              <Card key={t._id} variant="outlined" sx={{ borderRadius: 2 }}>
+                <CardContent>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack spacing={0.5}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <BookOpen size={16} />
+                        <Typography sx={{ fontWeight: 600 }}>{t.subject}</Typography>
+                      </Stack>
+
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Users size={14} />
+                        <Typography variant="body2" color="text.secondary">
+                          Kelas: {t.class} • Tempoh: {t.period}
                         </Typography>
-                      </Box>
-                      <Button
-                        variant="outlined"
-                        onClick={() => handleContinueTask(task._id)}
-                      >
-                        Sambung
-                      </Button>
+                      </Stack>
                     </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          </Box>
-        ) : null}
+
+                    <Button variant="outlined" onClick={() => navigate(`/cerapan/task/${t._id}`)}>
+                      Sambung
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Tiada penilaian yang belum diselesaikan.
+          </Typography>
+        )}
       </Stack>
 
-      {/* Subject and Class Selection Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Pilih Mata Pelajaran dan Kelas</DialogTitle>
+      {/* Dialog */}
+      <Dialog open={dialogOpen} onClose={closeSelection} fullWidth maxWidth="sm">
+        <DialogTitle
+          sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+        >
+          Pilih Mata Pelajaran & Kelas
+          <IconButton size="small" onClick={closeSelection}>
+            <X size={14} />
+          </IconButton>
+        </DialogTitle>
+
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            {error && (
-              <Alert severity="error" onClose={() => setError("")}>
-                {error}
-              </Alert>
-            )}
-            {tapakTemplateLoading && (
-              <Alert severity="info">Memuat template TAPAK...</Alert>
-            )}
-            {!tapakTemplateLoading && !tapakTemplate && (
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {error && <Alert severity="error">{error}</Alert>}
+
+            {!tapakTemplate ? (
               <Alert severity="warning">
-                Template TAPAK tidak ditemui. Sila hubungi pentadbir untuk menambah template rubrik TAPAK STANDARD 4.
+                Template TAPAK tidak ditemui. Hubungi pentadbir jika anda perlu mula penilaian.
+              </Alert>
+            ) : (
+              <Alert severity="info">
+                Template: <strong>{tapakTemplate.name}</strong>
               </Alert>
             )}
-            {!tapakTemplateLoading && tapakTemplate && (
-              <Alert severity="success">
-                Template dipilih: <strong>{tapakTemplate.name}</strong> ({tapakTemplate.categories.reduce((c, cat) => c + cat.subCategories.reduce((s, sub) => s + sub.items.length, 0), 0)} item)
-              </Alert>
-            )}
-            {loadingAssignments && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={32} />
-              </Box>
-            )}
-            {!loadingAssignments && subjects.length === 0 && (
-              <Alert severity="warning">
-                Tiada mata pelajaran ditetapkan kepada anda. Sila hubungi pentadbir.
-              </Alert>
-            )}
-            
+
+            {/* Subject */}
             <TextField
               select
               label="Mata Pelajaran"
               value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
+              onChange={(e) => {
+                setSelectedSubject(e.target.value);
+                setSelectedClass("");
+              }}
               fullWidth
-              required
-              disabled={loadingAssignments || subjects.length === 0}
             >
-              {subjects.map((subject) => (
-                <MenuItem key={subject} value={subject}>
-                  {subject}
+              {subjects.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
                 </MenuItem>
               ))}
             </TextField>
 
+            {/* Class */}
             <TextField
               select
               label="Kelas"
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               fullWidth
-              required
-              disabled={loadingAssignments || classes.length === 0}
+              disabled={!selectedSubject}
             >
-              {classes.map((kelas) => (
-                <MenuItem key={kelas} value={kelas}>
-                  {kelas}
+              {classesForSelectedSubject.map((c) => (
+                <MenuItem key={c} value={c}>
+                  {c}
                 </MenuItem>
               ))}
             </TextField>
+
+            <Typography variant="caption" color="text.secondary">
+              Pilih kombinasi mata pelajaran dan kelas yang ingin anda nilai sendiri.
+            </Typography>
           </Stack>
         </DialogContent>
+
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseDialog} disabled={loading}>
-            Batal
-          </Button>
+          <Button onClick={closeSelection}>Batal</Button>
           <Button
-            onClick={handleSubmitSelection}
             variant="contained"
-            disabled={loading || !selectedSubject || !selectedClass || loadingAssignments || tapakTemplateLoading || !tapakTemplate}
+            onClick={handleStart}
+            disabled={submitting || !selectedSubject || !selectedClass || !tapakTemplate}
+            startIcon={submitting ? <CircularProgress size={16} /> : undefined}
           >
-            {loading ? <CircularProgress size={24} /> : "Teruskan"}
+            {submitting ? "Memproses..." : "Teruskan"}
           </Button>
         </DialogActions>
       </Dialog>
