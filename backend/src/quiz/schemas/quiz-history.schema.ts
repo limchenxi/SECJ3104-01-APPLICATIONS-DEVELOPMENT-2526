@@ -3,8 +3,20 @@ import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class QuizHistory extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Quiz', required: true })
-  quizId: Types.ObjectId;
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Quiz',
+    required: false,
+    index: true,
+    default: null,
+  })
+  quizId: Types.ObjectId | null;
+
+  @Prop({ required: true, enum: ['quiz-topic', 'quiz-video', 'flashcard'] }) // which type of quiz
+  contentType: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Content', required: false })
+  contentId: Types.ObjectId;
 
   @Prop({ required: true })
   generatedBy: string;

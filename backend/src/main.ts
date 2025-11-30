@@ -68,7 +68,8 @@ const ensureAdminUser = async (usersService: UsersService) => {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
+  // app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   const usersService = app.get(UsersService);
   await ensureAdminUser(usersService);
   const pentadbirService = app.get(PentadbirService);

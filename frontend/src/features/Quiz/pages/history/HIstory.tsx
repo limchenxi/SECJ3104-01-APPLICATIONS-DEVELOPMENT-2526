@@ -1,4 +1,3 @@
-// src/components/QuizHistory.tsx
 import React from "react";
 import {
   Box,
@@ -13,44 +12,75 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
-import { useQuizHistory } from "../hooks/useQuizHistory";
-import { exportQuizToPDF } from "./exportQuizToPdf";
+import { useQuizHistory } from "../../hooks/useQuizHistory";
+import { exportQuizToPDF } from "../exportQuizToPdf";
 
 export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void }) {
   const { list, loading, error, reload } = useQuizHistory({ pollInterval: 8000 });
 
   async function handleDeleteHistory(id: string) {
     if (!confirm("Padam rekod sejarah ini?")) return;
-    await fetch(`/api/quiz/history/${id}`, { method: "DELETE" });
-    reload();
-  }
+    try {
+      const res = await fetch(`/api/quiz/history/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        reload(); // 删除成功后才重新加载列表
+      } else {
+        const errorText = await res.text();
+        console.error("DELETE FAILED:", res.status, errorText);
+        alert(`Gagal padam rekod. Status: ${res.status}`);
+      }
+    } catch (err) {
+      console.error("DELETE FETCH ERROR:", err);
+      alert("Ralat rangkaian ketika memadam.");
+    }
+}
 
   async function handleExport(quiz: any) {
-    // if history contains snapshot string, parse it; otherwise fetch quiz by id
     let quizObj = null;
-    if (quiz.snapshot) {
-      try {
-        const snap = typeof quiz.snapshot === "string" ? JSON.parse(quiz.snapshot) : quiz.snapshot;
-        // 如果 snapshot 存放 { quiz: [...] , meta: {...} }
+    const contentObj = null;
+    // 1. 尝试使用预解析的快照对象 (假设 useQuizHistory 已经处理)
+    if (quiz.snapshot && quiz.snapshot.questions && quiz.snapshot.questions.length > 0) {
+        const snap = quiz.snapshot;
         quizObj = {
-          title: quiz?.title || (snap.meta && snap.meta.title) || "Kuiz",
-          subject: snap.meta?.subject || "",
-          createdAt: quiz.createdAt,
-          questions: snap.quiz || snap.questions || [],
+            // 从历史记录和快照中提取元数据
+            title: snap.title || "Kuiz Dijana",
+            subject: snap.subject || "",
+            createdAt: quiz.createdAt,
+            questions: snap.questions, // 直接使用解析后的 questions 数组
         };
-      } catch {
-        // fallback to fetching
-      }
+    } 
+    
+    // 2. 否则，通过 API 获取
+    else if (quiz.quizId) {
+        try {
+            const res = await fetch(`/api/quiz/${quiz.quizId}`);
+            if (!res.ok) throw new Error("Failed to fetch quiz");
+            quizObj = await res.json();
+        } catch (e) {
+            console.error("Failed to fetch quiz by ID:", e);
+            alert("Gagal memuat kuiz dari API. Sila cuba lagi.");
+            return;
+        }
     }
-    if (!quizObj && quiz.quizId) {
-      const res = await fetch(`/api/quiz/${quiz.quizId}`);
-      quizObj = await res.json();
+
+    if (!quizObj || !quizObj.questions || quizObj.questions.length === 0) {
+        alert("Tiada data kuiz untuk dieksport");
+        return;
     }
-    if (!quizObj) {
-      alert("Tiada data kuiz untuk dieksport");
-      return;
-    }
-    exportQuizToPDF(quizObj, { title: quizObj.title });
+    // if (!contentObj) {
+    //     alert("Gagal memuat data content.");
+    //     return;
+    // }
+
+    // if (historyItem.contentType === 'flashcard') {
+    //     // 如果是闪卡，调用闪卡导出函数
+    //     await downloadFlashcardPDF(contentObj, { title: contentObj.title });
+    // } else {
+    //     // 默认为测验 (quiz-topic, quiz-video)
+    //     await exportQuizToPDF(contentObj, { title: contentObj.title });
+    // }
+
+    await exportQuizToPDF(quizObj, { title: quizObj.title});
   }
 
   if (loading) return <Box sx={{ p: 3 }}><CircularProgress /></Box>;
@@ -70,7 +100,10 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
               <Box>
                 <Typography fontWeight="bold">{h.generatedBy} • {new Date(h.createdAt).toLocaleString()}</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  QuizId: {String(h.quizId).slice(0, 8)}
+                {/* 🌟 根据 h.contentType 显示类型 */}
+                  Jenis: 
+                  {h.contentType === 'flashcard' ? '🃏 Kad Imbas' : '📝 Kuiz'} 
+                  {h.contentType === 'quiz-video' && ' (Video)'}
                 </Typography>
               </Box>
 
