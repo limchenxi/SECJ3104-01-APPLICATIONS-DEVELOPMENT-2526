@@ -22,7 +22,7 @@ const PentadbirDashboard = lazy(
   () => import("../features/Dashboard/pages/PentadbirDashboard")
 );
 const SuperAdminDashboard = lazy(
-  () => import("../features/Dashboard/pages/SuperadminDashboard")
+  () => import("../features/Dashboard/pages/SuperAdminDashboard")
 );
 
 const  TeachingAssignmentPage = lazy(

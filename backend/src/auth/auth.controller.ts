@@ -13,6 +13,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt.strategy';
 import { UsersService } from 'src/users/users.service';
 import { User } from 'src/users/schemas/user.schema';
+import { IpGuard } from './guards/ip-guard';
 
 interface RequestWithUser extends Request {
   user: User;
@@ -32,11 +33,9 @@ export class AuthController {
   }
 
   @Get('checkip')
+  @UseGuards(IpGuard)
   async checkIP() {
-    const response = await fetch('https://api.ipify.org');
-    const ip = await response.text();
-
-    return { ip: ip };
+    return;
   }
 
   @UseGuards(JwtAuthGuard)

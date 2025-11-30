@@ -1,7 +1,6 @@
 import { setAuthToken } from "../../../utils/auth";
 import { backendClient } from "../../../utils/axios-client";
 import type { Profile } from "../../Profile/type";
-import type { UserRole } from "../type";
 
 export const authService = {
   login: async (email: string, password: string) => {
