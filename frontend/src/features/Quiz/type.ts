@@ -1,8 +1,11 @@
 export type QuizDifficulty = "easy" | "medium" | "hard";
 
 export interface QuizQuestion {
+  id: string;
+  _id?: string;
   question: string;
   options: string[];
+  answerIndex: number;
   answer: string;
   explanation?: string;
 }
@@ -38,4 +41,10 @@ export interface QuizGenerationRequest {
 export interface QuizGenerationResponse {
   questions: QuizQuestion[];
   generatedAt: string;
+}
+
+export interface Flashcard {
+  id: string;
+  front: string; 
+  back: string;  
 }

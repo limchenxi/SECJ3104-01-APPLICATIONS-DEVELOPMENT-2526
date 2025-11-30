@@ -2,7 +2,7 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateQuizHistoryDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   quizId: string;
 
   @IsString()
@@ -16,4 +16,8 @@ export class CreateQuizHistoryDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @IsOptional()
+  @IsString()
+  contentType?: string; // e.g., 'quiz-topic', 'flashcard'
 }

@@ -1,6 +1,7 @@
-import { QuizQuestion } from '../schemas/quiz.schema';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { QuizDifficulty } from './generate-quiz.dto';
+import { QuizQuestionDto } from './quiz-question.dto';
 
 export class CreateQuizDto {
   @IsString()
@@ -11,7 +12,10 @@ export class CreateQuizDto {
 
   difficulty: QuizDifficulty;
 
-  questions: QuizQuestion[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => QuizQuestionDto)
+  questions: QuizQuestionDto[];
 
   @IsOptional()
   @IsString()

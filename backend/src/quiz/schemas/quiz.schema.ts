@@ -1,14 +1,21 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { QuizDifficulty } from '../dto/generate-quiz.dto';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, _id: false })
 //each question in the quiz
 export class QuizQuestion {
+  @Prop({ required: true })
+  id: string;
+
   @Prop({ required: true })
   question: string;
 
   @Prop({ type: [String], required: true })
   options: string[];
+
+  @Prop({ required: true })
+  answerIndex: number;
 
   @Prop({ required: true })
   answer: string;
@@ -27,8 +34,8 @@ export class Quiz extends Document {
   @Prop({ required: true })
   subject: string; // contoh: Science, Maths, BM
 
-  @Prop({ default: 1 })
-  difficulty: number; // 1–5
+  @Prop({ required: true, enum: ['easy', 'medium', 'hard'], default: 'medium' })
+  difficulty: QuizDifficulty;
 
   @Prop({ type: [QuizQuestionSchema], default: [] })
   questions: QuizQuestion[];

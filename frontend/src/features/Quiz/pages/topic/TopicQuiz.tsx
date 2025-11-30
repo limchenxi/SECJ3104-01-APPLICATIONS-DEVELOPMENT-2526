@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Box, Card, Typography, Button, CircularProgress } from "@mui/material";
-import QuizForm from "./Form";
-import { useGenerateQuiz } from "../hooks/useGenerateQuiz"; 
-import QuizPreview from "./QuizPreview";
-import { useQuizHistory } from "../hooks/useQuizHistory";
+import QuizForm from "../Form";
+import { useGenerateQuiz } from "../../hooks/useGenerateQuiz"; 
+import QuizPreview from "../QuizPreview";
+import { useQuizHistory } from "../../hooks/useQuizHistory";
+import { exportQuizToPDF } from "../exportQuizToPdf";
 
 export default function TopicQuizGenerator() {
   const [form, setForm] = useState({
@@ -15,32 +16,13 @@ export default function TopicQuizGenerator() {
   });
   const { loading, error, data, generateAndSave } = useGenerateQuiz();
   const { reload } = useQuizHistory({ pollInterval: 0 });
-  // const [quiz, setQuiz] = useState([]);
-  // const [loading, setLoading] = useState(false);
-  // const [copied, setCopied] = useState(false);
-
-  // const generateQuiz = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const res = await fetch("/api/ai/quiz", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(form),
-  //     });
-
-  //     const data = await res.json();
-  //     setQuiz(data.quiz);
-  //   } catch {
-  //     alert("Gagal menjana kuiz.");
-  //   }
-  //   setLoading(false);
-  // };
 
   const handleGenerate = async () => {
     try {
       const saved = await generateAndSave(
         {
           subject: form.subject,
+          year: form.year,
           topic: form.topic,
           difficulty: form.difficulty,
           numQuestions: form.numQuestions,
@@ -54,6 +36,12 @@ export default function TopicQuizGenerator() {
     } catch (err) {
       console.error(err);
       alert("Gagal menjana kuiz.");
+    }
+  };
+
+  const handleExport = () => {
+    if (data) {
+      exportQuizToPDF(data);
     }
   };
 
@@ -77,7 +65,18 @@ export default function TopicQuizGenerator() {
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
             📘 Kuiz Dijana
           </Typography>
-          <QuizPreview questions={data.questions || []} showAnswers={false} />
+          <QuizPreview questions={data.questions || []} showAnswers={true} />
+          {/* <Box sx={{ mt: 2, p: 1, border: '1px solid #ccc' }}>
+            {data.questions && data.questions.length > 0 ? (
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                    {JSON.stringify(data.questions[0], null, 2)} 
+                </pre>
+            ) : (
+                <Typography>Questions array is empty or missing.</Typography>
+            )}
+        </Box> */}
+          {/* `Jumlah ${data.questions.length} soalan dijana.` 
+          "Tiada soalan dijana。" */}
           {/* {data.quiz.map((q, idx) => (
             <Box key={idx}>
               <b>{idx + 1}. {q.question}</b>
@@ -88,6 +87,14 @@ export default function TopicQuizGenerator() {
               ))}
             </Box>
           ))} */}
+          <Box sx={{ mt: 3, textAlign: 'right' }}>
+            <Button 
+              variant="contained" 
+              onClick={handleExport}
+            >
+              Eksport ke PDF 📄
+            </Button>
+          </Box>
         </Card>
       )}
     </Box>
