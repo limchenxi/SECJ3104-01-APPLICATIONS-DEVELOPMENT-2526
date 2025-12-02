@@ -12,6 +12,7 @@ import { UpdateRphDto } from './dto/update-rph.dto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { RequestRphDto } from './dto/request-rph.dto';
 import { RPHResponseDto } from './dto/response-rph.dto';
+import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 @Injectable()
 export class RphService {
   private model;
@@ -19,6 +20,7 @@ export class RphService {
   constructor(
     @InjectModel(RPH.name)
     private rphModel: Model<RPH>,
+    @InjectModel(AI_USAGE_MODEL_NAME) private usageModel: Model<AiUsage>,
   ) {
     const key = process.env.GEMINI_API_KEY;
 
@@ -58,7 +60,7 @@ export class RphService {
     return this.rphModel.findByIdAndDelete(id);
   }
 
-  async generateRPH(dto: RequestRphDto) {
+  async generateRPH(dto: RequestRphDto, userId: string) {
     const prompt = `
     Anda adalah guru pakar pendidikan Malaysia.
     Jana sebuah Rancangan Pengajaran Harian (RPH) berdasarkan maklumat berikut:
@@ -100,12 +102,19 @@ export class RphService {
 
       const jsonString = raw.slice(start, end);
       const aiResult: RPHResponseDto = JSON.parse(jsonString);
-      const simulatedUserId = 'SimulatedTeacherId123';
+      // const simulatedUserId = 'SimulatedTeacherId123';
 
+      // 🌟 关键：记录 AI Usage
+      await this.usageModel.create({
+        userId: userId,
+        usageType: 'eRPH', // 明确指出 Usage Type
+        provider: 'Gemini', // 明确指出 Provider
+        model: 'gemini-2.5-flash', // 明确指出 Model
+      });
       const fullDocument: Omit<CreateRphDto, '_id'> = {
         ...dto, // User input fields
         ...aiResult, // AI generated fields (title, date, sections)
-        userId: simulatedUserId,
+        userId: userId,
         createdAt: Date.now(),
       };
 

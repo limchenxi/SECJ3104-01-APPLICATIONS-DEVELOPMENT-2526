@@ -14,5 +14,8 @@ import { AiModuleSchema } from './schemas/ai-module.schema';
   ],
   providers: [AiService],
   controllers: [AiController],
+  exports: [
+    MongooseModule.forFeature([{ name: AiUsage.name, schema: AiUsageSchema }]),
+  ],
 })
 export class AiModule {}

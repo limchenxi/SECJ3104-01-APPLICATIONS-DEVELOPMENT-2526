@@ -4,8 +4,8 @@ export class CreateAIModuleDto {
   @IsString()
   name: string;
 
-  @IsString()
-  usageType: string;
+  @IsString({ each: true })
+  usageTypes: string[];
 
   @IsString()
   provider: string;

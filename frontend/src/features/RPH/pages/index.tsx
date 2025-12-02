@@ -40,13 +40,9 @@ export default function RPH() {
 
   async function handleDelete(id: string) {
     if (!confirm("Padam RPH ini?")) return;
-
     await fetch(`/api/rph/${id}`, { method: "DELETE" });
-
     setSelected(null);
-
     navigate("/rph");
-
     historyRef.current?.refresh();
   }
 

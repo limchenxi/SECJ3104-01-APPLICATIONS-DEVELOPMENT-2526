@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
   FormControlLabel,
+  Chip,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import type { AIModule } from "../../type";
@@ -26,30 +27,51 @@ interface AIModuleFormProps {
 const defaultValues: AIModule = {
   _id: "",
   name: "",
-  usageType: "",
-  provider: "OpenAI",
-  model: "",
+  usageTypes: [],
   enabled: true,
+  provider: "Gemini",
+  model: "",
+  temperature: 0.7,
+  maxToken: 2000,
+  timeout: 30,
+  updatedAt: "",
 };
+
+const USAGE_OPTIONS = [
+  "eRPH",
+  "AI Quiz",
+  "Cerapan Comment"
+];
 
 export default function AIModuleForm({
   initialValues = defaultValues,
   isSubmitting = false,
   onSubmit,
 }: AIModuleFormProps) {
-  const [values, setValues] = useState<AIModule>(initialValues);
+  const [values, setValues] = useState<AIModule>({
+        ...initialValues,
+        // 确保 usageTypes 是数组，如果 initialValues.usageTypes 可能是 null/undefined
+        usageTypes: initialValues.usageTypes || [], 
+    } as AIModule); // 强制类型转换，因为 initialValues 总是提供了所有字段
 
-  useEffect(() => {
-    setValues(initialValues);
-  }, [initialValues]);
+    // 🌟 简化 useEffect 逻辑：当 initialValues 变化时，直接设置整个对象
+    useEffect(() => {
+        setValues({ 
+            ...initialValues, 
+            usageTypes: initialValues.usageTypes || [] 
+        });
+    }, [initialValues]);
 
-  function handleChange(field: keyof AIModule, value: any) {
+  function handleChange(field: keyof typeof values, value: any) {
     setValues((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    await onSubmit(values);
+    
+    await onSubmit({
+        ...values,
+    } as unknown as AIModule); 
   }
 
   return (
@@ -76,13 +98,30 @@ export default function AIModuleForm({
             />
 
             {/* Usage Type */}
-            <TextField
-              label="Usage Type (e.g., quiz / lesson_plan / cerapan)"
-              value={values.usageType}
-              onChange={(e) => handleChange("usageType", e.target.value)}
-              required
-              fullWidth
-            />
+            <FormControl fullWidth required>
+              <InputLabel id="usage-type-label">Usage Types</InputLabel>
+              <Select
+                labelId="usage-type-label"
+                multiple // 启用多选
+                value={values.usageTypes}
+                onChange={(e) => handleChange("usageTypes", e.target.value)}
+                label="Usage Types"
+                // 渲染选中项为 Chip
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} />
+                    ))}
+                  </Box>
+                )}
+              >
+                {USAGE_OPTIONS.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             {/* Provider */}
             <FormControl fullWidth>
@@ -92,8 +131,8 @@ export default function AIModuleForm({
                 label="Provider"
                 onChange={(e) => handleChange("provider", e.target.value)}
               >
-                <MenuItem value="OpenAI">OpenAI</MenuItem>
                 <MenuItem value="Gemini">Gemini</MenuItem>
+                <MenuItem value="OpenAI">OpenAI</MenuItem>
                 <MenuItem value="Copilot">Copilot</MenuItem>
               </Select>
             </FormControl>

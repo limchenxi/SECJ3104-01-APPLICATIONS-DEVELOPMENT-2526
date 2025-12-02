@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Request,
 } from '@nestjs/common';
 import { RphService } from './rph.service';
 import { CreateRphDto } from './dto/create-rph.dto';
@@ -41,7 +42,9 @@ export class RphController {
     return this.rphService.remove(id);
   }
   @Post('generate')
-  generate(@Body() dto: RequestRphDto) {
-    return this.rphService.generateRPH(dto);
+  generate(@Body() dto: RequestRphDto, @Request() req: any) {
+    const realUserId = req.user?.userId || 'GUEST_USER_FALLBACK';
+
+    return this.rphService.generateRPH(dto, realUserId);
   }
 }
