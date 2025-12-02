@@ -191,10 +191,10 @@ export default function TeacherCerapanKendiri() {
                     Tempoh Penilaian
                   </Typography>
                   <Chip
-                    label={pendingTasks.length ? "Belum Selesai" : "Selesai"}
+                    label={pendingTasks.length > 0 ? "Belum Selesai" : "Selesai"}
                     size="small"
                     sx={{
-                      bgcolor: pendingTasks.length
+                      bgcolor: pendingTasks.length > 0
                         ? theme.palette.warning.main
                         : theme.palette.success.main,
                       color: "white",
