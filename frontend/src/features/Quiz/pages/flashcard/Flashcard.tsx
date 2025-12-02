@@ -55,7 +55,7 @@ export default function FlashcardGenerator() {
       <Typography color="text.secondary">
         Jana kad imbas (flashcards) untuk membantu murid mengingati istilah dan konsep penting
       </Typography>
-      <br /><br />
+      <br />
 
       <QuizForm
         form={form}

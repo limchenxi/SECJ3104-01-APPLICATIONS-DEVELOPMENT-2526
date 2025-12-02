@@ -30,7 +30,7 @@ export default function TopicQuizGenerator() {
         "teacher-web"
       );
       // refresh history list immediately (if you show it)
-      reload();
+      // reload();
       // data returned as saved quiz
       // optional: show toast/snackbar
     } catch (err) {
@@ -39,9 +39,15 @@ export default function TopicQuizGenerator() {
     }
   };
 
-  const handleExport = () => {
+  const handleExportWithAnswers = () => {
     if (data) {
-      exportQuizToPDF(data);
+      exportQuizToPDF(data, { showAnswers: true });
+    }
+  };
+  
+  const handleExportWithoutAnswers = () => {
+    if (data) {
+      exportQuizToPDF(data, { showAnswers: false });
     }
   };
 
@@ -53,7 +59,7 @@ export default function TopicQuizGenerator() {
       <Typography color="text.secondary">
         Jana soalan kuiz aneka pilihan secara automatik berdasarkan topik
       </Typography>
-      <br /><br />
+      <br />
       <QuizForm 
         form={form} 
         setForm={setForm} 
@@ -87,12 +93,21 @@ export default function TopicQuizGenerator() {
               ))}
             </Box>
           ))} */}
-          <Box sx={{ mt: 3, textAlign: 'right' }}>
+          <Box sx={{ mt: 3, textAlign: 'right', display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            {/* 导出无答案版本 (给学生) */}
             <Button 
-              variant="contained" 
-              onClick={handleExport}
+              variant="outlined" 
+              onClick={handleExportWithoutAnswers}
             >
-              Eksport ke PDF 📄
+              Eksport (Tanpa Jawapan)
+            </Button>
+
+            {/* 导出带答案版本 (给老师) */}
+            <Button 
+              variant="outlined" 
+              onClick={handleExportWithAnswers}
+            >
+              Eksport (Dengan Jawapan)
             </Button>
           </Box>
         </Card>

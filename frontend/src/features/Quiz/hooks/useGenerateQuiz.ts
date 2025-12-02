@@ -210,6 +210,7 @@ export function useGenerateQuiz(generateApiUrl?: string) {
           generatedBy,
           snapshot,
           note: `Generated ${new Date().toISOString()}`,
+          contentType: "quiz-topic",
         }),
       });
       reload(); 

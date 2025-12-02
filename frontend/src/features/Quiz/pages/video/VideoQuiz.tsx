@@ -29,15 +29,27 @@ export default function VideoQuizGenerator() {
     });
   };
 
-  const handleExport = async () => {
-    if (data?.questions) { // Video Quiz 返回 questions
-      const quizToExport = {
+  const createQuizToExport = () => {
+    if (!data?.questions) return null;
+      return {
         questions: data.questions,
         title: "Kuiz Video: " + form.url,
         subject: "Video Content",
-        // createdAt 默认为当前时间
+        createdAt: new Date().toISOString(),
       };
-      await exportQuizToPDF(quizToExport);
+  };
+
+  const handleExportWithAnswers = async () => {
+    const quizToExport = createQuizToExport();
+    if (quizToExport) {
+      await exportQuizToPDF(quizToExport, { showAnswers: true });
+    }
+  };
+
+  const handleExportWithoutAnswers = async () => {
+    const quizToExport = createQuizToExport();
+    if (quizToExport) {
+      await exportQuizToPDF(quizToExport, { showAnswers: false });
     }
   };
 
@@ -89,15 +101,23 @@ export default function VideoQuizGenerator() {
             <Typography variant="h6" fontWeight="bold">
               📘 Kuiz Video Dijana
             </Typography>
-            <Button
-              onClick={handleExport}
-              variant="contained"
-              startIcon={<DownloadIcon size={18} />}
-            >
-                    Eksport PDF
-                </Button>
           </Box>
           <QuizPreview questions={data.questions} showAnswers={true} />
+            <Box sx={{ mt: 3, textAlign: 'right', display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button 
+                variant="outlined" 
+                onClick={handleExportWithoutAnswers}
+              >
+                Eksport (Tanpa Jawapan)
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={handleExportWithAnswers}
+                startIcon={<DownloadIcon size={18} />}
+              >
+                Eksport (Dengan Jawapan)
+              </Button>
+            </Box>
         </Card>
       )}
     </Box>

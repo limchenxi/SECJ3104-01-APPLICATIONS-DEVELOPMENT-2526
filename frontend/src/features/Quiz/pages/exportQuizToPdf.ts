@@ -10,7 +10,13 @@ function escapeHtml(str: string) {
 }
 
 // 导出的核心函数 (异步执行)
-export async function exportQuizToPDF(quiz: any, options?: { title?: string }) {
+export async function exportQuizToPDF(
+    quiz: any, 
+    options?: { 
+        title?: string, 
+        showAnswers?: boolean //show answer or not
+}) {
+    const showAnswers = options?.showAnswers ?? true;
     if (!quiz || !quiz.questions || quiz.questions.length === 0) {
         alert("Tiada data kuiz untuk dieksport.");
         return;
@@ -18,7 +24,7 @@ export async function exportQuizToPDF(quiz: any, options?: { title?: string }) {
 
     const title = options?.title || quiz.title || "Quiz Export";
     const finalTitle = escapeHtml(title);
-    
+    const pdfHeaderTitle = showAnswers ? finalTitle : `${finalTitle} (Tanpa Jawapan)`;
     // --- 1. 构建 HTML 内容 ---
     // 使用内联样式，避免依赖外部 CSS 或 @media print
     const htmlContent = `
@@ -30,29 +36,34 @@ export async function exportQuizToPDF(quiz: any, options?: { title?: string }) {
             ).toLocaleDateString()}
         </div>
         
-        ${ (quiz.questions || []).map((q: any, i: number) => `
+        ${ (quiz.questions || []).map((q: any, i: number) =>{ 
+            // const optionsWithLabel = q.options.map((opt: string, j: number) => 
+            //      `${String.fromCharCode(65 + j)}. ${opt}` // 仅在构建 HTML 时创建一次带字母的文本
+            // );
+            return `
             <div class="question-page" style="margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 15px; page-break-inside: avoid;">
                  <div style="margin-bottom: 8px; font-weight: bold; font-family: Arial, sans-serif;">
                     ${i + 1}. ${escapeHtml(String(q.question || ""))}
                 </div>
                  <div style="margin-left: 15px;">
                  ${(q.options || []).map((opt: string, j: number) => {
+                    
                     // 检查当前选项是否是答案
                     const isAnswer = j === q.answerIndex; 
                     // 根据是否是答案设置样式
-                    const optionStyle = isAnswer 
+                    const optionStyle = (showAnswers && isAnswer)
                         ? 'font-weight: bold; color: green; font-size: 13px;' // 👈 加粗并可选地改变颜色
                         : 'font-weight: normal; font-size: 13px;'; // 👈 普通样式
                         
                     return `
-                    <div style="margin-bottom: 6px; font-family: Arial, sans-serif; ${optionStyle}">
+                    <div style="margin-bottom: 6px; font-family: Arial, sans-serif; ${optionStyle}"> 
                         ${String.fromCharCode(65+j)}. ${escapeHtml(String(opt || ""))}
                     </div>
                      `
                 }).join('')}
                  </div>
             </div>
-        `).join('')}
+        `}).join('')}
 
     </div>
     `;
