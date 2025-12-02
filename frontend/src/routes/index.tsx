@@ -71,10 +71,7 @@ const AIList= lazy(
 const AiUsageAnalytics= lazy(
   () => import("../features/AI/pages/usage/ai-usage")
 );
-const AiModuleSettings= lazy(
-  () => import("../features/AI/pages/default/ai-default")
-);
-  
+
 // Cerapan Pages
 const TeacherCerapanKendiri = lazy(
  () => import("../features/Cerapan/pages/TeacherCerapanKendiri")
@@ -324,13 +321,6 @@ export default function AppRoutes() {
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <AiUsageAnalytics/>
-              </RoleGuard>
-            }
-          /><Route
-            path="/ai/default"
-            element={
-              <RoleGuard roles={["SUPERADMIN"]}>
-                <AiModuleSettings moduleId={""}/>
               </RoleGuard>
             }
           />

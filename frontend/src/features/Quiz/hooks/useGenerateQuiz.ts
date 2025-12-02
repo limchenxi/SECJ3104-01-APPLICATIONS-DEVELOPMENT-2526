@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useQuizHistory } from "./useQuizHistory";
+import { processQuestions } from "../../../utils/quizUtils";
 const ArrayOf = Array.isArray;
 interface GenerationPayload {
     topic?: string;
@@ -10,7 +11,7 @@ interface GenerationPayload {
     subject?: string;
     year?: string;
     // Video Quiz specific fields
-    url?: string;
+    // url?: string;
 }
 
 export function useGenerateQuiz(generateApiUrl?: string) {
@@ -18,28 +19,8 @@ export function useGenerateQuiz(generateApiUrl?: string) {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any | null>(null);
   const { reload } = useQuizHistory({ pollInterval: 0 }); 
-
-  const processQuestions = useCallback((rawQuestions: any[]) => {
-        if (!ArrayOf(rawQuestions)) return [];
-
-        return rawQuestions.map((q: any, idx: number) => {
-            const questionId = q.id || `${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 9)}`;
-            const answerText = q.correctAnswer || q.answer; 
-            const answerIndex = q.options.findIndex((opt: string) => opt === answerText);
-
-            return {
-                id: questionId,
-                question: q.question,
-                options: q.options,
-                answerIndex: answerIndex >= 0 ? answerIndex : 0, 
-                answer: answerText || "",
-                explanation: q.explanation || "",
-            };
-        });
-    }, []); // 依赖数组为空，因此只创建一次
-
   // ----------------------------------------------------
-  // 1. 通用生成方法 (用于 Flashcards, Video Quiz - 不保存)
+  // 1. 通用生成方法 (用于 Flashcards)
   // ----------------------------------------------------
   async function generate(payload: GenerationPayload) {
     setLoading(true);
@@ -49,17 +30,32 @@ export function useGenerateQuiz(generateApiUrl?: string) {
     // 确定目标 API URL，默认为 generateApiUrl，如果未提供则使用 Quiz 的路径
     const apiUrl = generateApiUrl || "/api/quiz/generate"; 
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const apiBody: any = {
+        questionCount: payload.numQuestions ?? payload.questionCount ?? 5,
+        topic : payload.topic,
+        difficulty : payload.difficulty,
+    };
+        
+    // if (apiUrl.includes('video-quiz')) {
+    //     // Video Quiz (GenerateVideoQuizDto) 只需要 url 和 questionCount
+    //     if (!payload.url) throw new Error("URL diperlukan untuk kuiz video.");
+    //     apiBody = {
+    //         url: payload.url,
+    //         questionCount: apiBody.questionCount,
+    //     };
+    //     // ⚠️ 故意不包含 topic 和 difficulty
+    // } else {
+    //     // Flashcard/Topic Quiz Generate 需要 topic 和 difficulty
+    //     apiBody.topic = payload.topic;
+    //     apiBody.difficulty = payload.difficulty;
+    // }
+
     try {
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: payload.url, // 传递 URL (如果存在)
-          topic: payload.topic,
-          difficulty: payload.difficulty,
-          // 使用 numQuestions 或 questionCount 字段，取决于后端预期
-          questionCount: payload.numQuestions ?? payload.questionCount ?? 5,
-        }),
+        body: JSON.stringify(apiBody),
       });
 
       if (!res.ok) {
@@ -67,55 +63,63 @@ export function useGenerateQuiz(generateApiUrl?: string) {
         throw new Error(`Generation failed: Status ${res.status}. ${errorText.substring(0, 100)}...`);
       }
       const processedData = await res.json();
-      const isVideoQuiz = apiUrl.includes('video-quiz');
+      // const isVideoQuiz = apiUrl.includes('video-quiz');
       const isFlashcard = apiUrl.includes('flashcards');
       
-      let historyType: 'quiz-video' | 'flashcard' | 'unknown' = 'unknown';
+      let historyType: 'flashcard' | 'quiz-topic' = 'quiz-topic';
 
       // 🚨 Video Quiz 逻辑：注入 ID/Index
-      if (isVideoQuiz && processedData.questions) {
-          processedData.questions = processQuestions(processedData.questions);
-          historyType = 'quiz-video';
-      } else if (isFlashcard && processedData.flashcards) {
-          historyType = 'flashcard';
+      // if (isVideoQuiz && processedData.questions) {
+      //     processedData.questions = processQuestions(processedData.questions);
+      //     historyType = 'quiz-video';
+      // } else if (isFlashcard && processedData.flashcards) {
+      //     historyType = 'flashcard';
+      // } else if (processedData.questions) {
+      //     processedData.questions = processQuestions(processedData.questions);
+      //     historyType = 'quiz-topic';
+      // }
+      if (isFlashcard && processedData.flashcards) {
+        historyType = 'flashcard';
+      } else if (processedData.questions) {
+      // Topic Quiz 逻辑：注入 ID/Index
+        processedData.questions = processQuestions(processedData.questions);
       }
       
       setData(processedData); 
       
       // ----------------------------------------------------
-      // 历史记录保存逻辑 (Video Quiz & Flashcard)
+      // 历史记录保存逻辑 (Flashcard)
       // ----------------------------------------------------
-      if (historyType !== 'unknown') {
-          const content = isFlashcard ? processedData.flashcards : processedData.questions;
-          const snapshotData = {
-              title: isVideoQuiz ? `Kuiz Video: ${payload.url}` : "Kad Imbas Dijana",
-              subject: payload.subject || (isVideoQuiz ? "Video Content" : "N/A"),
-              difficulty: payload.difficulty || "medium",
-              questions: isVideoQuiz ? content : undefined, 
-              flashcards: isFlashcard ? content : undefined,
-          };
-          
-          await fetch("/api/quiz/history", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  generatedBy: isVideoQuiz ? 'video-quiz-generator' : 'flashcard-generator',
-                  note: `Generated via ${historyType}`,
-                  snapshot: JSON.stringify(snapshotData),
-                  contentType: historyType, 
-              }),
-          });
-          reload(); // 刷新历史记录
-      }
-
-      return processedData;
-      } catch (err: any) {
+      
+      if (historyType !== 'quiz-topic') { // 仅保存 Flashcard 的历史记录
+        const content = processedData.flashcards;
+        const snapshotData = {
+          title: `Kad Imbas: ${payload.topic}`,
+          subject: payload.subject || "N/A",
+          difficulty: payload.difficulty || "medium",
+          flashcards: content,
+        };
+                
+        await fetch("/api/quiz/history", {
+          method: "POST",
+          eaders: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            generatedBy: 'flashcard-generator',
+            note: `Generated via ${historyType}`,
+            snapshot: JSON.stringify(snapshotData),
+            contentType: historyType, 
+          }),
+         });
+         reload(); 
+       }
+     
+    } catch (err: any) {
         setError(err?.message || String(err));
         console.error("GENERATE HOOK ERROR:", err);
       throw err;
-      } finally {
+    } finally {
       setLoading(false);
-      }
+    }
   }
   
   // ----------------------------------------------------
@@ -148,26 +152,6 @@ export function useGenerateQuiz(generateApiUrl?: string) {
 
       // ⭐ 使用辅助函数注入 ID/Index
       const questions = processQuestions(rawQuestions);
-
-      // ⭐ 转换步骤：从答案文本找到索引
-      // const questions = rawQuestions.map((q: any, idx: number) => {
-      //     // 确保每个问题都有一个唯一的ID
-      //     const questionId = q.id || `${Date.now()}-${idx}`;
-          
-      //     const answerText = q.correctAnswer || q.answer; 
-          
-      //     // 找到正确答案在 options 数组中的9index
-      //     const answerIndex = q.options.findIndex((opt: string) => opt === answerText);
-
-      //     return {
-      //         id: questionId,
-      //         question: q.question,
-      //         options: q.options,
-      //         answerIndex: answerIndex >= 0 ? answerIndex : 0, // 默认值为0
-      //         answer: answerText || "",
-      //         explanation: q.explanation || "",
-      //     };
-      // });
 
       // 2) Build Quiz Object
       const quizToSave = {

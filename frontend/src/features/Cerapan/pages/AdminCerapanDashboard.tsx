@@ -17,7 +17,7 @@ import {
 import { ClipboardList, Users, BookOpen, Calendar, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getAdminTasks } from "../api/cerapanService";
-import type { CerapanRecord } from "../type";
+import type { CerapanRecord, ReportSummary } from "../type";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -131,7 +131,7 @@ export default function AdminCerapanDashboard() {
 
         {/* Summary Cards */}
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={12}>
             <Card raised sx={{ border: `1px solid ${theme.palette.info.light}` }}>
               <CardContent>
                 <Stack direction="row" alignItems="center" spacing={2}>
@@ -154,7 +154,7 @@ export default function AdminCerapanDashboard() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={12}>
             <Card raised sx={{ border: `1px solid ${theme.palette.success.light}` }}>
               <CardContent>
                 <Stack direction="row" alignItems="center" spacing={2}>
@@ -205,7 +205,7 @@ export default function AdminCerapanDashboard() {
                 <Card key={task._id} variant="outlined">
                   <CardContent>
                     <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} md={8}>
+                      <Grid size={12}>
                         <Stack spacing={1}>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <Users size={18} style={{ color: theme.palette.primary.main }} />
@@ -236,7 +236,7 @@ export default function AdminCerapanDashboard() {
                           )}
                         </Stack>
                       </Grid>
-                      <Grid item xs={12} md={4} sx={{ textAlign: "right" }}>
+                      <Grid size={12} sx={{ textAlign: "right" }}>
                         <Button
                           variant="contained"
                           startIcon={<Eye size={18} />}
@@ -267,7 +267,7 @@ export default function AdminCerapanDashboard() {
                 <Card key={task._id} variant="outlined">
                   <CardContent>
                     <Grid container spacing={2} alignItems="center">
-                      <Grid item xs={12} md={8}>
+                      <Grid size={12}>
                         <Stack spacing={1}>
                           <Stack direction="row" alignItems="center" spacing={1}>
                             <Users size={18} style={{ color: theme.palette.primary.main }} />
@@ -298,7 +298,7 @@ export default function AdminCerapanDashboard() {
                           />
                         </Stack>
                       </Grid>
-                      <Grid item xs={12} md={4} sx={{ textAlign: "right" }}>
+                      <Grid size={12} sx={{ textAlign: "right" }}>
                         <Button
                           variant="contained"
                           startIcon={<Eye size={18} />}

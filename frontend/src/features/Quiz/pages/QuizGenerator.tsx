@@ -58,13 +58,13 @@ export default function QuizGeneratorPage() {
               </Stack>
             }
           />
-          <Tab
+          {/* <Tab
             label={
               <Stack direction="row" spacing={1} alignItems="center">
                 <Youtube size={16} /> Kuiz dari Video
               </Stack>
             }
-          />
+          /> */}
           <Tab
             label={
               <Stack direction="row" spacing={1} alignItems="center">
@@ -77,8 +77,8 @@ export default function QuizGeneratorPage() {
         {/* Panels */}
         {tabValue === 0 && <TopicQuizGenerator />}
         {tabValue === 1 && <FlashcardGenerator />}
-        {tabValue === 2 && <VideoQuizGenerator />}
-        {tabValue === 3 && <QuizHistory onSelect={handleSelectQuiz} />}
+        {/* {tabValue === 2 && <VideoQuizGenerator />} */}
+        {tabValue === 2 && <QuizHistory onSelect={handleSelectQuiz} />}
       </Stack>
         {/* 4. 渲染模态框 */}
       {selectedHistory && (

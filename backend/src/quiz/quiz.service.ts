@@ -14,6 +14,7 @@ import { GenerateQuizDto } from './dto/generate-quiz.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizHistoryDto } from './dto/create-history.dto';
 import { GenerateVideoQuizDto } from './dto/generate-video-quiz.dto';
+import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 @Injectable()
 export class QuizService {
@@ -22,6 +23,7 @@ export class QuizService {
   constructor(
     @InjectModel(Quiz.name) private quizModel: Model<Quiz>,
     @InjectModel(QuizHistory.name) private histModel: Model<QuizHistory>,
+    @InjectModel(AI_USAGE_MODEL_NAME) private usageModel: Model<AiUsage>,
   ) {
     const key = process.env.GEMINI_API_KEY;
 
@@ -39,7 +41,7 @@ export class QuizService {
   // -----------------------------------------
   // AI Generate Quiz
   // -----------------------------------------
-  async generateQuiz(dto: GenerateQuizDto) {
+  async generateQuiz(dto: GenerateQuizDto, userId: string) {
     const difficultyMap = {
       easy: 'Mudah',
       medium: 'Sederhana',
@@ -47,7 +49,7 @@ export class QuizService {
     };
 
     const prompt = `
-Anda adalah pakar pembina soalan UPSR/PMR/SPM.
+Anda adalah pakar pembina soalan sekolah rendah.
 Jana ${dto.questionCount} soalan berdasarkan:
 
 Topik: ${dto.topic}
@@ -66,7 +68,7 @@ FORMAT WAJIB JSON SAHAJA:
   ]
 }
 `;
-
+    // const simulatedUserId = 'User_QuizGen_1'; // ⚠️ TODO: 替换为实际的用户ID
     try {
       const result = await this.model.generateContent(prompt);
 
@@ -87,6 +89,14 @@ FORMAT WAJIB JSON SAHAJA:
       // const data = JSON.parse(raw.slice(start, end));
       const questions = data.questions;
 
+      // 🌟 关键：记录 AI Usage
+      await this.usageModel.create({
+        userId: userId,
+        usageType: 'AI Quiz - Topic Quiz',
+        provider: 'Gemini',
+        model: 'gemini-2.5-flash',
+      });
+
       return {
         questions,
         generatedAt: new Date().toISOString(),
@@ -97,11 +107,10 @@ FORMAT WAJIB JSON SAHAJA:
     }
   }
 
-  // AI Generate Flashcards (New Method)
   // -----------------------------------------
-
+  // AI Generate Flashcards
   // -----------------------------------------
-  async generateFlashcards(dto: GenerateQuizDto) {
+  async generateFlashcards(dto: GenerateQuizDto, userId: string) {
     const difficultyMap = {
       easy: 'Mudah',
       medium: 'Sederhana',
@@ -133,8 +142,34 @@ FORMAT WAJIB JSON SAHAJA:
       console.log('🧪 Raw AI Flashcard Output:', raw);
 
       const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) throw new BadRequestException('Invalid JSON');
-      const data = JSON.parse(match[0]);
+      if (!match)
+        throw new BadRequestException(
+          'AI did not return a valid JSON structure.',
+        );
+
+      let data: any;
+      try {
+        data = JSON.parse(match[0]);
+      } catch (e) {
+        console.error('❌ JSON Parse Error:', e);
+        throw new BadRequestException('Invalid JSON structure returned by AI.');
+      }
+
+      // 🚨 修复：检查关键字段是否存在
+      if (!data.flashcards) {
+        throw new BadRequestException(
+          'JSON is missing the required "flashcards" field.',
+        );
+      }
+
+      await this.usageModel.create({
+        userId: userId, // 使用真实的 userId
+        usageType: 'AI Quiz - Flashcard', // 假设 Flashcard 是一个独立的 Usage Type
+        provider: 'Gemini',
+        model: 'gemini-2.5-flash',
+      });
+
+      // const data = JSON.parse(match[0]);
 
       return {
         flashcards: data.flashcards || [],
@@ -149,51 +184,67 @@ FORMAT WAJIB JSON SAHAJA:
   // -----------------------------------------
   // AI Generate Quiz from Video
   // -----------------------------------------
-  async generateVideoQuiz(dto: GenerateVideoQuizDto) {
-    // 这里的 difficultyMap 暂时不用，但 prompt 结构应和普通 Quiz 保持一致
-    const prompt = `
-Anda adalah pakar kandungan video dan pembina soalan.
-Berdasarkan kandungan video di pautan ini: ${dto.url}
+  //   async generateVideoQuiz(dto: GenerateVideoQuizDto) {
+  //     // 这里的 difficultyMap 暂时不用，但 prompt 结构应和普通 Quiz 保持一致
+  //     const prompt = `
+  // Anda adalah pakar kandungan video dan pembina soalan.
+  // Berdasarkan kandungan video di pautan ini: ${dto.url}
 
-Jana ${dto.questionCount} soalan aneka pilihan berdasarkan maklumat dari video tersebut.
+  // Jana ${dto.questionCount} soalan aneka pilihan berdasarkan maklumat dari video tersebut.
 
-FORMAT WAJIB JSON SAHAJA:
+  // FORMAT WAJIB JSON SAHAJA:
 
-{
- "questions": [
-  {
-    "question": "",
-    "options": ["", "", "", ""],
-    "answer": "",
-    "explanation": ""
-  }
- ]
-}
-`;
-    try {
-      // ⚠️ 注意：Gemini 模型可以直接处理 URL，但你需要确保你的 SDK 版本和配置支持此操作。
-      // 我们使用 generateContent 传递 prompt，模型会尝试处理 URL 内容。
-      const result = await this.model.generateContent(prompt);
+  // {
+  //  "questions": [
+  //   {
+  //     "question": "",
+  //     "options": ["", "", "", ""],
+  //     "answer": "",
+  //     "explanation": ""
+  //   }
+  //  ]
+  // }
+  // `;
+  //     try {
+  //       const result = await this.model.generateContent({
+  //         contents: [{ parts: [{ text: prompt }] }],
+  //         tools: [{ google_search: {} }], // 启用搜索工具
+  //         systemInstruction:
+  //           'You are a specialist in analyzing external content to create quizzes. Use the provided URL and search results to ensure accuracy.',
+  //       });
 
-      const raw = result.response.text().trim();
-      console.log('🧪 Raw AI Video Quiz Output:', raw);
+  //       const raw = result.response.text().trim();
+  //       console.log('🧪 Raw AI Video Quiz Output:', raw);
 
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) throw new BadRequestException('Invalid JSON');
-      const data = JSON.parse(match[0]);
+  //       const match = raw.match(/\{[\s\S]*\}/);
+  //       if (!match)
+  //         throw new BadRequestException(
+  //           'AI did not return a valid JSON structure.',
+  //         );
+  //       const data = JSON.parse(match[0]);
+  //       const questions = data.questions;
+  //       // let data: any;
+  //       // try {
+  //       //   data = JSON.parse(match[0]);
+  //       // } catch (e) {
+  //       //   console.error('❌ JSON Parse Error:', e);
+  //       //   throw new BadRequestException('Invalid JSON structure returned by AI.');
+  //       // }
 
-      const questions = data.questions;
-
-      return {
-        questions,
-        generatedAt: new Date().toISOString(),
-      };
-    } catch (err) {
-      console.error('❌ generateVideoQuiz ERROR:', err);
-      throw new InternalServerErrorException('Failed to generate video quiz');
-    }
-  }
-
+  //       // if (!data.questions) {
+  //       //   throw new BadRequestException(
+  //       //     'JSON is missing the required "questions" field.',
+  //       //   );
+  //       // }
+  //       return {
+  //         questions,
+  //         generatedAt: new Date().toISOString(),
+  //       };
+  //     } catch (err) {
+  //       console.error('❌ generateVideoQuiz ERROR:', err);
+  //       throw new InternalServerErrorException('Failed to generate video quiz');
+  //     }
+  //   }
   // -----------------------------------------
   // Create Quiz
   // -----------------------------------------

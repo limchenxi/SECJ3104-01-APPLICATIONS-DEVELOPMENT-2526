@@ -30,12 +30,13 @@ export const SidebarItem = {
       children: [
         { label: "Cerapan", to: "pentadbir/cerapan" },
         { label: "Template Rubrik", to: "pentadbir/template-rubrik" },
+        { label: "Teaching Assignment", to: "/teaching-assignment" },
       ],
     },
     { label: "Dashboard", to: "/dashboard/superadmin" },
     { label: "Pengurusan AI", to: "/ai" },
     { label: "Pengurusan Pengguna", to: "/users" },
-    { label: "Teaching Assignment", to: "/teaching-assignment" },
+  
     { label: "Profile", to: "/profile" },
   ],
 };

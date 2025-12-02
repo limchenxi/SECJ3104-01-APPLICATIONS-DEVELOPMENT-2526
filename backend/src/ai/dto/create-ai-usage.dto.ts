@@ -7,7 +7,7 @@ export class CreateAiUsageDto {
 
   @IsString()
   @IsNotEmpty()
-  module: string;
+  usageType: string;
 
   @IsString()
   @IsNotEmpty()

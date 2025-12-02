@@ -1,35 +1,63 @@
 import { useState } from "react";
 import AIList from "./model/ai-list";
 import AiUsageAnalytics from "./usage/ai-usage";
-import AIHeaderTabs from "./AIHeaderTabs";
+import { Box, Typography, Tabs, Stack, Tab } from "@mui/material";
+
 // import AiModuleSettings from "./default/ai-default";
 
 export default function AIManagementIndex() {
-  const [activeTab, setActiveTab] = useState<"model" | "usage" | "default">(
+  const [activeTab, setActiveTab] = useState<"model" | "usage">(
     "model"
   );
-  const tabTitle = {
-    model: "Senarai Model AI",
-    usage: "Analitik Penggunaan AI",
-    default: "Default Setting",
-  }[activeTab];
+  const handleTabChange = (event: React.SyntheticEvent, newValue: "model" | "usage") => {
+    setActiveTab(newValue);
+  };
 
   return (
-    <div className="p-6">
+    <Box className="p-6">
       {/* Page Title */}
-      <h1 className="text-3xl font-semibold mb-6 text-gray-800 tracking-tight">
-        {tabTitle}
-      </h1>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" sx={{ mb: 0.5, display: 'flex', alignItems: 'center'}}>
+          Pengurusan AI
+        </Typography>
+      </Box>
+      <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          // variant="fullWidth"
+          sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+        >
+          <Tab
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                Senarai Model AI
+              </Stack>
+            }
+            value="model"
+          />
+          <Tab
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                Analitik Penggunaan AI
+              </Stack>
+            }
+            value="usage"
+          />
+        </Tabs>
 
-      {/* Header Tabs Component */}
-      <AIHeaderTabs activeTab={activeTab} onChange={setActiveTab} />
-
-      {/* Main Content Card */}
-      <div className="bg-white border border-gray-300 rounded-xl p-6 shadow-sm">
+      <Box
+        sx={{
+          backgroundColor: 'white',
+          border: '1px solid',
+          borderColor: 'grey.300',
+          borderRadius: 3,
+          p: 3,
+          boxShadow: 1,
+        }}
+      >
         {activeTab === "model" && <AIList items={[]} />}
         {activeTab === "usage" && <AiUsageAnalytics />}
-        {/* {activeTab === "default" && <AiModuleSettings moduleId={""} />} */}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

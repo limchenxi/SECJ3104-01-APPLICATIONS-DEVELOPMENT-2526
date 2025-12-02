@@ -61,36 +61,6 @@ export class AiController {
   }
 
   // ────────────────────────────────────────────────
-  //  DEFAULT SETTINGS
-  // ────────────────────────────────────────────────
-
-  // @Get('settings/default')
-  // async getDefaultSetting() {
-  //   let doc = await this.defaultModel.findOne();
-
-  //   if (!doc) {
-  //     doc = await this.defaultModel.create({
-  //       provider: 'OpenAI',
-  //       model: 'gpt-4o',
-  //       temperature: 0.7,
-  //       maxToken: 2000,
-  //       timeout: 30,
-  //     });
-  //   }
-
-  //   return doc;
-  // }
-
-  // @Put('settings/default')
-  // async updateDefaultSetting(@Body() dto: any) {
-  //   return this.defaultModel.findOneAndUpdate(
-  //     {},
-  //     dto as UpdateQuery<AiDefaultSetting>,
-  //     { new: true, upsert: true },
-  //   );
-  // }
-
-  // ────────────────────────────────────────────────
   //  USAGE ANALYTICS
   // ────────────────────────────────────────────────
 
@@ -116,49 +86,48 @@ export class AiController {
   // ────────────────────────────────────────────────
   //  AI EXECUTION
   // ────────────────────────────────────────────────
+  //   @Post('run')
+  //   async runAi(
+  //     @Body() dto: { module: string; prompt: string; userId?: string },
+  //   ) {
+  //     // 1. Validate
+  //     if (!dto.module || !dto.prompt) {
+  //       return { message: 'Missing module or prompt' };
+  //     }
 
-  @Post('run')
-  async runAi(
-    @Body() dto: { module: string; prompt: string; userId?: string },
-  ) {
-    // 1. Validate
-    if (!dto.module || !dto.prompt) {
-      return { message: 'Missing module or prompt' };
-    }
+  //     // 2. Find Module
+  //     const aiModule = await this.moduleModel.findOne({
+  //       usageType: dto.module,
+  //       enabled: true,
+  //     });
 
-    // 2. Find Module
-    const aiModule = await this.moduleModel.findOne({
-      usageType: dto.module,
-      enabled: true,
-    });
+  //     if (!aiModule) {
+  //       return { message: `AI module '${dto.module}' not found or disabled` };
+  //     }
 
-    if (!aiModule) {
-      return { message: `AI module '${dto.module}' not found or disabled` };
-    }
+  //     // 3. Record Usage
+  //     await this.usageModel.create({
+  //       userId: dto.userId ?? 'Unknown',
+  //       module: aiModule.usageTypes,
+  //       provider: aiModule.provider,
+  //       model: aiModule.model,
+  //     });
 
-    // 3. Record Usage
-    await this.usageModel.create({
-      userId: dto.userId ?? 'Unknown',
-      module: aiModule.usageType,
-      provider: aiModule.provider,
-      model: aiModule.model,
-    });
+  //     // 4. Execute AI
+  //     try {
+  //       const result = await this.aiService.callAI(aiModule, dto.prompt);
 
-    // 4. Execute AI
-    try {
-      const result = await this.aiService.callAI(aiModule, dto.prompt);
-
-      return {
-        success: true,
-        module: aiModule,
-        result,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        message: 'AI execution failed',
-        error: err instanceof Error ? err.message : String(err),
-      };
-    }
-  }
+  //       return {
+  //         success: true,
+  //         module: aiModule,
+  //         result,
+  //       };
+  //     } catch (err) {
+  //       return {
+  //         success: false,
+  //         message: 'AI execution failed',
+  //         error: err instanceof Error ? err.message : String(err),
+  //       };
+  //     }
+  //   }
 }

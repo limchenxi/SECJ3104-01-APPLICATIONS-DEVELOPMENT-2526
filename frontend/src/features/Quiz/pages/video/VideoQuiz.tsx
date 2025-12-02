@@ -8,9 +8,10 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { DownloadIcon } from "lucide-react";
-import { useGenerateQuiz } from "../../hooks/useGenerateQuiz";
+import { useGenerateVideoQuiz } from "../../hooks/useGenerateVideoQuiz";
 import { exportQuizToPDF } from "../exportQuizToPdf";
 import QuizPreview from "../QuizPreview";
+
 
 export default function VideoQuizGenerator() {
   const [form, setForm] = useState({
@@ -19,10 +20,10 @@ export default function VideoQuizGenerator() {
     difficulty: "medium",
   });
 
-  const { loading, data, generate } = useGenerateQuiz("/api/quiz/ai/video-quiz");
+  const { loading, data, generateVideoQuiz  } = useGenerateVideoQuiz();
 
   const handleSubmit = async () => {
-    await generate({
+    await generateVideoQuiz({
       url: form.url,
       numQuestions: form.numQuestions,
       difficulty: form.difficulty as 'easy' | 'medium' | 'hard',

@@ -5,13 +5,12 @@ export class AiModule {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true })
-  usageType: string;
+  @Prop({ type: [String], required: true, default: [] })
+  usageTypes: string[];
 
   @Prop({ default: true })
   enabled: boolean;
 
-  // provider info
   @Prop({
     required: true,
     enum: ['OpenAI', 'Gemini', 'Copilot'],

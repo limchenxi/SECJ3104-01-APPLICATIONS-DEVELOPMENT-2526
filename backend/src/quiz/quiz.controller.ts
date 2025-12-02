@@ -7,6 +7,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { GenerateQuizDto } from './dto/generate-quiz.dto';
@@ -20,22 +21,23 @@ export class QuizController {
 
   // -------- AI Generate Quiz --------
   @Post('generate')
-  async generate(@Body() dto: GenerateQuizDto) {
-    return this.quizService.generateQuiz(dto);
+  async generate(@Body() dto: GenerateQuizDto, @Request() req: any) {
+    const userId = req.user?.userId || 'GUEST_QUIZ';
+    return this.quizService.generateQuiz(dto, userId);
   }
 
   // -------- AI Generate Flashcards --------
   @Post('ai/flashcards')
-  async generateFlashcards(@Body() dto: GenerateQuizDto) {
-    // 使用 GenerateQuizDto 作为输入
-    return this.quizService.generateFlashcards(dto);
+  async generateFlashcards(@Body() dto: GenerateQuizDto, @Request() req: any) {
+    const userId = req.user?.userId || 'GUEST_FLASHCARD';
+    return this.quizService.generateFlashcards(dto, userId);
   }
 
   // -------- AI Generate Video Quiz (New Route) --------
-  @Post('ai/video-quiz') // 👈 匹配前端的 /api/ai/video-quiz
-  async generateVideoQuiz(@Body() dto: GenerateVideoQuizDto) {
-    return this.quizService.generateVideoQuiz(dto);
-  }
+  // @Post('ai/video-quiz') // 👈 匹配前端的 /api/ai/video-quiz
+  // async generateVideoQuiz(@Body() dto: GenerateVideoQuizDto) {
+  //   return this.quizService.generateVideoQuiz(dto);
+  // }
 
   // -------- Save generated quiz --------
   @Post()
