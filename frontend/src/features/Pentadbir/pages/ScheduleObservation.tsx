@@ -204,12 +204,25 @@ export default function ScheduleObservation() {
           subject: formData.subject,
           class: formData.class,
         });
+
+        const newEvaluationId = record._id;
+        await client.put(`/cerapan/schedule/${newEvaluationId}`, {
+            scheduledDate: formData.scheduledDate,
+            scheduledTime: formData.scheduledTime,
+            observerName: formData.observerName,
+            templateRubric: formData.templateRubric,
+            notes: formData.notes,
+            observationType: formData.observationType, // 应为 'Cerapan 1'
+        });
+        const cerapanService = await import("../../Cerapan/api/cerapanService"); // Corrected import
+        await cerapanService.startObservation1ByAdmin(newEvaluationId);
+        
         setSchedules((prev) =>
           prev.map((s) =>
             s.id === selectedTeacher.id
               ? {
                   ...s,
-                  evaluationId: record._id,
+                  evaluationId: newEvaluationId,
                   observationType: formData.observationType,
                   scheduledDate: formData.scheduledDate,
                   scheduledTime: formData.scheduledTime,

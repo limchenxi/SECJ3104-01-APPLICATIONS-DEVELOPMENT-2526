@@ -1,5 +1,3 @@
-// src/pentadbir/template.schema.ts
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
@@ -96,15 +94,16 @@ export class TemplateRubric extends Document {
   updatedAt: Date;
 }
 
-export const TemplateRubricSchema = SchemaFactory.createForClass(TemplateRubric);
+export const TemplateRubricSchema =
+  SchemaFactory.createForClass(TemplateRubric);
 
 // Update the updatedAt field on save
-TemplateRubricSchema.pre('save', function() {
+TemplateRubricSchema.pre('save', function () {
   this.updatedAt = new Date();
 });
 
 // Ensure a virtual 'id' field is exposed (frontend expects 'id' not '_id')
-TemplateRubricSchema.virtual('id').get(function() {
+TemplateRubricSchema.virtual('id').get(function () {
   // @ts-ignore _id exists on mongoose document
   return this._id.toString();
 });

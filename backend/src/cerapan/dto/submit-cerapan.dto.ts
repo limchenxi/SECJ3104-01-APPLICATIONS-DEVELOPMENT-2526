@@ -1,4 +1,13 @@
-import { IsArray, IsString, IsNotEmpty, IsNumber, ValidateNested, Min, Max, IsOptional } from 'class-validator';
+import {
+  IsArray,
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  ValidateNested,
+  Min,
+  Max,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class MarkDto {
@@ -7,15 +16,14 @@ class MarkDto {
   questionId: string;
 
   @IsNumber()
-  @Min(0) 
-  @Max(4) 
+  @Min(0)
+  @Max(4)
   mark: number;
 
   @IsString()
   @IsOptional()
   comment?: string; // optional comment
 }
-
 
 export class SubmitObservationDto {
   @IsArray()

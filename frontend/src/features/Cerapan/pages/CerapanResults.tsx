@@ -25,9 +25,117 @@ import {
 // Charts removed - no longer used
 import { getReportSummary, getAdminReportSummary } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import useAuth from "../../../hooks/useAuth";
+import { userApi } from "../../Users/api";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+
+const SCHOOL_NAME = 'SK SRI SIAKAP'; 
+const SCHOOL_CODE = 'ABA 3012';
+const PDFExportContent = ({ report, summary, teacherName }: { report: CerapanRecord, summary: ReportSummary, teacherName: string | undefined }) => {
+    if (!report || !summary) return null;
+
+    const breakdown = summary.categories.breakdown.sort((a, b) => a.code.localeCompare(b.code));
+    const subCategoryCodes = breakdown.map(c => c.code);
+    const dateToday = new Date().toLocaleDateString('ms-MY');
+
+    const scoreRowData = [
+        { label: 'Cerapan Kendiri / Self', key: 'weightedSelf' as keyof ReportSummary['categories']['breakdown'][0], total: summary.categories.totals.weightedSelfTotal },
+        { label: 'Cerapan 1 / Obs 1', key: 'weighted1' as keyof ReportSummary['categories']['breakdown'][0], total: summary.categories.totals.weightedObservation1Total },
+        { label: 'Cerapan 2 / Obs 2', key: 'weighted2' as keyof ReportSummary['categories']['breakdown'][0], total: summary.categories.totals.weightedObservation2Total },
+    ];
+
+    // 🚨 注意: 样式使用内联 CSS，因为 html2canvas 不总能完美抓取外部 MUI/CSS 样式
+    return (
+        <div style={{ 
+            padding: '20px', 
+            backgroundColor: '#fff', 
+            fontSize: '10pt', 
+            fontFamily: 'Arial, sans-serif', 
+            width: '1100px' // 确保宽度足够大，用于横向 A4 导出
+        }}>
+            {/* Header / Info */}
+            <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>TAPAK STANDARD 4</h1>
+            <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>PEMBELAJARAN DAN PEMUDAHCARAAN (PdPc)</h1>
+            <br />
+            <table style={{ width: '100%', marginBottom: '15px', borderCollapse: 'collapse' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ width: '33%' }}><strong>Nama Guru:</strong> {teacherName || report.teacherId}</td>
+                        <td style={{ width: '33%' }}><strong>Sekolah:</strong> {SCHOOL_NAME} ({SCHOOL_CODE})</td>
+                        <td style={{ width: '33%' }}><strong>Sesi Pengisian:</strong> {report.period}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mata Pelajaran:</strong> {report.subject}</td>
+                        <td><strong>Kelas:</strong> {report.class}</td>
+                        <td><strong>Tarikh Laporan:</strong> {dateToday}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* Score Table (Excel Format) */}
+            <h2 style={{ fontSize: '14pt', marginTop: '20px', marginBottom: '10px' }}>Skor Berwajaran Mengikut Subkategori (0-100)</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000' }}>
+                <thead>
+                    <tr style={{ backgroundColor: '#f0f0f0' }}>
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', minWidth: '150px' }}>Penilaian/Evaluation</th>
+                        {subCategoryCodes.map(code => (
+                            <th key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{code}</th>
+                        ))}
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', minWidth: '120px' }}>Jumlah Skor</th>
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>Taraf</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {scoreRowData.map(row => (
+                        <tr key={row.label}>
+                            <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>{row.label}</td>
+                            {subCategoryCodes.map(code => {
+                                const category = breakdown.find(c => c.code === code);
+                                const score = category ? category[row.key] : 0;
+                                return (
+                                    <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>
+                                        {score && score > 0 ? score.toFixed(2) : '-'}
+                                    </td>
+                                );
+                            })}
+                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>{row.total.toFixed(2)}</td>
+                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.label.includes('Cerapan 2') ? summary.overall.label : ''}</td>
+                        </tr>
+                    ))}
+                    {/* Footer Row for Wajaran */}
+                    <tr>
+                        <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold', backgroundColor: '#e0ee0e' }}>Wajaran / Weight (Total 100)</td>
+                        {subCategoryCodes.map(code => {
+                            const category = breakdown.find(c => c.code === code);
+                            return (
+                                <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                                    {category ? category.weight.toFixed(0) : '-'}
+                                </td>
+                            );
+                        })}
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                            {summary.overall.triAverageWeighted.toFixed(2)}
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                            Purata
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* AI Comment Section */}
+            {/* {report.aiComment && (
+                <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f9f9f9', border: '1px dashed #ccc' }}>
+                    <h2 style={{ fontSize: '14pt', marginBottom: '5px', fontWeight: 'bold', color: '#006699' }}>Komen AI (Dwibahasa) / AI Comment (Bilingual)</h2>
+                    <p style={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: '1.5' }}>
+                        {report.aiComment}
+                    </p>
+                </div>
+            )} */}
+        </div>
+    );
+};
 
 export default function CerapanResults() {
   const theme = useTheme();
@@ -41,6 +149,7 @@ export default function CerapanResults() {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fullTeacherName, setFullTeacherName] = useState<string | undefined>(undefined);
 
   // Determine if this is admin view
   const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/");
@@ -48,6 +157,20 @@ export default function CerapanResults() {
   useEffect(() => {
     loadReport();
   }, [id]);
+
+  useEffect(() => {
+    const fetchTeacherName = async () => {
+      if (report?.teacherId) {
+        try {
+            const user = await userApi.getById(report.teacherId);
+              setFullTeacherName(user?.name);
+            } catch {
+                setFullTeacherName(report.teacherId); // 失败时使用 ID
+            }
+        }
+    };
+    fetchTeacherName();
+  }, [report?.teacherId]);
 
   const loadReport = async () => {
     if (!id) return;
@@ -74,47 +197,64 @@ export default function CerapanResults() {
   const hasObs2 = (summary?.observation2.count ?? 0) > 0;
 
   const handleExportPdf = async () => {
+    if (!report || !summary) {
+        setError("Laporan tidak lengkap untuk eksport.");
+        return;
+    }
+    
     try {
-      const input = exportRef.current;
-      if (!input) return;
+        // 🚨 目标元素是隐藏的 PDF 容器
+        // 由于我们将其命名为 'pdf-export-content'，我们使用 document.getElementById
+        const input = document.getElementById('pdf-export-content');
+        if (!input) {
+            setError("PDF content container not found.");
+            return;
+        }
 
-      // Use a white background to avoid transparency issues
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      const imgData = canvas.toDataURL("image/png");
+        // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
+        const canvas = await html2canvas(input, {
+            scale: 2, // 提高分辨率
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            // 确保我们抓取的是隐藏元素的实际内容尺寸
+        });
+        
+        const imgData = canvas.toDataURL("image/png");
 
-      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+        // 2. 初始化 jsPDF
+        // 使用 Landscape (横向) A4 格式
+        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        const imgProps = {
+            width: pageWidth,
+            height: (canvas.height * pageWidth) / canvas.width,
+        };
 
-      const imgProps = {
-        width: pageWidth,
-        height: (canvas.height * pageWidth) / canvas.width,
-      };
+        let heightLeft = imgProps.height;
+        let position = 0;
 
-      let heightLeft = imgProps.height;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgProps.height;
-        pdf.addPage();
+        // 3. 将 Canvas 图像添加到 PDF 中并处理分页
         pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
         heightLeft -= pageHeight;
-      }
 
-      const fileName = `Laporan_Cerapan_${report?.subject || ''}_${report?.class || ''}.pdf`;
-      pdf.save(fileName.replace(/\s+/g, '_'));
-    } catch (e) {
-      console.error("PDF export failed", e);
-      setError("Gagal menjana PDF. Sila cuba lagi.");
+        while (heightLeft > 0) {
+            position = heightLeft - imgProps.height;
+            pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
+            heightLeft -= pageHeight;
+        }
+
+        // 4. 保存文件
+        const fileName = `Laporan_Cerapan_${report.subject}_${report.class}.pdf`;
+        pdf.save(fileName.replace(/\s+/g, '_'));
+
+    } catch (e: any) {
+        console.error("PDF export failed:", e);
+        setError(`Gagal menjana PDF: ${e.message || '未知错误'}`);
     }
-  };
+};
 
   if (loading) {
     return (
@@ -228,7 +368,7 @@ export default function CerapanResults() {
                         Kendiri (Self)
                       </Typography>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" component="span">
                       {summary?.selfEvaluation.status === 'submitted' ? (
                         <>
                           <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
@@ -382,6 +522,35 @@ export default function CerapanResults() {
           </CardContent>
         </Card>
 
+        {/* AI COMMENT CARD: NEW SECTION */}
+        {report.aiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
+          <Card
+            raised
+            sx={{
+                border: `2px solid ${theme.palette.primary.main}`,
+                bgcolor: theme.palette.primary.light + '20',
+            }}
+          >
+            <CardContent>
+                <Stack spacing={2}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                        <Award size={24} style={{ color: theme.palette.primary.main }} />
+                        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 700 }}>
+                            AI Comment / Komen AI (Dwibahasa)
+                        </Typography>
+                    </Stack>
+                    <Typography 
+                        variant="body1" 
+                        sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
+                    >
+                        {/* 显示 AI 生成的双语评论 */}
+                        {report.aiComment}
+                    </Typography>
+                </Stack>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Per-subcategory breakdown table */}
         {(summary?.categories.breakdown?.length ?? 0) > 0 && (
           <Card>
@@ -437,6 +606,9 @@ export default function CerapanResults() {
             </CardContent>
           </Card>
         )}
+        <Box id="pdf-export-content" sx={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -1 }}>
+            <PDFExportContent report={report} summary={summary} teacherName={fullTeacherName} />
+        </Box>
 
 
         {/* Action Buttons */}
@@ -448,13 +620,13 @@ export default function CerapanResults() {
           >
             Kembali ke Dashboard
           </Button>
-          <Button
+          {/* <Button
             variant="contained"
             size="large"
             onClick={() => navigate(isAdminView ? "/cerapan/admin" : "/cerapan/my-reports")}
           >
             {isAdminView ? "Lihat Tugasan Pentadbir" : "Lihat Semua Laporan"}
-          </Button>
+          </Button> */}
           <Button
             variant="contained"
             color="secondary"

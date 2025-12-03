@@ -91,6 +91,10 @@ const AdminObservationForm = lazy(
 const PentadbirCerapanForm = lazy(
   () => import("../features/Cerapan/pages/sample/Cerapan")
 );
+const TeacherReportHistory = lazy(
+  () => import("../features/Cerapan/pages/TeacherReportHistory")
+);
+
 const NotFound = lazy(() => import("./NotFound"));
 const ProtectedLayout = lazy(() => import("./ProtectedLayout"));
   
@@ -241,6 +245,7 @@ export default function AppRoutes() {
               </RoleGuard>
             } 
           />
+          <Route path="/cerapan/my-reports" element={<TeacherReportHistory />} />
           
           {/* Pentadbir Routes */}
           <Route
@@ -263,7 +268,7 @@ export default function AppRoutes() {
             path="/cerapan/report/:id"
             element={
               <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
-                <PentadbirCerapanReport />
+                <CerapanResults />
               </RoleGuard>
             }
           />

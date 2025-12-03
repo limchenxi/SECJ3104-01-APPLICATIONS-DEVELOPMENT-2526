@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -39,7 +38,7 @@ export class CerapanController {
       if (err.code === 11000) {
         throw new HttpException(
           'Cerapan untuk guru, subjek dan kelas ini sudah wujud.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
       throw err;
@@ -72,7 +71,6 @@ export class CerapanController {
     return this.cerapanService.getEvaluationByIdAdmin(evaluationId);
   }
 
-  
   @Put('observation-1/:id')
   // @UseGuards(AdminAuthGuard)
   submitObservation1(
@@ -81,11 +79,7 @@ export class CerapanController {
     @Req() req: RequestWithUser,
   ) {
     const adminId = req.user.name || (req.user._id as any).toString();
-    return this.cerapanService.submitObservation1(
-      evaluationId,
-      dto,
-      adminId,
-    );
+    return this.cerapanService.submitObservation1(evaluationId, dto, adminId);
   }
 
   /**
@@ -100,11 +94,7 @@ export class CerapanController {
     @Req() req: RequestWithUser,
   ) {
     const adminId = req.user.name || (req.user._id as any).toString();
-    return this.cerapanService.submitObservation2(
-      evaluationId,
-      dto,
-      adminId,
-    );
+    return this.cerapanService.submitObservation2(evaluationId, dto, adminId);
   }
 
   /**
@@ -117,7 +107,6 @@ export class CerapanController {
     return this.cerapanService.getAdminReportWithSummary(evaluationId);
   }
 
- 
   @Get('my-tasks')
   getMyPendingTasks(@Req() req: RequestWithUser) {
     const teacherId = (req.user._id as any).toString();
@@ -137,7 +126,6 @@ export class CerapanController {
     return this.cerapanService.getEvaluationForTask(evaluationId, teacherId);
   }
 
-
   @Put('self-evaluation/:id')
   submitSelfEvaluation(
     @Param('id') evaluationId: string,
@@ -155,7 +143,8 @@ export class CerapanController {
   @Put('schedule/:id')
   updateSchedule(
     @Param('id') evaluationId: string,
-    @Body() scheduleData: {
+    @Body()
+    scheduleData: {
       scheduledDate: string;
       scheduledTime: string;
       observerName: string;
@@ -173,7 +162,6 @@ export class CerapanController {
     return this.cerapanService.getMyReportHistory(teacherId);
   }
 
-  
   @Get('report/:id')
   getReportDetails(
     @Param('id') evaluationId: string,

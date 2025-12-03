@@ -165,3 +165,7 @@ export const startSelfEvaluation = async (
   const response = await client().post<CerapanRecord>("/cerapan/self-start", payload);
   return response.data;
 };
+
+export function startObservation1ByAdmin(newEvaluationId: string) {
+  throw new Error("Function not implemented.");
+}

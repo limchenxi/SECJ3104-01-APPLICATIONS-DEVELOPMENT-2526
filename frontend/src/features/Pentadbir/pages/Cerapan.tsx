@@ -80,7 +80,7 @@ function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluatio
   };
 
   const handleViewReport = (evaluationId: string) => {
-    navigate(`/pentadbir/cerapan/report/${evaluationId}`);
+    navigate(`/cerapan/report/${evaluationId}`);
   };
 
   // Build rows for each teacher-subject-class combination
@@ -277,7 +277,8 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {row.obs1Status === 'pending' && title.includes('Cerapan 1') && row.scheduledDate && row.scheduledTime && (
+                      {/* {row.obs1Status === 'pending' && title.includes('Cerapan 1') && row.scheduledDate && row.scheduledTime && ( */}
+                      {(row.obs1Status === 'pending') && row.id && (
                         <Button 
                           size="small" 
                           variant="contained"
@@ -287,7 +288,8 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                           Mula Cerapan 1
                         </Button>
                       )}
-                      {row.obs2Status === 'pending' && title.includes('Cerapan 2') && row.obs1Status === 'submitted' && row.scheduledDate && row.scheduledTime && (
+                      {/* {row.obs2Status === 'pending' && title.includes('Cerapan 2') && row.obs1Status === 'submitted' && row.scheduledDate && row.scheduledTime && ( */}
+                      {row.obs2Status === 'pending' && title.includes('Cerapan 2') && row.obs1Status === 'submitted' && row.id && (
                         <Button 
                           size="small" 
                           variant="contained"
@@ -297,9 +299,14 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                           Mula Cerapan 2
                         </Button>
                       )}
-                      <Button size="small" startIcon={<Eye size={16} />} onClick={() => navigate(`/pentadbir/cerapan/report/${row.id}`)}>
+                      {/* <Button size="small" startIcon={<Eye size={16} />} onClick={() => navigate(`/cerapan/report/${row.id}`)}>
                         Lihat
-                      </Button>
+                      </Button> */}
+                      {row.id && (
+                        <Button size="small" startIcon={<Eye size={16} />} onClick={() => navigate(`/cerapan/report/${row.id}`)}>
+                          Lihat
+                        </Button>
+                      )}
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -412,7 +419,9 @@ export default function Cerapan() {
 
       <TabPanel value={activeTab} index={1}>
         <CerapanTable 
-          data={evaluations.filter(e => e.obs1Status === 'pending')} 
+          data={evaluations.filter(e => 
+            e.obs1Status === 'pending'|| 
+            e.status === 'pending_self_evaluation')} 
           title="Cerapan 1 - Sedia untuk Pentadbir" 
         />
       </TabPanel>

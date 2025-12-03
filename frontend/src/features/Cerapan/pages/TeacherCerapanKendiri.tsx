@@ -66,6 +66,16 @@ export default function TeacherCerapanKendiri() {
     [assignments, selectedSubject]
   );
 
+  const unstartedAssignments = useMemo(() => {
+    if (assignments.length === 0) return [];
+    const existingKeys = new Set(pendingTasks.map(t => `${t.subject}_${t.class}`));
+    return assignments.filter(assignment => {
+        const key = `${assignment.subject}_${assignment.class}`;
+        return !existingKeys.has(key);
+    });
+    
+  }, [assignments, pendingTasks]);
+
   // Load templates, assignments, tasks
   useEffect(() => {
     let mounted = true;
@@ -167,6 +177,16 @@ export default function TeacherCerapanKendiri() {
           <Typography color="text.secondary">
             Penilaian prestasi & pembangunan profesional
           </Typography>
+          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2, mb: -2 }}>
+            <Button
+                variant="contained" // 使用 contained 样式更显眼
+                color="primary"
+                onClick={() => navigate('/cerapan/my-reports')} // 跳转到 TeacherReportHistory 页面
+                startIcon={<BookOpen size={18} />}
+            >
+                Lihat Sejarah Laporan
+            </Button>
+          </Stack>
         </Box>
 
         {/* Period card */}
@@ -211,7 +231,7 @@ export default function TeacherCerapanKendiri() {
                 </Stack>
               </Stack>
 
-              <Button
+              {/* <Button
                 variant="contained"
                 onClick={openSelection}
                 sx={{
@@ -227,7 +247,7 @@ export default function TeacherCerapanKendiri() {
                 }}
               >
                 Mula Penilaian Kendiri
-              </Button>
+              </Button> */}
             </Stack>
           </CardContent>
         </Card>
@@ -235,44 +255,92 @@ export default function TeacherCerapanKendiri() {
         <Divider />
 
         {/* Pending tasks */}
-        {pendingTasks.length > 0 ? (
-          <Stack spacing={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        {(pendingTasks.length > 0 || unstartedAssignments.length > 0) ? (
+          <Stack spacing={4}>
+            {/* <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Penilaian Belum Selesai
-            </Typography>
+            </Typography> */}
 
-            {pendingTasks.map((t) => (
-              <Card key={t._id} variant="outlined" sx={{ borderRadius: 2 }}>
-                <CardContent>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack spacing={0.5}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <BookOpen size={16} />
-                        <Typography sx={{ fontWeight: 600 }}>{t.subject}</Typography>
-                      </Stack>
-
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Users size={14} />
-                        <Typography variant="body2" color="text.secondary">
-                          Kelas: {t.class} • Tempoh: {t.period}
+            {/* 1. 正在进行的任务 (Pending tasks) */}
+                {pendingTasks.length > 0 && (
+                    <Stack spacing={2}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            Penilaian Belum Selesai ({pendingTasks.length})
                         </Typography>
-                      </Stack>
+                        {pendingTasks.map((t) => (
+                            <Card key={t._id} variant="outlined" sx={{ borderRadius: 2 }}>
+                                <CardContent>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                        <Stack spacing={0.5}>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <BookOpen size={16} />
+                                                <Typography sx={{ fontWeight: 600 }}>{t.subject}</Typography>
+                                            </Stack>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <Users size={14} />
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Kelas: {t.class} • Tempoh: {t.period}
+                                                </Typography>
+                                            </Stack>
+                                        </Stack>
+                                        <Button variant="outlined" onClick={() => navigate(`/cerapan/task/${t._id}`)}>
+                                            Sambung
+                                        </Button>
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </Stack>
+                )}
 
-                    <Button variant="outlined" onClick={() => navigate(`/cerapan/task/${t._id}`)}>
-                      Sambung
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
+                {/* 2. 待开始的新任务 (Unstarted assignments) */}
+                {unstartedAssignments.length > 0 && (
+                    <Stack spacing={2}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mt: 3, color: theme.palette.info.main }}>
+                            Sedia Untuk Mula Penilaian ({unstartedAssignments.length})
+                        </Typography>
+                        {unstartedAssignments.map((assignment, index) => (
+                            <Card key={index} variant="outlined" sx={{ borderRadius: 2, bgcolor: theme.palette.info.light + '10' }}>
+                                <CardContent>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                        <Stack spacing={0.5}>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <BookOpen size={16} style={{ color: theme.palette.info.main }} />
+                                                <Typography sx={{ fontWeight: 600, color: theme.palette.info.dark }}>{assignment.subject}</Typography>
+                                            </Stack>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                                <Users size={14} />
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Kelas: {assignment.class} • Tempoh: {currentPeriod.name}
+                                                </Typography>
+                                            </Stack>
+                                        </Stack>
+                                        <Button 
+                                            variant="outlined" 
+                                            size="small"
+                                            onClick={() => {
+                                                setSelectedSubject(assignment.subject);
+                                                setSelectedClass(assignment.class);
+                                                setError(null);
+                                                setDialogOpen(true);
+                                            }}
+                                        >
+                                            Mula Sekarang
+                                        </Button>
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </Stack>
+                )}
+            </Stack>
         ) : (
-          <Typography variant="body2" color="text.secondary">
-            Tiada penilaian yang belum diselesaikan.
-          </Typography>
-        )}
-      </Stack>
+          <>
+            <Typography variant="body2" color="text.secondary">
+              Tiada penilaian kendiri yang perlu diselesaikan. Tahniah!
+            </Typography>
+          </>
+        )}     
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onClose={closeSelection} fullWidth maxWidth="sm">
@@ -351,6 +419,7 @@ export default function TeacherCerapanKendiri() {
           </Button>
         </DialogActions>
       </Dialog>
+      </Stack>
     </Box>
   );
 }

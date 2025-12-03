@@ -29,11 +29,11 @@ export async function exportQuizToPDF(
     // 使用内联样式，避免依赖外部 CSS 或 @media print
     const htmlContent = `
     <div id="pdf-content-wrapper" style="width: 210mm; padding: 20px; box-sizing: border-box; background: white;">
-        <h1 style="font-size: 20px; margin-bottom: 8px; font-family: Arial, sans-serif;">${finalTitle}</h1>
+        <h1 style="font-size: 24px; margin-bottom: 5px; font-family: Arial, sans-serif; text-align: center;">SK SRI SIAKAP</h1>
+        <h2 style="font-size: 18px; margin-bottom: 10px; font-family: Arial, sans-serif; text-align: center;">${pdfHeaderTitle}</h2>
+
         <div style="color: #666; margin-bottom: 15px; font-size: 14px; font-family: Arial, sans-serif;">
-            Subjek: ${escapeHtml(quiz.subject || "")} | Generated: ${new Date(
-                quiz.createdAt || Date.now()
-            ).toLocaleDateString()}
+            Subjek: ${escapeHtml(quiz.subject || "")} | Bilangan Soalan: ${(quiz.questions || []).length}
         </div>
         
         ${ (quiz.questions || []).map((q: any, i: number) =>{ 
