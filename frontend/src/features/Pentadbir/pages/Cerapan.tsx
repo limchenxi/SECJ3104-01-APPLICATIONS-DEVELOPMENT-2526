@@ -16,6 +16,7 @@ import {
   TableRow,
   Chip,
   Button,
+  Stack,
 } from "@mui/material";
 import { ClipboardCheck, CheckCircle, BarChart3, Calendar, Eye } from "lucide-react";
 import { pentadbirService } from "../api/pentadbirService";
@@ -24,6 +25,7 @@ import type { UserItem } from "../../Users/stores";
 import { useNavigate } from "react-router-dom";
 import ScheduleObservationModal from "../components/ScheduleObservationModal";
 import ObservationCard from "../components/ObservationCard";
+import { ManageAccounts } from "@mui/icons-material";
 
 interface EvaluationRow {
   id: string;
@@ -225,10 +227,6 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
     }
   };
 
-  const handleViewReport = (evaluationId: string) => {
-    navigate(`/pentadbir/cerapan/report/${evaluationId}`);
-  };
-
   return (
     <Card>
       <CardContent>
@@ -399,10 +397,13 @@ export default function Cerapan() {
   }
 
   return (
-    <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        Pengurusan Cerapan Pengajaran
-      </Typography>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>  
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <ManageAccounts color="primary" fontSize="large"/> Pengurusan Cerapan Pengajaran
+          </Typography>
+        </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
@@ -623,6 +624,7 @@ export default function Cerapan() {
           )}
         </Box>
       </TabPanel>
+      </Stack>
     </Box>
   );
 }

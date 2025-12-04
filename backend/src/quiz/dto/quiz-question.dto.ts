@@ -1,5 +1,3 @@
-// quiz-question.dto.ts
-
 import {
   IsNotEmpty,
   IsNumber,

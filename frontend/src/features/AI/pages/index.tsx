@@ -2,6 +2,7 @@ import { useState } from "react";
 import AIList from "./model/ai-list";
 import AiUsageAnalytics from "./usage/ai-usage";
 import { Box, Typography, Tabs, Stack, Tab } from "@mui/material";
+import { Computer } from "@mui/icons-material";
 
 // import AiModuleSettings from "./default/ai-default";
 
@@ -14,13 +15,14 @@ export default function AIManagementIndex() {
   };
 
   return (
-    <Box className="p-6">
-      {/* Page Title */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 0.5, display: 'flex', alignItems: 'center'}}>
-          Pengurusan AI
-        </Typography>
-      </Box>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>  
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <Computer color="primary" fontSize="large"/> Pengurusan AI
+          </Typography>
+        </Box>
+
       <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -58,6 +60,7 @@ export default function AIManagementIndex() {
         {activeTab === "model" && <AIList items={[]} />}
         {activeTab === "usage" && <AiUsageAnalytics />}
       </Box>
+      </Stack>
     </Box>
   );
 }

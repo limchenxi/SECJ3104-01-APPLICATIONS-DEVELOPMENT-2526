@@ -28,6 +28,8 @@ import type { AvailableCerapanAssignment } from "../../TeachingAssignment/api";
 import type { CerapanRecord } from "../type";
 import type { TemplateRubric } from "../../Pentadbir/type";
 import useAuth from "../../../hooks/useAuth";
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+
 
 export default function TeacherCerapanKendiri() {
   const theme = useTheme();
@@ -170,13 +172,14 @@ export default function TeacherCerapanKendiri() {
     <Box sx={{ maxWidth: "xl", mx: "auto", p: { xs: 2, md: 4 } }}>
       <Stack spacing={4}>
         {/* Header */}
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            Cerapan Guru — Penilaian Kendiri
-          </Typography>
-          <Typography color="text.secondary">
-            Penilaian prestasi & pembangunan profesional
-          </Typography>
+          <Box>
+            <Typography variant="h4" sx={{ mb: 0.5 }}>
+              <ReceiptLongIcon color="primary" fontSize="large"/> Cerapan Guru — Penilaian Kendiri
+            </Typography>
+            <Typography color="text.secondary">
+              Penilaian prestasi & pembangunan profesional
+            </Typography>
+          </Box>
           <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2, mb: -2 }}>
             <Button
                 variant="contained" // 使用 contained 样式更显眼
@@ -187,7 +190,6 @@ export default function TeacherCerapanKendiri() {
                 Lihat Sejarah Laporan
             </Button>
           </Stack>
-        </Box>
 
         {/* Period card */}
         <Card
@@ -231,7 +233,7 @@ export default function TeacherCerapanKendiri() {
                 </Stack>
               </Stack>
 
-              {/* <Button
+              <Button
                 variant="contained"
                 onClick={openSelection}
                 sx={{
@@ -247,7 +249,7 @@ export default function TeacherCerapanKendiri() {
                 }}
               >
                 Mula Penilaian Kendiri
-              </Button> */}
+              </Button>
             </Stack>
           </CardContent>
         </Card>

@@ -4,9 +4,10 @@ import { FileQuestion, BookOpen, Youtube, ClipboardClock } from "lucide-react";
 
 import TopicQuizGenerator from "./topic/TopicQuiz";
 import FlashcardGenerator from "./flashcard/Flashcard";
-import VideoQuizGenerator from "./video/VideoQuiz";
+// import VideoQuizGenerator from "./video/VideoQuiz";
 import QuizHistory from "./history/HIstory";
 import QuizDetailModal from "./history/QuizDetailModal";
+import { Quiz } from "@mui/icons-material";
 
 export default function QuizGeneratorPage() {
   const [tabValue, setTabValue] = useState(0);
@@ -27,14 +28,14 @@ export default function QuizGeneratorPage() {
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
-      <Stack spacing={4}>
+      <Stack spacing={4}>  
         {/* Header */}
         <Box>
           <Typography variant="h4" sx={{ mb: 0.5 }}>
-            📝 AI Penjana Kuiz & Kad Imbas
+            <Quiz color="primary" fontSize="large"/> AI Penjana Kuiz & Kad Imbas
           </Typography>
           <Typography color="text.secondary">
-            Jana kuiz, kad imbas dan kuiz video dengan bantuan AI
+            Jana kuiz dan kad imbas dengan bantuan AI
           </Typography>
         </Box>
 

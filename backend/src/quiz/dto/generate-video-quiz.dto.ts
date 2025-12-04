@@ -1,3 +1,4 @@
+//x guna
 import { IsNumber, IsString, IsUrl, Min } from 'class-validator';
 
 export class GenerateVideoQuizDto {

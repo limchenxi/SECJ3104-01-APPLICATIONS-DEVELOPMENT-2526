@@ -40,10 +40,10 @@ export const getUsageColor = (usageType: string) => {
   switch (usageType) {
     case "eRPH":
       return "primary";
-    case "AI Quiz - Topic Quiz":
+    case "AI Topic Quiz":
       return "secondary";
-    case "AI Quiz - Flashcard":
-      return "secondary";
+    case "AI Flashcard":
+      return "error";
     case "Cerapan Comment":
       return "warning";
     default:

@@ -54,9 +54,6 @@ const PentadbirTemplateRubrik = lazy(
 const PentadbirTemplateRubrikDetail = lazy(
   () => import("../features/Pentadbir/pages/TemplateRubrikDetail")
 );
-const PentadbirCerapanReport = lazy(
-  () => import("../features/Pentadbir/pages/CerapanReport")
-);
 
 //Superadmin Pages
 const UserList= lazy(
@@ -157,7 +154,7 @@ export default function AppRoutes() {
                 path="/pentadbir/cerapan/report/:id"
                 element={
                   <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
-                    <PentadbirCerapanReport />
+                    <CerapanResults />
                   </RoleGuard>
                 }
               />

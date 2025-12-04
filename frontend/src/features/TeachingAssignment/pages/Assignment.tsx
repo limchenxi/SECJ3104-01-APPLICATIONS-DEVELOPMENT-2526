@@ -37,6 +37,7 @@ import {
 
 import { userApi } from "../../Users/api";
 import type { UserItem } from "../../Users/stores";
+import { School } from "@mui/icons-material";
 
 // ---------------------------------------------------------------
 // Clean, organized subjects list
@@ -205,20 +206,22 @@ export default function TeachingAssignmentPage() {
   // Render UI
   // -------------------------------------------------------------
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: "2rem" }}>
-      {/* Top Bar */}
-      <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h4">Pengurusan Tugasan Mengajar</Typography>
-
-        <Button
-          variant="contained"
-          startIcon={<Plus size={18} />}
-          onClick={() => openForm()}
-        >
-          Tambah
-        </Button>
-      </Box>
-
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>  
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <School color="primary" fontSize="large"/> Pengurusan Tugasan Mengajar
+          </Typography>
+        </Box>
+        <Box>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() => openForm()}
+          >
+            Tambah
+          </Button>
+        </Box>
       {/* Table */}
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 2 }}>
         <Table>
@@ -342,6 +345,7 @@ export default function TeachingAssignmentPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </motion.div>
+      </Stack>
+    </Box>
   );
 }

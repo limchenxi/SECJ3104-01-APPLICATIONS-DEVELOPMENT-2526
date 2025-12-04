@@ -13,9 +13,9 @@ type AiModule = {
 
 @Injectable()
 export class AiService {
-  private openai = new OpenAI({
-    apiKey: process.env.OPENAI_KEY || process.env.OPENAI_API_KEY,
-  });
+  // private openai = new OpenAI({
+  //   apiKey: process.env.OPENAI_KEY || process.env.OPENAI_API_KEY,
+  // });
 
   private gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 

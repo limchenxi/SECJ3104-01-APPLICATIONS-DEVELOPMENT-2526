@@ -13,7 +13,7 @@ import { QuizHistory } from './schemas/quiz-history.schema';
 import { GenerateQuizDto } from './dto/generate-quiz.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizHistoryDto } from './dto/create-history.dto';
-import { GenerateVideoQuizDto } from './dto/generate-video-quiz.dto';
+// import { GenerateVideoQuizDto } from './dto/generate-video-quiz.dto';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 @Injectable()
@@ -92,7 +92,7 @@ FORMAT WAJIB JSON SAHAJA:
       // 🌟 关键：记录 AI Usage
       await this.usageModel.create({
         userId: userId,
-        usageType: 'AI Quiz - Topic Quiz',
+        usageType: 'AI Topic Quiz',
         provider: 'Gemini',
         model: 'gemini-2.5-flash',
       });
@@ -164,7 +164,7 @@ FORMAT WAJIB JSON SAHAJA:
 
       await this.usageModel.create({
         userId: userId, // 使用真实的 userId
-        usageType: 'AI Quiz - Flashcard', // 假设 Flashcard 是一个独立的 Usage Type
+        usageType: 'AI Flashcard', // 假设 Flashcard 是一个独立的 Usage Type
         provider: 'Gemini',
         model: 'gemini-2.5-flash',
       });

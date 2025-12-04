@@ -1,25 +1,5 @@
 import { Store } from "@tanstack/react-store";
-
-export interface UserItem {
-  id?: string; // from Mongodb
-  _id?: string; // for Datagrid
-  name: string;
-  email: string;
-  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
-  ic: string;
-  gender: string;
-  phone?: string;
-  profileImageUrl?: string;
-  // Optional teaching assignments
-  // subjects?: string[];
-  // classes?: string[];
-}
-
-export interface UsersState {
-  items: UserItem[];
-  isLoading: boolean;
-  error?: string;
-}
+import type { UserItem, UsersState } from "../type";
 
 export const usersStore = new Store<UsersState>({
   items: [],
