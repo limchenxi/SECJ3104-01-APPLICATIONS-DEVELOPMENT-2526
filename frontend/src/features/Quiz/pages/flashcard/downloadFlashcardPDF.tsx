@@ -26,7 +26,8 @@ export async function downloadFlashcardPDF(data: any, options?: { title?: string
   // We create a grid layout (2 columns) suitable for printing and cutting
   const htmlContent = `
     <div id="pdf-flashcard-wrapper" style="width: 210mm; padding: 15mm; box-sizing: border-box; background: white; font-family: Arial, sans-serif;">
-        <div style="text-align: center; margin-bottom: 20px;">
+      <h1 style="font-size: 24px; margin-bottom: 5px; font-family: Arial, sans-serif; text-align: center;">SK SRI SIAKAP</h1>  
+      <div style="text-align: center; margin-bottom: 20px;">
             <h1 style="font-size: 24px; margin: 0;">${finalTitle}</h1>
             <p style="color: #666; margin: 5px 0;">${subject} | ${new Date().toLocaleDateString()}</p>
         </div>
@@ -44,16 +45,16 @@ export async function downloadFlashcardPDF(data: any, options?: { title?: string
                     background-color: #f9f9f9;
                 ">
                     <div style="font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; font-weight: bold;">
-                        Card #${i + 1}
+                        Kad #${i + 1}
                     </div>
                     
                     <div style="margin-bottom: 15px;">
-                        <div style="font-size: 11px; color: #555; font-weight: bold;">MUKA DEPAN (FRONT):</div>
+                        <div style="font-size: 11px; color: #555; font-weight: bold;">Soalan:</div>
                         <div style="font-size: 14px; margin-top: 4px; color: #000;">${escapeHtml(card.front)}</div>
                     </div>
                     
                     <div style="border-top: 1px solid #ddd; padding-top: 10px;">
-                        <div style="font-size: 11px; color: #555; font-weight: bold;">BELAKANG (BACK):</div>
+                        <div style="font-size: 11px; color: #555; font-weight: bold;">Jawapan:</div>
                         <div style="font-size: 14px; margin-top: 4px; color: #000; font-weight: bold;">${escapeHtml(card.back)}</div>
                     </div>
                 </div>
