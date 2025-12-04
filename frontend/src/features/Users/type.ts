@@ -2,10 +2,10 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  gender: "female" | "male";
+  gender: "Female" | "Male";
   ic: string;
   phone?: string;
-  role: "guru" | "pentadbir" | "superadmin";
+  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
   profilePicture?: string;
 
   // additional User fields
@@ -21,12 +21,9 @@ export interface UserItem {
   email: string;
   role: "GURU" | "PENTADBIR" | "SUPERADMIN";
   ic: string;
-  gender: string;
+  gender: "Female" | "Male";
   phone?: string;
   profileImageUrl?: string;
-  // Optional teaching assignments
-  // subjects?: string[];
-  // classes?: string[];
 }
 
 export interface UsersState {
@@ -34,3 +31,11 @@ export interface UsersState {
   isLoading: boolean;
   error?: string;
 }
+
+export interface CreateUserPayload {
+  name: string;
+  email: string;
+  role?: string;
+  password?: string;
+}
+export type UpdateUserPayload = Partial<CreateUserPayload>;

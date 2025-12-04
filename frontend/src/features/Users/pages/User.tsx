@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -18,11 +18,11 @@ import {
   type GridRenderCellParams,
   type GridRowModel, // Diimpor untuk tipe processRowUpdate
 } from "@mui/x-data-grid";
-import { userApi } from "../api";
-import type { UserItem, UpdateUserPayload } from "../stores"; // Import UpdateUserPayload
+import { userApi} from "../api";
 import { Plus, Trash2 } from "lucide-react";
 import { enqueueSnackbar } from "notistack";
 import { People } from "@mui/icons-material";
+import type { UserItem, UpdateUserPayload } from "../type";
 
 // Definisikan tipe untuk opsi role dan gender (sesuai dengan UserItem)
 type Role = "GURU" | "PENTADBIR" | "SUPERADMIN";
@@ -32,20 +32,30 @@ type Gender = "Male" | "Female";
 const roleOptions: Role[] = ["GURU", "PENTADBIR", "SUPERADMIN"];
 const genderOptions: Gender[] = ["Male", "Female"];
 
+const initialNewUser = {
+  name: "",
+  email: "",
+  password: "",
+  role: "GURU" as Role,
+  ic: "",
+  gender: "Male" as Gender,
+};
+
 export default function UserList() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [newUser, setNewUser] = useState(initialNewUser);
   
   // Perbarui inisialisasi untuk memastikan nilai role dan gender valid
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "GURU" as Role, // Tetapkan tipe Role
-    ic: "",
-    gender: "Male" as Gender, // Tetapkan tipe Gender
-  });
+  // const [newUser, setNewUser] = useState({
+  //   name: "",
+  //   email: "",
+  //   password: "",
+  //   role: "GURU" as Role, // Tetapkan tipe Role
+  //   ic: "",
+  //   gender: "Male" as Gender, // Tetapkan tipe Gender
+  // });
 
   useEffect(() => {
     fetchUsers();
@@ -84,9 +94,10 @@ export default function UserList() {
       enqueueSnackbar("Pengguna berjaya ditambah", { variant: "success" });
       setOpenAddDialog(false);
       // Reset state untuk form tambah pengguna
-      setNewUser({
-        name: "", email: "", password: "", role: "GURU" as Role, ic: "", gender: "Male" as Gender,
-      });
+      // setNewUser({
+      //   name: "", email: "", password: "", role: "GURU" as Role, ic: "", gender: "Male" as Gender,
+      // });
+      setNewUser(initialNewUser);
       fetchUsers();
     } catch (error) {
       console.error("Error creating user:", error);
@@ -94,33 +105,31 @@ export default function UserList() {
     }
   }
 
-  // Perbaiki implementasi untuk processRowUpdate
-  const handleEditUser = async (newRow: GridRowModel, oldRow: GridRowModel): Promise<GridRowModel> => {
+  const handleEditUser = useCallback(async (newRow: GridRowModel, oldRow: GridRowModel): Promise<GridRowModel> => {
     const id = newRow.id as string; 
     const updatedFields: UpdateUserPayload = {};
-    
+
     if (newRow.name !== oldRow.name) updatedFields.name = newRow.name;
     if (newRow.email !== oldRow.email) updatedFields.email = newRow.email; 
-    if (newRow.role !== oldRow.role) updatedFields.role = newRow.role;    
-    if (newRow.ic !== oldRow.ic) updatedFields.ic = newRow.ic;            
-    if (newRow.gender !== oldRow.gender) updatedFields.gender = newRow.gender; 
-
-    if (Object.keys(updatedFields).length === 0) {
-      return oldRow; // 无变化
-    }
+    if (newRow.role !== oldRow.role) updatedFields.role = newRow.role as Role;
+    if (newRow.ic !== oldRow.ic) updatedFields.ic = newRow.ic;
+    if (newRow.gender !== oldRow.gender) updatedFields.gender = newRow.gender as Gender; 
     
+    if (Object.keys(updatedFields).length === 0) {
+      return oldRow; // No change
+    }
+
     try {
       await userApi.update(id, updatedFields as any); 
-      
       enqueueSnackbar("Pengguna berjaya dikemaskini", { variant: "success" });
 
-      return newRow;
+      return newRow; // Return the new row to accept changes
     } catch (error) {
       console.error("Error updating user:", error);
-      // enqueueSnackbar("Gagal mengemaskini pengguna", { variant: "error" });
+      // Let onProcessRowUpdateError handle the failure snackbar
       throw error; 
     }
-  }
+   }, []);
 
   async function handleDeleteUser(id: string) {
     if (!confirm("Adakah anda pasti ingin memadam pengguna ini?")) return;
@@ -236,7 +245,7 @@ export default function UserList() {
         )}
 
         {/* Dialog Tambah Pengguna */}
-        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
+        <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} fullWidth maxWidth="sm">
           <DialogTitle>Tambah Pengguna Baru</DialogTitle>
           <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
             <TextField

@@ -53,6 +53,13 @@ export class CerapanService {
       });
     }
   }
+  private getTarafLabel(score: number): string {
+    if (score >= 85) return 'CEMERLANG';
+    if (score >= 70) return 'BAIK';
+    if (score >= 55) return 'SEDERHANA';
+    if (score >= 0) return 'PERLU TINDAKAN SEGERA';
+    return 'Tidak Dinilai';
+  }
   /**
    * Admin: Start Cerapan 1 for an evaluation (set status and prepare observation_1)
    */
@@ -467,6 +474,11 @@ export class CerapanService {
     const weightedSelf = totalWeightedSelf; // 0..100
     const weightedObs1 = totalWeighted1; // 0..100
     const weightedObs2 = totalWeighted2; // 0..100
+
+    const labelSelf = this.getTarafLabel(weightedSelf);
+    const labelObs1 = this.getTarafLabel(weightedObs1);
+    const labelObs2 = this.getTarafLabel(weightedObs2);
+
     // Average across the three sections (excluding those with 0 if desired)
     const presentWeighted = [weightedSelf, weightedObs1, weightedObs2].filter(
       (v) => v > 0,
@@ -515,16 +527,19 @@ export class CerapanService {
         completionPercent: selfCompletionPct,
         status: evaluation.self_evaluation?.status || 'pending',
         submittedAt: evaluation.self_evaluation?.submittedAt || null,
+        label: labelSelf,
       },
       observation1: {
         ...obs1,
         status: evaluation.observation_1?.status || 'pending',
         submittedAt: evaluation.observation_1?.submittedAt || null,
+        label: labelObs1,
       },
       observation2: {
         ...obs2,
         status: evaluation.observation_2?.status || 'pending',
         submittedAt: evaluation.observation_2?.submittedAt || null,
+        label: labelObs2,
       },
       categories: {
         breakdown: catBreakdown,

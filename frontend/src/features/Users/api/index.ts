@@ -1,17 +1,8 @@
 import { backendClient } from "../../../utils/axios-client";
-import type { UserItem } from "../stores";
+import type { CreateUserPayload, UpdateUserPayload, UserItem } from "../type";
 
 const client = () => backendClient();
 const basePath = "/users";
-
-export interface CreateUserPayload {
-  name: string;
-  email: string;
-  role?: string;
-  password?: string;
-}
-
-export type UpdateUserPayload = Partial<CreateUserPayload>;
 
 export const userApi = {
   getAll: async (): Promise<UserItem[]> => {

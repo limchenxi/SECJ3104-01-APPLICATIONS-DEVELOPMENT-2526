@@ -14,6 +14,7 @@ import { ConfigModule } from '@nestjs/config';
 import { QuestionModule } from './question/question.module';
 import { PentadbirModule } from './pentadbir/pentadbir.module';
 import { TeachingAssignmentModule } from './teaching-assignment/teaching-assignment.module';
+// import { SchoolModule } from './school/school.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { TeachingAssignmentModule } from './teaching-assignment/teaching-assignm
     QuestionModule,
     PentadbirModule,
     TeachingAssignmentModule,
+    // SchoolModule,
   ],
   controllers: [AppController],
   providers: [AppService],
