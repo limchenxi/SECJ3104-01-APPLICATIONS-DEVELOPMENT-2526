@@ -215,6 +215,33 @@ export default function CerapanResults() {
     ];
   }, [summary, report]);
 
+  const parsedAiComment = useMemo(() => {
+    if (!report?.aiComment) return null;
+    
+    const isRefused = report.aiComment.includes('[MODEL REFUSED GENERATION]');
+    if (!isRefused) return { isRefused: false, text: report.aiComment }; // 正常评论
+
+    const data: Record<string, string> = {};
+    
+    // 解析结构化回退数据
+    report.aiComment.split('\n').forEach(line => {
+        const firstColonIndex = line.indexOf(':');
+        if (firstColonIndex > 0) {
+            let key = line.substring(0, firstColonIndex).trim();
+            const value = line.substring(firstColonIndex + 1).trim();
+            
+            // 简化键名，移除括号内容
+            key = key.replace(/\s*\(.*?\)\s*/g, '');
+            
+            if (key) {
+                data[key] = value;
+            }
+        }
+    });
+    return { isRefused: true, data: data, text: report.aiComment };
+  }, [report]);
+  const isModelRefused = parsedAiComment?.isRefused === true;
+
   const handleExportPdf = async () => {
     if (!report || !summary) {
         setError("Laporan tidak lengkap untuk eksport.");
@@ -324,7 +351,7 @@ export default function CerapanResults() {
     }
   };
 
-  const isModelRefused = report.aiComment && report.aiComment.includes('[MODEL REFUSED GENERATION]');
+  // const isModelRefused = report.aiComment && report.aiComment.includes('[MODEL REFUSED GENERATION]');
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }} ref={exportRef}>
@@ -569,11 +596,11 @@ export default function CerapanResults() {
         </Card>
 
         {/* AI COMMENT CARD: NEW SECTION */}
-        {report.aiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
+        {parsedAiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
           <Card
             raised
             sx={{
-              border: isModelRefused 
+              border: isModelRefused
                 ? `2px dashed ${theme.palette.warning.main}` 
                 : `2px solid ${theme.palette.primary.main}`,
               bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
@@ -583,37 +610,27 @@ export default function CerapanResults() {
               <Stack spacing={2}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
-                  <Typography variant="h6" sx={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
-                    {isModelRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
+                  <Typography variant="h6" sx={{ color: parsedAiComment.isRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
+                    {parsedAiComment.isRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
                   </Typography>
                 </Stack>
 
-                {isModelRefused ? (
-                    // 🚨 【显示结构化数据】 - 仅显示 Maklum Balas Terstruktur
+                {parsedAiComment.isRefused ? (
                     <Stack spacing={1}>
                         <Typography variant="body2" color="text.secondary">
                             Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
                         </Typography>
                         
                         {/* 提取并显示关键数据行 */}
-                        {report.aiComment.split('\n').filter(line => line.includes(':')).map((line, index) => {
-                            const firstColonIndex = line.indexOf(':');
-                            const key = line.substring(0, firstColonIndex).trim();
-                            const value = line.substring(firstColonIndex + 1).trim();
+                        {Object.keys(parsedAiComment!.data).map((key) => {
+                          const value = parsedAiComment!.data[key];
+                          const label = key.includes('Maklum Balas') ? 'Maklum Balas' : key;
                             
-                            if (key.includes('Maklum Balas')) {
-                                return (
-                                    <Typography key={index} variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                                        {key}: {value}
-                                    </Typography>
-                                );
-                            }
-                            return (
-                              <Typography key={index} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
-                                {/* 修复：使用 Typography component="span" 来避免 HTML 嵌套错误 */}
-                                <Box component="span" sx={{ color: theme.palette.grey[600] }}>{key}:</Box> <strong>{value}</strong>
-                              </Typography>
-                            );
+                          return (
+                            <Typography key={key} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
+                              <Box component="span" sx={{ color: theme.palette.grey[600] }}>{label}:</Box> <strong>{value}</strong>
+                            </Typography>
+                          );
                         })}
                     </Stack>
                 ) : (
@@ -622,7 +639,7 @@ export default function CerapanResults() {
                         variant="body1" 
                         sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
                     >
-                        {report.aiComment}
+                        {parsedAiComment.text}
                     </Typography>
                 )}
               </Stack>
