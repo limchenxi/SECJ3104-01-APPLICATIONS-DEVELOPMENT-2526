@@ -1007,7 +1007,7 @@ Write the final comment now.
 
     try {
       const result = await this.aiModel.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-pro',
         config: {
           systemInstruction: systemPrompt,
         },
@@ -1078,7 +1078,7 @@ Write the final comment now.
             userId: aiUserId,
             usageType: 'Cerapan Comment',
             provider: 'Gemini',
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-pro',
           });
         }
       } catch (err) {

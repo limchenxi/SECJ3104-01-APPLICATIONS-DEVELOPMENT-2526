@@ -9,16 +9,12 @@ import {
 } from "@mui/material";
 import { useState, useEffect } from "react";
 
-import type { AIModule, AIGeneratedItem } from "../../type";
+import type { AIModule} from "../../type";
 import AIModuleForm from "./Form";
 import AIModuleCard from  "./card";
 import { createAIModule, deleteAIModule, listAIModules, updateAIModule } from "../../api/ai-module.api";
 
-interface AIListProps {
-  items?: AIGeneratedItem[];
-}
-
-export default function AIList({ items }: AIListProps) {
+export default function AIList() {
   const [modules, setModules] = useState<AIModule[]>([]);
   const [openForm, setOpenForm] = useState(false);
   const [editing, setEditing] = useState<AIModule | null>(null);
