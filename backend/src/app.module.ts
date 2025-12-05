@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CerapanModule } from './cerapan/cerapan.module';
-//import { KedatanganModule } from './kedatangan/kedatangan.module';
-
 import { QuizModule } from './quiz/quiz.module';
 import { RphModule } from './rph/rph.module';
 import { UsersModule } from './users/users.module';
@@ -15,6 +13,7 @@ import { QuestionModule } from './question/question.module';
 import { PentadbirModule } from './pentadbir/pentadbir.module';
 import { TeachingAssignmentModule } from './teaching-assignment/teaching-assignment.module';
 import { AttendanceModule } from './kedatangan/attendance.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -33,6 +32,7 @@ import { AttendanceModule } from './kedatangan/attendance.module';
     PentadbirModule,
     TeachingAssignmentModule,
     AttendanceModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

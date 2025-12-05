@@ -3,10 +3,15 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { AttendanceRecord, AttendanceRecordSchema } from "./attendance.schema";
 import { AttendanceService } from "./attendance.service";
 import { AttendanceController } from "./attendance.controller";
+import { UserSchema } from "src/users/schemas/user.schema";
+import { User } from "src/users/schemas/user.schema";
 
 @Module({
     imports: [
-        MongooseModule.forFeature([{name: AttendanceRecord.name, schema: AttendanceRecordSchema}])
+        MongooseModule.forFeature([
+            {name: AttendanceRecord.name, schema: AttendanceRecordSchema},
+            {name: User.name, schema: UserSchema}
+        ]),
     ],
     controllers: [AttendanceController],
     providers: [AttendanceService],

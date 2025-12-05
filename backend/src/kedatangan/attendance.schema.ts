@@ -7,13 +7,16 @@ export class AttendanceRecord extends mongoose.Document {
     userID: string;
 
     @Prop()
-    timeIn: string;
+    timeIn: Date;
 
     @Prop()
-    timeOut: string;
+    timeOut: Date;
 
     @Prop()
-    attendanceType: "HADIR" | "HADIR LAMBAT";
+    attendanceType: "HADIR" | "LEWAT" | "TIDAK HADIR";
+
+    @Prop()
+    attendanceDate: Date;
 }
 
 export const AttendanceRecordSchema = SchemaFactory.createForClass(AttendanceRecord);
