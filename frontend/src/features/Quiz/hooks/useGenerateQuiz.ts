@@ -91,28 +91,36 @@ export function useGenerateQuiz(generateApiUrl?: string) {
       // 历史记录保存逻辑 (Flashcard)
       // ----------------------------------------------------
       
-      if (historyType !== 'quiz-topic') { // 仅保存 Flashcard 的历史记录
-        const content = processedData.flashcards;
+      if (historyType !== 'quiz-topic') { 
+        const content = isFlashcard ? processedData.flashcards : processedData.questions;
         const snapshotData = {
           title: `Kad Imbas: ${payload.topic}`,
           subject: payload.subject || "N/A",
           difficulty: payload.difficulty || "medium",
           flashcards: content,
         };
-                
-        await fetch("/api/quiz/history", {
-          method: "POST",
-          eaders: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            generatedBy: 'flashcard-generator',
-            note: `Generated via ${historyType}`,
-            snapshot: JSON.stringify(snapshotData),
-            contentType: historyType, 
-          }),
-         });
-         reload(); 
-       }
-     
+        try { 
+          const histRes = await fetch("/api/quiz/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              generatedBy: isFlashcard ? 'flashcard-generator' : 'topic-quiz-generator',
+              note: `Generated via ${historyType}`,
+              snapshot: JSON.stringify(snapshotData),
+              contentType: historyType, 
+            }),
+          });
+                    
+          if (!histRes.ok) {
+            const errorText = await histRes.text();
+            console.error('❌ History Save Failed:', histRes.status, errorText);
+          }
+        } catch (histErr) {
+           console.error('❌ History Fetch Error:', histErr);
+        }
+        reload(); // 🚨 确保 reload 总是被调用，即使保存历史失败
+      }
+            
     } catch (err: any) {
         setError(err?.message || String(err));
         console.error("GENERATE HOOK ERROR:", err);
