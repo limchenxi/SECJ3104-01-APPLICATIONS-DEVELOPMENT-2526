@@ -49,7 +49,7 @@ const SelfEvaluationAnswerSchema =
   SchemaFactory.createForClass(SelfEvaluationAnswer);
 
 @Schema({ _id: false })
-class AdminMark {
+export class AdminMark {
   @Prop({ required: true })
   questionId: string;
   @Prop({ required: true })

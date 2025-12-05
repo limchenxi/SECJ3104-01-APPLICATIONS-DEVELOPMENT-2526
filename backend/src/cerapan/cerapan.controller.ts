@@ -50,7 +50,7 @@ export class CerapanController {
     @Body() dto: SelfStartEvaluationDto,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.createTeacherSelfEvaluation(teacherId, dto);
   }
 
@@ -79,7 +79,7 @@ export class CerapanController {
     @Body() dto: SubmitObservationDto,
     @Req() req: RequestWithUser,
   ) {
-    const adminId = req.user.name || (req.user._id as any).toString();
+    const adminId = req.user.name || req.user._id.toString();
     return this.cerapanService.submitObservation1(evaluationId, dto, adminId);
   }
 
@@ -94,7 +94,7 @@ export class CerapanController {
     @Body() dto: SubmitObservationDto,
     @Req() req: RequestWithUser,
   ) {
-    const adminId = req.user.name || (req.user._id as any).toString();
+    const adminId = req.user.name || req.user._id.toString();
     return this.cerapanService.submitObservation2(evaluationId, dto, adminId);
   }
 
@@ -110,7 +110,7 @@ export class CerapanController {
 
   @Get('my-tasks')
   getMyPendingTasks(@Req() req: RequestWithUser) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getMyPendingTasks(teacherId);
   }
 
@@ -123,7 +123,7 @@ export class CerapanController {
     @Param('id') evaluationId: string,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getEvaluationForTask(evaluationId, teacherId);
   }
 
@@ -133,7 +133,7 @@ export class CerapanController {
     @Body() dto: SubmitCerapankendiriDto, // { answers: [...] }
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.submitSelfEvaluation(
       evaluationId,
       dto,
@@ -159,7 +159,7 @@ export class CerapanController {
 
   @Get('my-reports')
   getMyReportHistory(@Req() req: RequestWithUser) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getMyReportHistory(teacherId);
   }
 
@@ -168,7 +168,7 @@ export class CerapanController {
     @Param('id') evaluationId: string,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getCompletedReport(evaluationId, teacherId);
   }
 
@@ -181,7 +181,7 @@ export class CerapanController {
     @Param('id') evaluationId: string,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getReportWithSummary(evaluationId, teacherId);
   }
 

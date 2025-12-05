@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class MarkDto {
+export class MarkDto {
   @IsString()
   @IsNotEmpty()
   questionId: string;
