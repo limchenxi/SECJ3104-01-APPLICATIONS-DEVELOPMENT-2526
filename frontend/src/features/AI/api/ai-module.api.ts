@@ -11,10 +11,14 @@ export const listAIModules = async (): Promise<AIModule[]> => {
 
 // create module
 export const createAIModule = async (data: AIModule) => {
-  const res = await client().post("/ai/modules", data);
-  return res.data;
+  try {
+    const res = await client().post("/ai/modules", data);
+    return res.data;
+  } catch (error) {
+    console.error("Failed to create AI Module:", error.response?.data || error.message);
+    throw error; 
+  }
 };
-
 // update module
 export const updateAIModule = async (id: string, data: Partial<AIModule>) => {
   const res = await client().put(`/ai/modules/${id}`, data);

@@ -68,10 +68,12 @@ export default function AIModuleForm({
 
   async function handleSubmit(e) {
     e.preventDefault();
-    
-    await onSubmit({
-        ...values,
-    } as unknown as AIModule); 
+    const { _id, ...dataToSend } = values;
+    const finalData = values._id ? values : dataToSend;
+    await onSubmit(finalData as unknown as AIModule);
+    // await onSubmit({
+    //     ...values,
+    // } as unknown as AIModule); 
   }
 
   return (

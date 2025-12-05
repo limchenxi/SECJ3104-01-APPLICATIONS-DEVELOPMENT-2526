@@ -38,6 +38,7 @@ export class AiController {
 
   @Post('modules')
   async createModule(@Body() dto: any) {
+    console.log('Received DTO:', dto);
     return this.moduleModel.create(dto);
   }
 

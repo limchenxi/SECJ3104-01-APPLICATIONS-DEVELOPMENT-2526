@@ -46,24 +46,20 @@ export default function AIList() {
   }
 
   async function saveModule(data: AIModule) {
-    // const method = data._id ? "PUT" : "POST";
-    // const url = data._id
-    //   ? `/api/ai/modules/${data._id}`
-    //   : "/api/ai/modules";
-
-    // await fetch(url, {
-    //   method,
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(data),
-    // });
-    if (data._id) {
-      await updateAIModule(data._id, data);
-    } else {
-      const newModule = await createAIModule(data);
+    try {
+      if (data._id) {
+        await updateAIModule(data._id, data);
+      } else {
+        const { _id, ...newData } = data; 
+        await createAIModule(newData as AIModule);
+        // await createAIModule(data);
+      }
+      setOpenForm(false);
+      loadModules();
+    } catch (e) {
+        alert("fail to save");
     }
-    setOpenForm(false);
-    loadModules();
-  }
+   }
 
   // async function deleteModule() {
   //   await fetch(`/api/ai/modules/${deleteId}`, { method: "DELETE" });
