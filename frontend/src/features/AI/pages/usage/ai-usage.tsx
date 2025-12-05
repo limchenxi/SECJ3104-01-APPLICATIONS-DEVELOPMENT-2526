@@ -71,7 +71,7 @@ export default function AiUsageAnalytics() {
                     Usage Distribution by Type
                 </Typography>
                 {/* ⚠️ PieChart 组件 */}
-                <Box sx={{ height: 250, width: '100%' }}>
+                <Box sx={{ height: 300, width: '100%' }}>
                   {/* 替换占位符 */}
                   <PieChart
                     series={[
