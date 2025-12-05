@@ -169,3 +169,17 @@ export const startSelfEvaluation = async (
 export function startObservation1ByAdmin(newEvaluationId: string) {
   throw new Error("Function not implemented.");
 }
+
+/**
+ * (ADMIN) Force regenerate AI Comment.
+ * PUT /cerapan/admin/regenerate-comment/:id
+ */
+export const regenerateAiComment = async (
+  id: string
+): Promise<CerapanRecord> => {
+  const response = await client().put<CerapanRecord>(
+    `/cerapan/admin/regenerate-comment/${id}`,
+    {} // Empty body
+  );
+  return response.data;
+};

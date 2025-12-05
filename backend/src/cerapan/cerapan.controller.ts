@@ -16,6 +16,7 @@ import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { SelfStartEvaluationDto } from './dto/self-start-evaluation.dto';
 import { SubmitObservationDto } from './dto/submit-cerapan.dto';
 import { JwtAuthGuard } from '../auth/jwt.strategy';
+import { Cerapan } from './cerapan.schema';
 
 @Controller('cerapan') // Base route: /cerapan
 @UseGuards(JwtAuthGuard) // Protect all routes in this controller
@@ -182,5 +183,13 @@ export class CerapanController {
   ) {
     const teacherId = (req.user._id as any).toString();
     return this.cerapanService.getReportWithSummary(evaluationId, teacherId);
+  }
+
+  @Put('admin/regenerate-comment/:id')
+  async regenerateAiComment(
+    @Param('id') evaluationId: string,
+    @Req() req: RequestWithUser, // 包含用户信息的请求对象
+  ): Promise<Cerapan> {
+    return this.cerapanService.forceGenerateAiComment(evaluationId);
   }
 }

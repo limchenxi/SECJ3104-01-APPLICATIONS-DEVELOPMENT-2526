@@ -30,7 +30,7 @@ import {
   Clock,
 } from "lucide-react";
 // Charts removed - no longer used
-import { getReportSummary, getAdminReportSummary } from "../api/cerapanService";
+import { getReportSummary, getAdminReportSummary, regenerateAiComment } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
 import useAuth from "../../../hooks/useAuth";
 import { userApi } from "../../Users/api";
@@ -298,7 +298,33 @@ export default function CerapanResults() {
     );
   }
 
-  // const isCompleted = report.self_evaluation.status === "submitted";
+  const handleRegenerateComment = async () => {
+    if (!report || !id) return;
+    
+    // 检查是否满足生成条件，防止浪费配额
+    const isReadyForAI = report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted';
+
+    if (!isReadyForAI && !window.confirm("Peringatan: Kendiri atau Cerapan 2 belum selesai. Anda pasti mahu teruskan regenerasi komen AI?")) {
+        return;
+    }
+
+    try {
+        setLoading(true);
+        // 调用新的 API 接口
+        await regenerateAiComment(id);
+        
+        // 成功后重新加载报告数据以显示新的评论
+        await loadReport(); 
+        
+    } catch (e: any) {
+        console.error("AI Regeneration Failed:", e);
+        setError(`Gagal regenerasi komen AI: ${e.response?.data?.message || 'Sila semak konsol.'}`);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const isModelRefused = report.aiComment && report.aiComment.includes('[MODEL REFUSED GENERATION]');
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }} ref={exportRef}>
@@ -547,26 +573,59 @@ export default function CerapanResults() {
           <Card
             raised
             sx={{
-                border: `2px solid ${theme.palette.primary.main}`,
-                bgcolor: theme.palette.primary.light + '20',
+              border: isModelRefused 
+                ? `2px dashed ${theme.palette.warning.main}` 
+                : `2px solid ${theme.palette.primary.main}`,
+              bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
             }}
           >
             <CardContent>
-                <Stack spacing={2}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                        <Award size={24} style={{ color: theme.palette.primary.main }} />
-                        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 700 }}>
-                            AI Comment / Komen AI (Dwibahasa)
+              <Stack spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
+                  <Typography variant="h6" sx={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
+                    {isModelRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
+                  </Typography>
+                </Stack>
+
+                {isModelRefused ? (
+                    // 🚨 【显示结构化数据】 - 仅显示 Maklum Balas Terstruktur
+                    <Stack spacing={1}>
+                        <Typography variant="body2" color="text.secondary">
+                            Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
                         </Typography>
+                        
+                        {/* 提取并显示关键数据行 */}
+                        {report.aiComment.split('\n').filter(line => line.includes(':')).map((line, index) => {
+                            const firstColonIndex = line.indexOf(':');
+                            const key = line.substring(0, firstColonIndex).trim();
+                            const value = line.substring(firstColonIndex + 1).trim();
+                            
+                            if (key.includes('Maklum Balas')) {
+                                return (
+                                    <Typography key={index} variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                                        {key}: {value}
+                                    </Typography>
+                                );
+                            }
+                            return (
+                              <Typography key={index} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
+                                {/* 修复：使用 Typography component="span" 来避免 HTML 嵌套错误 */}
+                                <Box component="span" sx={{ color: theme.palette.grey[600] }}>{key}:</Box> <strong>{value}</strong>
+                              </Typography>
+                            );
+                        })}
                     </Stack>
+                ) : (
+                    // 🚨 【显示流畅评论】 - 仅在 AI 成功生成时显示
                     <Typography 
                         variant="body1" 
                         sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
                     >
-                        {/* 显示 AI 生成的双语评论 */}
                         {report.aiComment}
                     </Typography>
-                </Stack>
+                )}
+              </Stack>
             </CardContent>
           </Card>
         )}
@@ -685,6 +744,19 @@ export default function CerapanResults() {
           >
             {isAdminView ? "Lihat Tugasan Pentadbir" : "Lihat Semua Laporan"}
           </Button> */}
+
+          {isAdminView && report && (
+            <Button
+              variant="contained"
+              color="warning"
+              size="large"
+              onClick={handleRegenerateComment}
+              disabled={loading}
+            >
+              Paksa Regenerasi Komen AI
+            </Button>
+          )}
+
           <Button
             variant="contained"
             color="secondary"

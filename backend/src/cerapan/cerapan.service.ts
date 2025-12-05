@@ -893,6 +893,29 @@ export class CerapanService {
     const obs1Score = summary.overall.weightedObservation1;
     const obs2Score = summary.overall.weightedObservation2;
 
+    const availableCategories = breakdown.filter(
+      (cat: any) => cat.weighted1 > 0 || cat.weighted2 > 0,
+    );
+
+    const combinedScores = availableCategories.map((cat: any) => ({
+      code: cat.code,
+      avgWeighted: (cat.weighted1 + cat.weighted2) / 2,
+    }));
+
+    const strongest = combinedScores.sort(
+      (a, b) => b.avgWeighted - a.avgWeighted,
+    )[0];
+    const weakest = combinedScores.sort(
+      (a, b) => a.avgWeighted - b.avgWeighted,
+    )[0];
+
+    const strongestArea = strongest
+      ? `${strongest.code} (Skor: ${strongest.avgWeighted.toFixed(2)}%)`
+      : 'Tiada Kekuatan Jelas (N/A)';
+    const weakestArea = weakest
+      ? `${weakest.code} (Skor: ${weakest.avgWeighted.toFixed(2)}%)`
+      : 'Tiada Kelemahan Jelas (N/A)';
+
     let categoryDetails = 'Performance Breakdown (Weighted Percentage):\n';
     breakdown.forEach((cat: any) => {
       const catObs1 = cat.weighted1 > 0 ? `${cat.weighted1}%` : 'N/A';
@@ -901,53 +924,56 @@ export class CerapanService {
     });
 
     const prompt = `
-        You are a seasoned educational assessment expert tasked with writing the final teaching performance appraisal comment for the teacher of ${evaluation.subject}.
+        You are a neutral translator. Combine the following data into a single, flowing, constructive paragraph, written only in Malay and English (bilingual). DO NOT ADD ANY EXTRA ANALYSIS.
         
-        **Instructions:**
-        1.  **Language:** The entire comment must be written in **Malay** and **English** (bilingual).
-        2.  **Format:** The comment should be a single, brief, professional, and insightful paragraph, approximately 100-150 characters long.
-        3.  **Content:**
-            a.  Start by mentioning the **Overall Evaluation Label** (${label}).
-            b.  Highlight the **strongest area** (the sub-category with the highest score) as the primary strength.
-            c.  Provide one **specific suggestion for improvement** targeting the **weakest area** (the sub-category with the lowest score).
-            d.  Maintain a professional and encouraging tone.
-
-        **Assessment Data (Total 100%):**
-        -   Teacher: ${evaluation.subject} Teacher, Class ${evaluation.class}
-        -   Overall Weighted Average Score: ${overallScore}%
-        -   Overall Evaluation Label: ${label}
-        -   Principal Observation 1 (Obs 1): ${obs1Score}%
-        -   Principal Observation 2 (Obs 2): ${obs2Score}%
+        Taraf: ${label}
+        Skor Purata: ${overallScore}%
+        Kekuatan Utama: ${strongestArea}
+        Bidang Pembangunan: ${weakestArea}
         
-        ${categoryDetails}
-
-        Based on the data above, generate the summary appraisal comment in Malay and English.
-      `;
+        Start with: "Penilaian prestasi telah selesai. Taraf Keseluruhan: ${label} (${overallScore}%). [Combine Kekuatan and Pembangunan into one sentence]. Teruskan usaha murni anda. / Performance assessment completed. Overall Taraf: ${label} (${overallScore}%). [Combine Strength and Development into one sentence]. Keep up the great work."
+    `;
 
     try {
-      const result = await this.aiModel.generateContent({
+      const response = await this.aiModel.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { temperature: 0.6, maxOutputTokens: 500 },
+        generationConfig: { temperature: 0.2 },
       });
-      if (!result.response.text) {
-        throw new Error('Gemini returned empty response.');
+
+      const rawText =
+        response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!rawText || rawText === '') {
+        // 🚨 模型拒绝时的硬编码数据模板
+        const dataTemplate = `
+[MODEL REFUSED GENERATION]
+Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
+Kekuatan Utama (Strongest Area): ${strongestArea}
+Bidang Pembangunan (Development Area): ${weakestArea}
+
+Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Detailed comment not generated due to AI model restrictions.
+          `.trim();
+
+        return dataTemplate; // 返回数据模板
       }
-      return result.response.text.trim();
+      return (rawText as string).trim();
     } catch (error) {
       console.error('❌ Gemini API Error in CerapanService:', error);
-      throw new InternalServerErrorException('AI service fail.'); // 抛出错误以在外部捕获
+      const errorMessage = error.message || 'Unknown API error';
+      return `Kesilapan kritikal API: Gagal menyambung ke servis AI. / Critical API error: Failed to connect to AI service. Detail: ${errorMessage.substring(0, 50)}...`;
     }
   }
+
   private async checkAndGenerateAiComment(
     evaluation: Cerapan,
   ): Promise<boolean> {
     const isSelfSubmitted = evaluation.self_evaluation?.status === 'submitted';
     const isObs2Submitted = evaluation.observation_2?.status === 'submitted';
-    const isCommentMissing = !evaluation.aiComment; // 确保只生成一次
+    const isCommentMissing = !evaluation.aiComment;
 
     // only when Kendiri & Obs 2 finish，and AI comment is null
     if (isSelfSubmitted && isObs2Submitted && isCommentMissing) {
-      let aiComment = 'Failed to generate AI comment / Gagal menjana komen AI.';
+      let aiComment: string;
       const aiUserId = evaluation.teacherId;
 
       try {
@@ -968,7 +994,8 @@ export class CerapanService {
         }
       } catch (err) {
         console.error('Error generating AI comment or logging usage:', err);
-        evaluation.aiComment = aiComment; // 保存失败信息
+        aiComment = `AI GENERATION FAILED. Detail: ${err.message || 'Unknown Runtime Error'}`;
+        evaluation.aiComment = aiComment;
         await evaluation.save();
         return false;
       }
