@@ -17,7 +17,7 @@ const ScoreDescriptionSchema = SchemaFactory.createForClass(ScoreDescription);
 
 // --- Sub-document for question snapshot ---
 @Schema({ _id: false })
-class QuestionSnapshot {
+export class QuestionSnapshot {
   @Prop({ required: true })
   questionId: string;
 
@@ -61,11 +61,11 @@ const AdminMarkSchema = SchemaFactory.createForClass(AdminMark);
 
 // --- Sub-document for the 3 observation sections ---
 @Schema({ _id: false })
-class ObservationSection {
+export class ObservationSection {
   @Prop({ type: String, enum: ['pending', 'submitted'], default: 'pending' })
   status: string;
   @Prop({ type: Date, default: null })
-  submittedAt: Date;
+  submittedAt?: Date | null;
   @Prop({ type: [SelfEvaluationAnswerSchema], default: [] })
   answers: SelfEvaluationAnswer[];
   @Prop({ type: [AdminMarkSchema], default: [] })

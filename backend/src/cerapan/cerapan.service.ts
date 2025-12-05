@@ -6,12 +6,16 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Cerapan } from './cerapan.schema';
+import {
+  Cerapan,
+  ObservationSection,
+  QuestionSnapshot,
+} from './cerapan.schema';
 import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { PentadbirService } from '../pentadbir/pentadbir.service';
 import { SubmitObservationDto } from './dto/submit-cerapan.dto';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 // -------------------------------------------------------------
@@ -33,7 +37,7 @@ const SUBCATEGORY_WEIGHT_MAP: Record<string, number> = {
 
 @Injectable()
 export class CerapanService {
-  private aiModel;
+  private aiModel: GenerativeModel | null = null;
   constructor(
     @InjectModel(Cerapan.name) private cerapanModel: Model<Cerapan>,
     private readonly pentadbirService: PentadbirService,
@@ -127,7 +131,7 @@ export class CerapanService {
     }
 
     // Flatten all items from all categories and subcategories with score descriptions
-    const questions_snapshot: any[] = [];
+    const questions_snapshot: QuestionSnapshot[] = [];
     for (const category of template.categories) {
       for (const subCategory of category.subCategories) {
         for (const item of subCategory.items) {
@@ -141,7 +145,6 @@ export class CerapanService {
           });
         }
       }
-      3;
     }
 
     const newEvaluation = new this.cerapanModel({
@@ -315,7 +318,7 @@ export class CerapanService {
       totalItems > 0 ? +((100 * selfAnswered) / totalItems).toFixed(2) : 0;
 
     // Aggregate function for observation sections (numeric marks)
-    const aggregateObservation = (section: any) => {
+    const aggregateObservation = (section: ObservationSection) => {
       const marks: { questionId: string; mark: number }[] =
         section?.marks || [];
       if (!marks.length) {
@@ -711,12 +714,12 @@ export class CerapanService {
       );
     }
     if (!evaluation.observation_1) {
-      (evaluation as any).observation_1 = {
+      evaluation.observation_1 = {
         status: 'pending',
         submittedAt: null,
         answers: [],
         marks: [],
-        administratorId: null,
+        administratorId: undefined,
       };
     }
     // Normalize & validate marks against snapshot
@@ -812,12 +815,12 @@ export class CerapanService {
       );
     }
     if (!evaluation.observation_2) {
-      (evaluation as any).observation_2 = {
+      evaluation.observation_2 = {
         status: 'pending',
         submittedAt: null,
         answers: [],
         marks: [],
-        administratorId: null,
+        administratorId: undefined,
       };
     }
     const snapshotIds = new Set(
@@ -879,60 +882,101 @@ export class CerapanService {
 
   private async generateAiComment(
     evaluation: Cerapan,
-    summary: any,
+    summary: ReturnType<CerapanService['computeSummary']>,
   ): Promise<string> {
     if (!this.aiModel) {
-      return 'AI cannot generate comment。';
+      return 'AI cannot generate comment.';
     }
 
     const breakdown = summary.categories.breakdown;
-    const overallScore =
-      summary.overall.triAverageWeighted ||
-      summary.overall.weightedObservationCombined;
+    const overallScore = summary.overall.triAverageWeighted;
     const label = summary.overall.label;
     const obs1Score = summary.overall.weightedObservation1;
     const obs2Score = summary.overall.weightedObservation2;
 
     let categoryDetails = 'Performance Breakdown (Weighted Percentage):\n';
-    breakdown.forEach((cat: any) => {
+    breakdown.forEach((cat) => {
       const catObs1 = cat.weighted1 > 0 ? `${cat.weighted1}%` : 'N/A';
       const catObs2 = cat.weighted2 > 0 ? `${cat.weighted2}%` : 'N/A';
       categoryDetails += `- ${cat.code} (Weight ${cat.weight}%)：Cerapan 1: ${catObs1}, Cerapan 2: ${catObs2}\n`;
     });
 
-    const prompt = `
-        You are a seasoned educational assessment expert tasked with writing the final teaching performance appraisal comment for the teacher of ${evaluation.subject}.
-        
-        **Instructions:**
-        1.  **Language:** The entire comment must be written in **Malay** and **English** (bilingual).
-        2.  **Format:** The comment should be a single, brief, professional, and insightful paragraph, approximately 100-150 characters long.
-        3.  **Content:**
-            a.  Start by mentioning the **Overall Evaluation Label** (${label}).
-            b.  Highlight the **strongest area** (the sub-category with the highest score) as the primary strength.
-            c.  Provide one **specific suggestion for improvement** targeting the **weakest area** (the sub-category with the lowest score).
-            d.  Maintain a professional and encouraging tone.
+    const systemPrompt = `
+You are a seasoned educational assessment expert.
 
-        **Assessment Data (Total 100%):**
-        -   Teacher: ${evaluation.subject} Teacher, Class ${evaluation.class}
-        -   Overall Weighted Average Score: ${overallScore}%
-        -   Overall Evaluation Label: ${label}
-        -   Principal Observation 1 (Obs 1): ${obs1Score}%
-        -   Principal Observation 2 (Obs 2): ${obs2Score}%
-        
-        ${categoryDetails}
+Your task is to help generate a generic teaching performance appraisal comment.
 
-        Based on the data above, generate the summary appraisal comment in Malay and English.
-      `;
+Strict rules:
+1. Do not identify real individuals; refer only to "this teacher".
+2. Use only the provided data; do not invent new information.
+3. The comment must be bilingual (Malay and English) in a single short paragraph.
+4. The tone must be professional, encouraging, and focused on strengths plus one area for improvement.
+5. Target length: about 100–150 characters, concise but meaningful.
+`;
+    const userPrompt = `
+Generate a bilingual Malay + English appraisal comment.
+
+Requirements:
+- Begin with the Overall Evaluation Label: ${label}
+- Highlight the strongest area (highest scoring sub-category)
+- Give one improvement suggestion for the weakest area
+- Keep it professional and encouraging
+
+Assessment Data:
+- Class: ${evaluation.class}
+- Overall Score: ${overallScore}%
+- Obs 1: ${obs1Score}%
+- Obs 2: ${obs2Score}%
+
+Category Details:
+${categoryDetails}
+
+Write the final comment now.
+`;
+    // const prompt = `
+    //     You are a seasoned educational assessment expert tasked with writing the final teaching performance appraisal comment for the teacher of ${evaluation.subject}.
+
+    //     **Instructions:**
+    //     1.  **Language:** The entire comment must be written in **Malay** and **English** (bilingual).
+    //     2.  **Format:** The comment should be a single, brief, professional, and insightful paragraph, approximately 100-150 characters long.
+    //     3.  **Content:**
+    //         a.  Start by mentioning the **Overall Evaluation Label** (${label}).
+    //         b.  Highlight the **strongest area** (the sub-category with the highest score) as the primary strength.
+    //         c.  Provide one **specific suggestion for improvement** targeting the **weakest area** (the sub-category with the lowest score).
+    //         d.  Maintain a professional and encouraging tone.
+
+    //     **Assessment Data (Total 100%):**
+    //     -   Teacher: ${evaluation.subject} Teacher, Class ${evaluation.class}
+    //     -   Overall Weighted Average Score: ${overallScore}%
+    //     -   Overall Evaluation Label: ${label}
+    //     -   Principal Observation 1 (Obs 1): ${obs1Score}%
+    //     -   Principal Observation 2 (Obs 2): ${obs2Score}%
+
+    //     ${categoryDetails}
+
+    //     Based on the data above, generate the summary appraisal comment in Malay and English.
+    //   `;
 
     try {
       const result = await this.aiModel.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: { temperature: 0.6, maxOutputTokens: 500 },
+        systemInstruction: {
+          role: 'system',
+          parts: [
+            {
+              text: systemPrompt,
+            },
+          ],
+        },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: {
+          temperature: 0.6,
+          maxOutputTokens: 500,
+        },
       });
       if (!result.response.text) {
         throw new Error('Gemini returned empty response.');
       }
-      return result.response.text.trim();
+      return result.response.text().trim();
     } catch (error) {
       console.error('❌ Gemini API Error in CerapanService:', error);
       throw new InternalServerErrorException('AI service fail.'); // 抛出错误以在外部捕获
