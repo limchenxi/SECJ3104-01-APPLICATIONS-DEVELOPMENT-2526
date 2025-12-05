@@ -884,6 +884,16 @@ export class CerapanService {
     if (!this.aiModel) {
       return 'AI cannot generate comment.';
     }
+    const codeDescriptionMap: Record<string, string> = {
+      '4.1.1': 'Perancangan PdPc / Planning',
+      '4.2.1': 'Mengelola proses pembelajaran / Managing learning process',
+      '4.2.2': 'Mengelola suasana pembelajaran / Managing learning environment',
+      '4.3.1': 'Bimbingan murid / Guiding students',
+      '4.4.1': 'Mendorong minda & tindakan murid / Motivating mind & actions',
+      '4.4.2': 'Mendorong emosi murid / Motivating student emotions',
+      '4.5.1': 'Pelaksanaan pentaksiran / Assessment implementation',
+      '4.6.1': 'Penglibatan aktif murid / Active student engagement',
+    };
 
     const breakdown = summary.categories.breakdown;
     const overallScore = summary.overall.triAverageWeighted;
@@ -907,11 +917,17 @@ export class CerapanService {
       (a, b) => a.avgWeighted - b.avgWeighted,
     )[0];
 
+    const strongestDescription =
+      codeDescriptionMap[strongest?.code || ''] ||
+      'Data score is not conclusive.';
+    const weakestDescription =
+      codeDescriptionMap[weakest?.code || ''] ||
+      'Data score is not conclusive.';
     const strongestArea = strongest
-      ? `${strongest.code} (Skor: ${strongest.avgWeighted.toFixed(2)}%)`
+      ? `${strongest.code} (${strongestDescription}) | Skor: ${strongest.avgWeighted.toFixed(2)}%` // 🚨 修正格式
       : 'Tiada Kekuatan Jelas (N/A)';
     const weakestArea = weakest
-      ? `${weakest.code} (Skor: ${weakest.avgWeighted.toFixed(2)}%)`
+      ? `${weakest.code} (${weakestDescription}) | Skor: ${weakest.avgWeighted.toFixed(2)}%` // 🚨 修正格式
       : 'Tiada Kelemahan Jelas (N/A)';
 
     let categoryDetails = 'Performance Breakdown (Weighted Percentage):\n';
@@ -937,6 +953,8 @@ Strict rules:
 Generate a bilingual Malay + English appraisal comment.
 
 Requirements:
+- Do not invent new information; base feedback strictly on the data below.
+- The tone must be constructive and encouraging.
 - Begin with the Overall Evaluation Label: ${label}
 - Highlight the strongest area (highest scoring sub-category)
 - Give one improvement suggestion for the weakest area
@@ -945,11 +963,9 @@ Requirements:
 Assessment Data:
 - Class: ${evaluation.class}
 - Overall Score: ${overallScore}%
-- Obs 1: ${obs1Score}%
-- Obs 2: ${obs2Score}%
-
-Category Details:
-${categoryDetails}
+- Overall Taraf: ${label}
+- Strongest Area: ${strongestArea}
+- Weakest Area: ${weakestArea}
 
 Write the final comment now.
 `;
@@ -978,38 +994,32 @@ Write the final comment now.
     //   `;
 
     try {
-      const response = await this.aiModel.generateContent({
+      const result = await this.aiModel.generateContent({
         systemInstruction: systemPrompt,
-        //  {
-        //   role: 'system',
-        //   parts: [
-        //     {
-        //       text: systemPrompt,
-        //     },
-        //   ],
-        // },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         generationConfig: {
           temperature: 0.6,
           maxOutputTokens: 500,
         },
       });
-
-      const rawText = (response as any).text;
+      console.log(systemPrompt);
+      console.log(userPrompt);
+      console.log(result);
+      const rawText = (result as any).text;
 
       if (!rawText || typeof rawText !== 'string' || rawText === '') {
         const refusalReason =
-          (response as any).promptFeedback?.blockReason ||
+          (result as any).promptFeedback?.blockReason ||
           'Empty response object.';
 
         const dataTemplate = `
-[MODEL REFUSED GENERATION]
-Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
-Kekuatan Utama (Strongest Area): ${strongestArea}
-Bidang Pembangunan (Development Area): ${weakestArea}
+      [MODEL REFUSED GENERATION]
+      Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
+      Kekuatan Utama (Strongest Area): ${strongestArea}
+      Bidang Pembangunan (Development Area): ${weakestArea}
 
-Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Detailed comment not generated due to AI model restrictions.
-            `.trim();
+      Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Detailed comment not generated due to AI model restrictions.
+                  `.trim();
 
         console.warn(
           `[AI REFUSAL] Using fallback template. Reason: ${refusalReason}`,
@@ -1018,7 +1028,7 @@ Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Det
       }
 
       return rawText.trim();
-      // if (!result.response.text) {
+      // if (!result.response.text()) {
       //   throw new Error('Gemini returned empty response.');
       // }
       // return result.response.text().trim();
@@ -1027,7 +1037,7 @@ Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Det
       const errorMessage = error.message || 'Unknown API or network error';
 
       return `Kesilapan kritikal API: Gagal menyambung ke servis AI. / Critical API error: Failed to connect to AI service. Detail: ${errorMessage.substring(0, 50)}...`;
-      // throw new InternalServerErrorException('AI service fail.');
+      throw new InternalServerErrorException('AI service fail.');
     }
   }
 
