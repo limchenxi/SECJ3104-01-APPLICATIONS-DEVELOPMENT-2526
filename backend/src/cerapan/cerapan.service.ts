@@ -16,8 +16,7 @@ import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { PentadbirService } from '../pentadbir/pentadbir.service';
 import { MarkDto, SubmitObservationDto } from './dto/submit-cerapan.dto';
-// import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-import { GenerativeModel, GoogleGenAI } from '@google/genai';
+import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 // -------------------------------------------------------------
@@ -52,7 +51,7 @@ export class CerapanService {
       console.error('❌ GEMINI_API_KEY missing in environment variables');
       // 生产环境应该抛出错误，但这里遵循 RphService 模式，允许服务启动，并在调用时处理失败
     } else {
-      const genAI = new GoogleGenAI(key);
+      const genAI = new GoogleGenerativeAI(key);
 
       this.aiModel = genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
@@ -903,10 +902,10 @@ export class CerapanService {
     const obs2Score = summary.overall.weightedObservation2;
 
     const availableCategories = breakdown.filter(
-      (cat: any) => cat.weighted1 > 0 || cat.weighted2 > 0,
+      (cat) => cat.weighted1 > 0 || cat.weighted2 > 0,
     );
 
-    const combinedScores = availableCategories.map((cat: any) => ({
+    const combinedScores = availableCategories.map((cat) => ({
       code: cat.code,
       avgWeighted: (cat.weighted1 + cat.weighted2) / 2,
     }));
@@ -1011,19 +1010,15 @@ Write the final comment now.
       const result = await this.aiModel.generateContent({
         systemInstruction: systemPrompt,
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        // generationConfig: {
-        //   temperature: 0.6,
-        //   maxOutputTokens: 500,
-        // },
       });
       console.log(systemPrompt);
       console.log(userPrompt);
       console.log(result);
-      const rawText = (result as any).text;
+      const rawText = result.response.text();
 
-      if (!rawText || typeof rawText !== 'string' || rawText === '') {
+      if (!rawText) {
         const refusalReason =
-          (result as any).promptFeedback?.blockReason ||
+          result.response.promptFeedback?.blockReason ||
           'Empty response object.';
 
         const reasonMsg =
@@ -1043,7 +1038,9 @@ Write the final comment now.
       // return result.response.text().trim();
     } catch (error) {
       console.error('❌ Gemini API Error in CerapanService:', error);
-      const errorMessage = error.message || 'Unknown API or network error';
+
+      const errorMessage =
+        (error as Error).message || 'Unknown API or network error';
       const reasonMsg =
         'Kesilapan kritikal API: Gagal menyambung ke servis AI.';
       return createFallbackTemplate(
