@@ -16,7 +16,8 @@ import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { PentadbirService } from '../pentadbir/pentadbir.service';
 import { MarkDto, SubmitObservationDto } from './dto/submit-cerapan.dto';
-import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+// import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+import { GenerativeModel, GoogleGenAI } from '@google/genai';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 // -------------------------------------------------------------
@@ -51,7 +52,7 @@ export class CerapanService {
       console.error('❌ GEMINI_API_KEY missing in environment variables');
       // 生产环境应该抛出错误，但这里遵循 RphService 模式，允许服务启动，并在调用时处理失败
     } else {
-      const genAI = new GoogleGenerativeAI(key);
+      const genAI = new GoogleGenAI(key);
 
       this.aiModel = genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
@@ -923,19 +924,31 @@ export class CerapanService {
     const weakestDescription =
       codeDescriptionMap[weakest?.code || ''] ||
       'Data score is not conclusive.';
+
     const strongestArea = strongest
-      ? `${strongest.code} (${strongestDescription}) | Skor: ${strongest.avgWeighted.toFixed(2)}%` // 🚨 修正格式
+      ? `Kekuatan Utama: ${strongestDescription} (${strongest.code})`
       : 'Tiada Kekuatan Jelas (N/A)';
     const weakestArea = weakest
-      ? `${weakest.code} (${weakestDescription}) | Skor: ${weakest.avgWeighted.toFixed(2)}%` // 🚨 修正格式
+      ? `Bidang Pembangunan: ${weakestDescription} (${weakest.code})`
       : 'Tiada Kelemahan Jelas (N/A)';
-
     let categoryDetails = 'Performance Breakdown (Weighted Percentage):\n';
     breakdown.forEach((cat) => {
       const catObs1 = cat.weighted1 > 0 ? `${cat.weighted1}%` : 'N/A';
       const catObs2 = cat.weighted2 > 0 ? `${cat.weighted2}%` : 'N/A';
       categoryDetails += `- ${cat.code} (Weight ${cat.weight}%)：Cerapan 1: ${catObs1}, Cerapan 2: ${catObs2}\n`;
     });
+
+    const createFallbackTemplate = (reason: string, detail: string = '') => {
+      return `
+[MODEL REFUSED GENERATION]
+Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
+Kekuatan Utama (Strongest Area): ${strongestArea}
+Bidang Pembangunan (Development Area): ${weakestArea}
+
+Maklum Balas: ${reason} / Detailed comment not generated.
+Detail Tambahan: ${detail}
+`.trim();
+    };
 
     const systemPrompt = `
 You are a seasoned educational assessment expert.
@@ -947,17 +960,18 @@ Strict rules:
 2. Use only the provided data; do not invent new information.
 3. The comment must be bilingual (Malay and English) in a single short paragraph.
 4. The tone must be professional, encouraging, and focused on strengths plus one area for improvement.
-5. Target length: about 100–150 characters, concise but meaningful.
+5. Target length: approximately 200–300 characters or 2-3 concise sentences. The comment must be highly descriptive.
 `;
     const userPrompt = `
 Generate a bilingual Malay + English appraisal comment.
 
 Requirements:
+- The comment must incorporate the full description of the strongest and weakest areas (e.g., use "Planning" and "Guiding students," not just "4.1.1" and "4.3.1").
 - Do not invent new information; base feedback strictly on the data below.
 - The tone must be constructive and encouraging.
 - Begin with the Overall Evaluation Label: ${label}
-- Highlight the strongest area (highest scoring sub-category)
-- Give one improvement suggestion for the weakest area
+- Highlight the strength: Use the full description for **${strongestArea}**.
+- Suggest improvement: Focus on the full description for **${weakestArea}**.
 - Keep it professional and encouraging
 
 Assessment Data:
@@ -997,10 +1011,10 @@ Write the final comment now.
       const result = await this.aiModel.generateContent({
         systemInstruction: systemPrompt,
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 500,
-        },
+        // generationConfig: {
+        //   temperature: 0.6,
+        //   maxOutputTokens: 500,
+        // },
       });
       console.log(systemPrompt);
       console.log(userPrompt);
@@ -1012,21 +1026,16 @@ Write the final comment now.
           (result as any).promptFeedback?.blockReason ||
           'Empty response object.';
 
-        const dataTemplate = `
-      [MODEL REFUSED GENERATION]
-      Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
-      Kekuatan Utama (Strongest Area): ${strongestArea}
-      Bidang Pembangunan (Development Area): ${weakestArea}
+        const reasonMsg =
+          'Komen terperinci tidak dapat dijana kerana sekatan model AI.';
 
-      Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Detailed comment not generated due to AI model restrictions.
-                  `.trim();
+        console.warn(`[AI REFUSAL] Using fallback. Reason: ${refusalReason}`);
 
-        console.warn(
-          `[AI REFUSAL] Using fallback template. Reason: ${refusalReason}`,
+        return createFallbackTemplate(
+          reasonMsg,
+          `Gemini Block Reason: ${refusalReason}`,
         );
-        return dataTemplate;
       }
-
       return rawText.trim();
       // if (!result.response.text()) {
       //   throw new Error('Gemini returned empty response.');
@@ -1035,9 +1044,13 @@ Write the final comment now.
     } catch (error) {
       console.error('❌ Gemini API Error in CerapanService:', error);
       const errorMessage = error.message || 'Unknown API or network error';
-
-      return `Kesilapan kritikal API: Gagal menyambung ke servis AI. / Critical API error: Failed to connect to AI service. Detail: ${errorMessage.substring(0, 50)}...`;
-      throw new InternalServerErrorException('AI service fail.');
+      const reasonMsg =
+        'Kesilapan kritikal API: Gagal menyambung ke servis AI.';
+      return createFallbackTemplate(
+        reasonMsg,
+        `Error: ${errorMessage.substring(0, 100)}...`,
+      );
+      // throw new InternalServerErrorException('AI service fail.');
     }
   }
 
