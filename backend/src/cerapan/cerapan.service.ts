@@ -16,7 +16,8 @@ import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { PentadbirService } from '../pentadbir/pentadbir.service';
 import { MarkDto, SubmitObservationDto } from './dto/submit-cerapan.dto';
-import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+// import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Models } from '@google/genai';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 // -------------------------------------------------------------
@@ -38,7 +39,7 @@ const SUBCATEGORY_WEIGHT_MAP: Record<string, number> = {
 
 @Injectable()
 export class CerapanService {
-  private aiModel: GenerativeModel | null = null;
+  private aiModel: Models | null = null;
   constructor(
     @InjectModel(Cerapan.name) private cerapanModel: Model<Cerapan>,
     private readonly pentadbirService: PentadbirService,
@@ -51,11 +52,9 @@ export class CerapanService {
       console.error('❌ GEMINI_API_KEY missing in environment variables');
       // 生产环境应该抛出错误，但这里遵循 RphService 模式，允许服务启动，并在调用时处理失败
     } else {
-      const genAI = new GoogleGenerativeAI(key);
+      const genAI = new GoogleGenAI({ apiKey: key });
 
-      this.aiModel = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
-      });
+      this.aiModel = genAI.models;
     }
   }
   private getTarafLabel(score: number): string {
@@ -1008,18 +1007,21 @@ Write the final comment now.
 
     try {
       const result = await this.aiModel.generateContent({
-        systemInstruction: systemPrompt,
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        model: 'gemini-2.5-flash',
+        config: {
+          systemInstruction: systemPrompt,
+        },
+        contents: userPrompt,
       });
       console.log(systemPrompt);
       console.log(userPrompt);
       console.log(result);
-      const rawText = result.response.text();
+
+      const rawText = result.text;
 
       if (!rawText) {
         const refusalReason =
-          result.response.promptFeedback?.blockReason ||
-          'Empty response object.';
+          result.promptFeedback?.blockReason || 'Empty response object.';
 
         const reasonMsg =
           'Komen terperinci tidak dapat dijana kerana sekatan model AI.';
