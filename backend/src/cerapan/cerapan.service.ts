@@ -5,8 +5,9 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, MongooseError } from 'mongoose';
 import {
+  AdminMark,
   Cerapan,
   ObservationSection,
   QuestionSnapshot,
@@ -14,7 +15,7 @@ import {
 import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { PentadbirService } from '../pentadbir/pentadbir.service';
-import { SubmitObservationDto } from './dto/submit-cerapan.dto';
+import { MarkDto, SubmitObservationDto } from './dto/submit-cerapan.dto';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
@@ -684,6 +685,33 @@ export class CerapanService {
       .exec();
   }
 
+  private dtoToAdminMark(
+    marks: MarkDto[],
+    questions: QuestionSnapshot[],
+  ): AdminMark[] {
+    const snapshotIds = new Set(questions.map((q) => q.questionId));
+    const result: AdminMark[] = [];
+    for (const m of marks) {
+      if (!m || typeof m.questionId !== 'string') continue;
+      if (!snapshotIds.has(m.questionId)) continue;
+      const q = questions.find((q) => q.questionId === m.questionId);
+      const max = q?.maxScore ?? 0;
+      let markNum = Number(m.mark);
+      if (Number.isNaN(markNum)) markNum = 0;
+      if (markNum < 0) markNum = 0;
+      if (markNum > max) markNum = max;
+      const entry: { questionId: string; mark: number; comment?: string } = {
+        questionId: m.questionId,
+        mark: markNum,
+      };
+      if (typeof m.comment === 'string' && m.comment.trim().length > 0) {
+        entry.comment = m.comment.trim();
+      }
+      result.push(entry);
+    }
+    return result;
+  }
+
   /**
    * 2. Submit marks for Observation 1.
    */
@@ -722,63 +750,46 @@ export class CerapanService {
         administratorId: undefined,
       };
     }
-    // Normalize & validate marks against snapshot
-    const snapshotIds = new Set(
-      evaluation.questions_snapshot.map((q) => q.questionId),
+    const adminMarks = this.dtoToAdminMark(
+      dto.marks,
+      evaluation.questions_snapshot,
     );
-    const normalized = [] as {
-      questionId: string;
-      mark: number;
-      comment?: string;
-    }[];
-    for (const m of dto.marks || []) {
-      if (!m || typeof m.questionId !== 'string') continue;
-      if (!snapshotIds.has(m.questionId)) continue; // ignore unknown questionIds
-      const q = evaluation.questions_snapshot.find(
-        (q) => q.questionId === m.questionId,
-      );
-      const max = q?.maxScore ?? 0;
-      let markNum = Number(m.mark);
-      if (Number.isNaN(markNum)) markNum = 0;
-      if (markNum < 0) markNum = 0;
-      if (markNum > max) markNum = max;
-      const entry: { questionId: string; mark: number; comment?: string } = {
-        questionId: m.questionId,
-        mark: markNum,
-      };
-      if (typeof m.comment === 'string' && m.comment.trim().length > 0) {
-        entry.comment = m.comment.trim();
-      }
-      normalized.push(entry);
-    }
-    if (!normalized.length) {
+
+    if (!adminMarks.length) {
       throw new BadRequestException(
         'No valid marks provided for Observation 1',
       );
     }
-    evaluation.observation_1.marks = normalized;
-    evaluation.observation_1.status = 'submitted';
-    evaluation.observation_1.submittedAt = new Date();
-    evaluation.observation_1.administratorId = adminId;
+
+    Object.assign(evaluation.observation_1, {
+      marks: adminMarks,
+      status: 'submitted',
+      submittedAt: new Date(),
+      administratorId: adminId,
+    });
     evaluation.status = 'pending_observation_2';
 
     // Reset schedule fields for Cerapan 2
-    evaluation.scheduledDate = undefined;
-    evaluation.scheduledTime = undefined;
-    evaluation.observerName = undefined;
-    evaluation.templateRubric = undefined;
-    evaluation.notes = undefined;
-    evaluation.observationType = undefined;
+    Object.assign(evaluation, {
+      scheduledDate: undefined,
+      scheduledTime: undefined,
+      observerName: undefined,
+      templateRubric: undefined,
+      notes: undefined,
+      observationType: undefined,
+    });
 
     try {
       return await evaluation.save();
     } catch (err: any) {
       // Log detailed error for debugging
-
+      if (!(err instanceof MongooseError)) {
+        throw err;
+      }
       console.error(
         'Error saving Observation 1 marks:',
         err?.message,
-        err?.errors || err,
+        err?.stack || err,
       );
       const detail =
         typeof err?.message === 'string' ? err.message : 'Unknown error';
@@ -823,51 +834,37 @@ export class CerapanService {
         administratorId: undefined,
       };
     }
-    const snapshotIds = new Set(
-      evaluation.questions_snapshot.map((q) => q.questionId),
+
+    const adminMarks = this.dtoToAdminMark(
+      dto.marks,
+      evaluation.questions_snapshot,
     );
-    const normalized = [] as {
-      questionId: string;
-      mark: number;
-      comment?: string;
-    }[];
-    for (const m of dto.marks || []) {
-      if (!m || typeof m.questionId !== 'string') continue;
-      if (!snapshotIds.has(m.questionId)) continue;
-      const q = evaluation.questions_snapshot.find(
-        (q) => q.questionId === m.questionId,
-      );
-      const max = q?.maxScore ?? 0;
-      let markNum = Number(m.mark);
-      if (Number.isNaN(markNum)) markNum = 0;
-      if (markNum < 0) markNum = 0;
-      if (markNum > max) markNum = max;
-      const entry: { questionId: string; mark: number; comment?: string } = {
-        questionId: m.questionId,
-        mark: markNum,
-      };
-      if (typeof m.comment === 'string' && m.comment.trim().length > 0) {
-        entry.comment = m.comment.trim();
-      }
-      normalized.push(entry);
-    }
-    if (!normalized.length) {
+
+    if (!adminMarks.length) {
       throw new BadRequestException(
         'No valid marks provided for Observation 2',
       );
     }
-    evaluation.observation_2.marks = normalized;
-    evaluation.observation_2.status = 'submitted';
-    evaluation.observation_2.submittedAt = new Date();
-    evaluation.observation_2.administratorId = adminId;
+
+    Object.assign(evaluation.observation_2, {
+      marks: adminMarks,
+      status: 'submitted',
+      submittedAt: new Date(),
+      administratorId: adminId,
+    });
+
     evaluation.status = 'marked';
     try {
       await evaluation.save();
     } catch (err: any) {
+      // Log detailed error for debugging
+      if (!(err instanceof MongooseError)) {
+        throw err;
+      }
       console.error(
         'Error saving Observation 2 marks:',
         err?.message,
-        err?.errors || err,
+        err?.stack || err,
       );
       const detail =
         typeof err?.message === 'string' ? err.message : 'Unknown error';
