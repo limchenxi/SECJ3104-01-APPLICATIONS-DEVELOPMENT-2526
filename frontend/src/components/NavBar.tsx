@@ -65,7 +65,7 @@ export default function NavBar({brand = "Smart School System"}: NavBarProps) {
 
             <Avatar
               alt={user?.name}
-              src={user?.profilePhoto ?? undefined}
+              src={undefined}
               sx={{ bgcolor: "#90CAF9", color: "#0D47A1", fontWeight: 600 }}
             >
               {user?.name?.[0]?.toUpperCase() ?? "U"}

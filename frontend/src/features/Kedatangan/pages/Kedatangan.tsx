@@ -1,20 +1,19 @@
 import { useEffect, useState } from "react";
 import { checkIP } from "../api/fetchApi";
+import AttendancePage from "./clockInPage";
 
-function Kedatangan() {
+export default function Kedatangan() {
 
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [allowed, setAllowed] = useState<boolean | null>(true);
 
-  useEffect(() => {
-    checkIP().then(setAllowed);
-  }, []);
+  // useEffect(() => {
+  //   checkIP().then(setAllowed);
+  // }, []);
 
   if(allowed === null) return <div>Checking network...</div>;
-  if(!allowed) return <div>Oopsies daises</div>
+  if(!allowed) return <div>Not Authorised</div>
 
   return(
-    <h1>Hello world</h1>
+    <AttendancePage/>
   );
 }
-
-export default Kedatangan;
