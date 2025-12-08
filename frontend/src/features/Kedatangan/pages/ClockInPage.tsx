@@ -20,6 +20,8 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import HistoryIcon from "@mui/icons-material/History";
 import PersonIcon from "@mui/icons-material/Person";
+import { useAttendance } from "../../../hooks/useAttendance";
+import useAuth from "../../../hooks/useAuth";
 
 // --- Type Definitions ---
 
@@ -57,9 +59,9 @@ interface SnackbarState {
   text: string;
 }
 
-// Teacher mock data
-const TEACHER_NAME: string = "Ms. Eleanor Vance";
-const TEACHER_ID: string = "T-401";
+// // Teacher mock data
+// const TEACHER_NAME: string = "Ms. Eleanor Vance";
+// const TEACHER_ID: string = "T-401";
 
 // Only "Clock In" and "Clock Out"
 const ACTIONS: Action[] = [
@@ -84,57 +86,69 @@ const formatDate = (d: Date): string =>
   });
 
 export default function AttendancePage(): JSX.Element {
+  const {user} = useAuth();
+
+  if(!user?.id) {
+    return <></>;
+  }
+
+  const { clockIn, loading, error } = useAttendance(user?.id);
+
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, text: "" });
 
   // Attendance history (no break entries)
-  const [history, setHistory] = useState<HistoryEntry[]>(() => {
-    const today = new Date();
-    
-    // Get date components for safe, non-mutating date creation
-    const baseYear = today.getFullYear();
-    const baseMonth = today.getMonth();
-    const baseDay = today.getDate();
-
-    // Initialize mock history. The array literal is explicitly cast as HistoryEntry[]
-    const mockHistory = ([
-      { 
-        id: 2, 
-        action: "in", 
-        // Use full Date constructor to create time without mutating a 'base' date object
-        timestamp: new Date(baseYear, baseMonth, baseDay, 13, 0, 0) 
-      },
-      { 
-        id: 1, 
-        action: "in", 
-        timestamp: new Date(baseYear, baseMonth, baseDay, 8, 0, 0) 
-      },
-    ] as HistoryEntry[])
-    .sort((a, b) => b.id - a.id);
-    
-    return mockHistory;
-  });
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleClockAction = useCallback((actionId: ActionId) => {
-    const newEntry: HistoryEntry = {
-      id: Date.now(),
-      action: actionId,
-      timestamp: new Date(),
-    };
+  useEffect(() => {
+    if(error) {
+      setSnackbar({
+        open: true,
+        text: `Action Failed: ${error}`,
+      });
+    }
+  }, [error]);
 
-    setHistory((prev) => [newEntry, ...prev].slice(0, 10));
+  const handleClockAction = useCallback(async (actionId: ActionId) => {
+    if(!user.id) {
+      setSnackbar({
+        open: true,
+        text: "User not found",
+      });
+      return;
+    }
 
-    const label = ACTIONS.find((a) => a.id === actionId)?.label;
-    setSnackbar({
-      open: true,
-      text: `${label} recorded at ${formatTime(new Date())}`,
-    });
-  }, []);
+    if(actionId === "in") {
+      try {
+        const res = await clockIn();
+        if(res?.timeIn) {
+          const newEntry: HistoryEntry = {
+            id: Date.now(),
+            action: "in",
+            timestamp: new Date(res.timeIn),
+          };
+
+          setHistory((prev) => [newEntry, ...prev].slice(0, 10));
+
+          setSnackbar({
+            open: true,
+            text: `Clock In successful at ${new Date(res.timeIn)}`
+          });
+        }
+      }
+      catch(err) {
+        setSnackbar({
+          open: true,
+          text: `Clock in failed: ${error ?? 'Unknown error'}`,
+        });
+      }
+    }
+  }, [clockIn, user?.id, error]);
 
   const currentStatus: ActionId | "none" = history.length ? history[0].action : "none";
 
@@ -197,10 +211,10 @@ export default function AttendancePage(): JSX.Element {
                 />
                 <Box>
                   <Typography variant="h6" fontWeight={700}>
-                    {TEACHER_NAME}
+                    {user.name}
                   </Typography>
                   <Typography color="text.secondary">
-                    ID: {TEACHER_ID}
+                    ID: {user.id}
                   </Typography>
                 </Box>
               </Box>

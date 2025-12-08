@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { checkIP } from "../api/fetchApi";
-import AttendancePage from "./clockInPage";
+import AttendancePage from "./ClockInPage";
 
 export default function Kedatangan() {
 
