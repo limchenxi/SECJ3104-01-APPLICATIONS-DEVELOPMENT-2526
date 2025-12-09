@@ -1030,7 +1030,7 @@ Write the final report now.
 `;
     try {
       const response = await this.aiModel.generateContent({
-        model: 'gemini-2.5-pro',
+        model: 'gemini-2.5-flash',
         contents: userPrompt,
         config: {
           systemInstruction: systemPrompt,
