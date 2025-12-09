@@ -54,6 +54,7 @@ export default function AiUsageAnalytics() {
     );
   }
 
+  const totalRequests = usage.length;
   return (
     
     <Stack spacing={2}>
@@ -62,6 +63,16 @@ export default function AiUsageAnalytics() {
       <Typography variant="h6" fontWeight="bold">
         Total Usage Overview
       </Typography>
+      <Card sx={{ boxShadow: 3 }}>
+        <CardContent sx={{ py: 1.5 }}>
+            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                Total AI Requests
+            </Typography>
+            <Typography variant="h4" fontWeight="bold">
+                {totalRequests}
+            </Typography>
+        </CardContent>
+      </Card>
       
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
         {/* 1. 饼图 (Pie Chart): 各 AI Type 用量占比 */}

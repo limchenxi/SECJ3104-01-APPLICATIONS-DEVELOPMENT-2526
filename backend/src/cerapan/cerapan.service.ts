@@ -20,11 +20,6 @@ import { MarkDto, SubmitObservationDto } from './dto/submit-cerapan.dto';
 import { GoogleGenAI, Models } from '@google/genai';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
-// -------------------------------------------------------------
-// WEIGHT MAP FOR SUBCATEGORY CODES (TOTAL 100)
-// Each entry: subCategoryCode => weight (points contribution when full mark achieved)
-// Formula per subcategory: (achieved / fullMark) * weight
-// Provided weights:
 // 4.1.1: 10, 4.2.1: 10, 4.2.2: 5, 4.3.1: 15, 4.4.1: 25, 4.4.2: 5, 4.5.1: 10, 4.6.1: 20 (sum = 100)
 const SUBCATEGORY_WEIGHT_MAP: Record<string, number> = {
   '4.1.1': 10,
@@ -50,7 +45,6 @@ export class CerapanService {
 
     if (!key) {
       console.error('❌ GEMINI_API_KEY missing in environment variables');
-      // 生产环境应该抛出错误，但这里遵循 RphService 模式，允许服务启动，并在调用时处理失败
     } else {
       const genAI = new GoogleGenAI({ apiKey: key });
 
@@ -64,9 +58,8 @@ export class CerapanService {
     if (score >= 0) return 'PERLU TINDAKAN SEGERA';
     return 'Tidak Dinilai';
   }
-  /**
-   * Admin: Start Cerapan 1 for an evaluation (set status and prepare observation_1)
-   */
+
+  // Admin: Start Cerapan 1 for an evaluation (set status and prepare observation_1)
   async startObservation1ByAdmin(evaluationId: string): Promise<Cerapan> {
     const evaluation = await this.cerapanModel.findById(evaluationId);
     if (!evaluation) {
@@ -231,9 +224,9 @@ export class CerapanService {
     evaluation.self_evaluation.status = 'submitted';
     evaluation.self_evaluation.submittedAt = new Date();
     if (evaluation.observation_2.status === 'submitted') {
-      evaluation.status = 'marked'; // Obs 2 已完成，流程结束
+      evaluation.status = 'marked';
     } else if (evaluation.observation_1.status === 'submitted') {
-      evaluation.status = 'pending_observation_2'; // Obs 1 已完成，等待 Obs 2
+      evaluation.status = 'pending_observation_2';
     }
 
     const savedEvaluation = await evaluation.save();
@@ -295,7 +288,6 @@ export class CerapanService {
   }
 
   // === SUMMARY / CALCULATION HELPERS ===
-
   private clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value));
   }
@@ -513,8 +505,8 @@ export class CerapanService {
     const label = (() => {
       // If weighted observation basis used, treat 0..100 similar thresholds (customizable)
       if (performanceBasis >= 85) return 'Cemerlang';
-      if (performanceBasis >= 65) return 'Baik';
-      if (performanceBasis >= 40) return 'Sederhana';
+      if (performanceBasis >= 70) return 'Baik';
+      if (performanceBasis >= 55) return 'Sederhana';
       if (performanceBasis > 0) return 'Lemah';
       return 'Tidak Dinilai';
     })();
@@ -583,18 +575,14 @@ export class CerapanService {
     };
   }
 
-  /**
-   * Return report plus computed summary for teacher.
-   */
+  // Return report plus computed summary for teacher.
   async getReportWithSummary(evaluationId: string, teacherId: string) {
     const report = await this.getCompletedReport(evaluationId, teacherId);
     const summary = this.computeSummary(report);
     return { report, summary };
   }
 
-  /**
-   * (ADMIN) Return report plus computed summary for any evaluation (no teacher restriction).
-   */
+  //(ADMIN) Return report plus computed summary for any evaluation (no teacher restriction).
   async getAdminReportWithSummary(evaluationId: string) {
     const report = await this.cerapanModel.findById(evaluationId).exec();
     if (!report) {
@@ -605,10 +593,7 @@ export class CerapanService {
   }
 
   // (Demo helpers removed)
-
-  /**
-   * Teacher initiates their own self-evaluation (same logic as admin createEvaluation but teacherId derived from JWT).
-   */
+  // Teacher initiates their own self-evaluation (same logic as admin createEvaluation but teacherId derived from JWT).
   async createTeacherSelfEvaluation(
     teacherId: string,
     dto: { templateId: string; period: string; subject: string; class: string },
@@ -656,9 +641,7 @@ export class CerapanService {
   // === NEW ADMIN FUNCTIONS (PENTADBIR) ===
   // ===============================================
 
-  /**
-   * 1. Get the "To-Do" list for all administrators.
-   */
+  //1. Get the "To-Do" list for all administrators.
   async getAdminPendingTasks(): Promise<Cerapan[]> {
     return this.cerapanModel
       .find({
@@ -671,9 +654,7 @@ export class CerapanService {
       .exec();
   }
 
-  /**
-   * Get all evaluations for admin overview (including completed).
-   */
+  // Get all evaluations for admin overview (including completed).
   async getAllEvaluationsForAdmin(): Promise<Cerapan[]> {
     return this.cerapanModel
       .find({})
@@ -711,9 +692,7 @@ export class CerapanService {
     return result;
   }
 
-  /**
-   * 2. Submit marks for Observation 1.
-   */
+  //2. Submit marks for Observation 1.
   async submitObservation1(
     evaluationId: string,
     dto: SubmitObservationDto,
@@ -799,9 +778,8 @@ export class CerapanService {
     }
   }
 
-  /**
-   * 3. Submit marks for Observation 2.
-   */
+  // 3. Submit marks for Observation 2.
+
   async submitObservation2(
     evaluationId: string,
     dto: SubmitObservationDto,
@@ -883,6 +861,26 @@ export class CerapanService {
     if (!this.aiModel) {
       return 'AI cannot generate comment.';
     }
+    const breakdown = summary.categories.breakdown;
+    const overallScore = summary.overall.triAverageWeighted;
+    const label = summary.overall.label;
+    const obs1Score = summary.overall.weightedObservation1;
+    const obs2Score = summary.overall.weightedObservation2;
+    const availableCategories = breakdown.filter(
+      (cat) => cat.weighted1 > 0 || cat.weighted2 > 0,
+    );
+    const combinedScores = availableCategories.map((cat) => ({
+      code: cat.code,
+      avgWeighted: (cat.weighted1 + cat.weighted2) / 2,
+    }));
+
+    // const strongest = combinedScores.sort(
+    //   (a, b) => b.avgWeighted - a.avgWeighted,
+    // )[0];
+    // const weakest = combinedScores.sort(
+    //   (a, b) => a.avgWeighted - b.avgWeighted,
+    // )[0];
+
     const codeDescriptionMap: Record<string, string> = {
       '4.1.1': 'Perancangan PdPc / Planning',
       '4.2.1': 'Mengelola proses pembelajaran / Managing learning process',
@@ -893,22 +891,6 @@ export class CerapanService {
       '4.5.1': 'Pelaksanaan pentaksiran / Assessment implementation',
       '4.6.1': 'Penglibatan aktif murid / Active student engagement',
     };
-
-    const breakdown = summary.categories.breakdown;
-    const overallScore = summary.overall.triAverageWeighted;
-    const label = summary.overall.label;
-    const obs1Score = summary.overall.weightedObservation1;
-    const obs2Score = summary.overall.weightedObservation2;
-
-    const availableCategories = breakdown.filter(
-      (cat) => cat.weighted1 > 0 || cat.weighted2 > 0,
-    );
-
-    const combinedScores = availableCategories.map((cat) => ({
-      code: cat.code,
-      avgWeighted: (cat.weighted1 + cat.weighted2) / 2,
-    }));
-
     const strongest = combinedScores.sort(
       (a, b) => b.avgWeighted - a.avgWeighted,
     )[0];
@@ -929,127 +911,163 @@ export class CerapanService {
     const weakestArea = weakest
       ? `Bidang Pembangunan: ${weakestDescription} (${weakest.code})`
       : 'Tiada Kelemahan Jelas (N/A)';
-    let categoryDetails = 'Performance Breakdown (Weighted Percentage):\n';
-    breakdown.forEach((cat) => {
-      const catObs1 = cat.weighted1 > 0 ? `${cat.weighted1}%` : 'N/A';
-      const catObs2 = cat.weighted2 > 0 ? `${cat.weighted2}%` : 'N/A';
-      categoryDetails += `- ${cat.code} (Weight ${cat.weight}%)：Cerapan 1: ${catObs1}, Cerapan 2: ${catObs2}\n`;
-    });
+    const strongestAreaDesc = 'Tiada Kekuatan Jelas (N/A)'; // Simplified as we rely on detailed feedback list
+    const weakestAreaDesc = 'Tiada Kelemahan Jelas (N/A)'; // Simplified as we rely on detailed feedback list
+    const detailedDataForAI = breakdown.map((b) => ({
+      code: b.code,
+      desc: codeDescriptionMap[b.code],
+      score: b.weighted1 || b.weighted2 || b.weightedSelf,
+      taraf: this.getTarafLabel(b.weighted1 || b.weighted2 || b.weightedSelf),
+    }));
+
+    // 定义强制 JSON Schema
+    const responseSchema = {
+      type: 'OBJECT',
+      properties: {
+        overall_summary_malay: { type: 'STRING' },
+        overall_summary_english: { type: 'STRING' },
+        detailed_feedback: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              code: { type: 'STRING' },
+              strength_or_development: { type: 'STRING' }, // 'Strength' or 'Development'
+              feedback_malay: {
+                type: 'STRING',
+                description: 'One constructive observation sentence in Malay.',
+              },
+              feedback_english: {
+                type: 'STRING',
+                description:
+                  'One constructive observation sentence in English.',
+              },
+            },
+            required: [
+              'code',
+              'strength_or_development',
+              'feedback_malay',
+              'feedback_english',
+            ],
+          },
+        },
+      },
+      required: [
+        'overall_summary_malay',
+        'overall_summary_english',
+        'detailed_feedback',
+      ],
+    };
 
     const createFallbackTemplate = (reason: string, detail: string = '') => {
       return `
+    [MODEL REFUSED GENERATION]
+    Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
+    Kekuatan Utama (Strongest Area): ${strongestArea}
+    Bidang Pembangunan (Development Area): ${weakestArea}
+
+    Maklum Balas: ${reason} / Detailed comment not generated.
+    Detail Tambahan: ${detail}
+    `.trim();
+    };
+
+    //     const systemPrompt = `
+    // You are a seasoned educational assessment expert.
+
+    // Your task is to help generate a generic teaching performance appraisal comment.
+
+    // Strict rules:
+    // 1. Do not identify real individuals; refer only to "this teacher".
+    // 2. Use only the provided data; do not invent new information.
+    // 3. The comment must be bilingual (Malay and English) in a single short paragraph.
+    // 4. The tone must be professional, encouraging, and focused on strengths plus one area for improvement.
+    // 5. Target length: approximately 200–300 characters or 2-3 concise sentences. The comment must be highly descriptive.
+    // `;
+    //     const userPrompt = `
+    // Generate a bilingual Malay + English appraisal comment.
+
+    // Requirements:
+    // - The comment must incorporate the full description of the strongest and weakest areas (e.g., use "Planning" and "Guiding students," not just "4.1.1" and "4.3.1").
+    // - Do not invent new information; base feedback strictly on the data below.
+    // - The tone must be constructive and encouraging.
+    // - Begin with the Overall Evaluation Label: ${label}
+    // - Highlight the strength: Use the full description for **${strongestArea}**.
+    // - Suggest improvement: Focus on the full description for **${weakestArea}**.
+    // - Keep it professional and encouraging
+
+    // Assessment Data:
+    // - Class: ${evaluation.class}
+    // - Overall Score: ${overallScore}%
+    // - Overall Taraf: ${label}
+    // - Strongest Area: ${strongestArea}
+    // - Weakest Area: ${weakestArea}
+
+    // Write the final comment now.
+    // `;
+    const summaryMalay = `Secara keseluruhan, prestasi guru ${evaluation.subject} ini dinilai pada tahap '${label}' (${overallScore.toFixed(2)}%), menunjukkan ${label === 'Cemerlang' || label === 'Baik' ? 'kekuatan yang konsisten dalam pelbagai aspek' : 'beberapa bidang utama yang memerlukan perhatian dan pembangunan segera'}.`;
+    const summaryEnglish = `Overall, this ${evaluation.subject} teacher's performance is rated as '${label}' (${overallScore.toFixed(2)}%), demonstrating ${label === 'Cemerlang' || label === 'Baik' ? 'consistent strengths across various aspects' : 'several key areas requiring immediate attention and development'}.`;
+
+    const systemPrompt = `
+You are a bilingual educational assessment expert. Your task is to generate a structured performance report using clear text sections and Markdown list formatting.
+Your output MUST strictly follow the requested structure and data provided.
+`;
+    const userPrompt = `
+Generate the bilingual appraisal report for the teacher of ${evaluation.subject}.
+
+# 1. Ringkasan Keseluruhan (Overall Summary)
+Use the following pre-calculated summary text:
+
+${summaryMalay}
+${summaryEnglish}
+
+# 2. Maklum Balas Terperinci (Detailed Feedback)
+For every category listed below, generate ONE bilingual bullet point of constructive feedback. The feedback must be informed by the score/Taraf provided in the data.
+
+Assessment Data (Reference):
+${JSON.stringify(detailedDataForAI, null, 2)}
+
+Write the final report now.
+`;
+    try {
+      const response = await this.aiModel.generateContent({
+        model: 'gemini-2.5-pro',
+        contents: userPrompt,
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.6,
+          maxOutputTokens: 2000,
+        },
+      });
+      const rawText = (response as any).text;
+
+      if (!rawText || typeof rawText !== 'string' || rawText.trim() === '') {
+        const refusalReason =
+          (response as any).promptFeedback?.blockReason ||
+          'Empty text or model safety block.';
+
+        const dataTemplate = `
 [MODEL REFUSED GENERATION]
 Taraf Keseluruhan (Overall Taraf): ${label} (${overallScore}%)
 Kekuatan Utama (Strongest Area): ${strongestArea}
 Bidang Pembangunan (Development Area): ${weakestArea}
 
-Maklum Balas: ${reason} / Detailed comment not generated.
-Detail Tambahan: ${detail}
-`.trim();
-    };
+Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Detailed comment not generated due to AI model restrictions.
+ `.trim();
 
-    const systemPrompt = `
-You are a seasoned educational assessment expert.
-
-Your task is to help generate a generic teaching performance appraisal comment.
-
-Strict rules:
-1. Do not identify real individuals; refer only to "this teacher".
-2. Use only the provided data; do not invent new information.
-3. The comment must be bilingual (Malay and English) in a single short paragraph.
-4. The tone must be professional, encouraging, and focused on strengths plus one area for improvement.
-5. Target length: approximately 200–300 characters or 2-3 concise sentences. The comment must be highly descriptive.
-`;
-    const userPrompt = `
-Generate a bilingual Malay + English appraisal comment.
-
-Requirements:
-- The comment must incorporate the full description of the strongest and weakest areas (e.g., use "Planning" and "Guiding students," not just "4.1.1" and "4.3.1").
-- Do not invent new information; base feedback strictly on the data below.
-- The tone must be constructive and encouraging.
-- Begin with the Overall Evaluation Label: ${label}
-- Highlight the strength: Use the full description for **${strongestArea}**.
-- Suggest improvement: Focus on the full description for **${weakestArea}**.
-- Keep it professional and encouraging
-
-Assessment Data:
-- Class: ${evaluation.class}
-- Overall Score: ${overallScore}%
-- Overall Taraf: ${label}
-- Strongest Area: ${strongestArea}
-- Weakest Area: ${weakestArea}
-
-Write the final comment now.
-`;
-    // const prompt = `
-    //     You are a seasoned educational assessment expert tasked with writing the final teaching performance appraisal comment for the teacher of ${evaluation.subject}.
-
-    //     **Instructions:**
-    //     1.  **Language:** The entire comment must be written in **Malay** and **English** (bilingual).
-    //     2.  **Format:** The comment should be a single, brief, professional, and insightful paragraph, approximately 100-150 characters long.
-    //     3.  **Content:**
-    //         a.  Start by mentioning the **Overall Evaluation Label** (${label}).
-    //         b.  Highlight the **strongest area** (the sub-category with the highest score) as the primary strength.
-    //         c.  Provide one **specific suggestion for improvement** targeting the **weakest area** (the sub-category with the lowest score).
-    //         d.  Maintain a professional and encouraging tone.
-
-    //     **Assessment Data (Total 100%):**
-    //     -   Teacher: ${evaluation.subject} Teacher, Class ${evaluation.class}
-    //     -   Overall Weighted Average Score: ${overallScore}%
-    //     -   Overall Evaluation Label: ${label}
-    //     -   Principal Observation 1 (Obs 1): ${obs1Score}%
-    //     -   Principal Observation 2 (Obs 2): ${obs2Score}%
-
-    //     ${categoryDetails}
-
-    //     Based on the data above, generate the summary appraisal comment in Malay and English.
-    //   `;
-
-    try {
-      const result = await this.aiModel.generateContent({
-        model: 'gemini-2.5-pro',
-        config: {
-          systemInstruction: systemPrompt,
-        },
-        contents: userPrompt,
-      });
-      console.log(systemPrompt);
-      console.log(userPrompt);
-      console.log(result);
-
-      const rawText = result.text;
-
-      if (!rawText) {
-        const refusalReason =
-          result.promptFeedback?.blockReason || 'Empty response object.';
-
-        const reasonMsg =
-          'Komen terperinci tidak dapat dijana kerana sekatan model AI.';
-
-        console.warn(`[AI REFUSAL] Using fallback. Reason: ${refusalReason}`);
-
-        return createFallbackTemplate(
-          reasonMsg,
-          `Gemini Block Reason: ${refusalReason}`,
+        console.warn(
+          `[AI REFUSAL] Using fallback template. Reason: ${refusalReason}`,
         );
+        return dataTemplate;
       }
       return rawText.trim();
-      // if (!result.response.text()) {
-      //   throw new Error('Gemini returned empty response.');
-      // }
-      // return result.response.text().trim();
     } catch (error) {
       console.error('❌ Gemini API Error in CerapanService:', error);
-
       const errorMessage =
         (error as Error).message || 'Unknown API or network error';
-      const reasonMsg =
-        'Kesilapan kritikal API: Gagal menyambung ke servis AI.';
       return createFallbackTemplate(
-        reasonMsg,
+        'Kesilapan kritikal API: Gagal menyambung ke servis AI.',
         `Error: ${errorMessage.substring(0, 100)}...`,
       );
-      // throw new InternalServerErrorException('AI service fail.');
     }
   }
 
@@ -1078,7 +1096,7 @@ Write the final comment now.
             userId: aiUserId,
             usageType: 'Cerapan Comment',
             provider: 'Gemini',
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash',
           });
         }
       } catch (err) {

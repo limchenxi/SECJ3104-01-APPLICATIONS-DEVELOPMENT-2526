@@ -13,7 +13,6 @@ const ProfilePage = lazy(() =>
   import("../features/Profile/pages/ProfileV2")
 );
 
-
 // Dashboard - all roles
 const GuruDashboard = lazy(
   () => import("../features/Dashboard/pages/GuruDashboard")
@@ -68,6 +67,21 @@ const AIList= lazy(
 const AiUsageAnalytics= lazy(
   () => import("../features/AI/pages/usage/ai-usage")
 );
+const SchoolConfiguration= lazy(
+  () => import("../features/School/pages/SchoolConfiguration")
+);
+const BasicInfo= lazy(
+  () => import("../features/School/pages/BasicInfo")
+)
+const ObservationSetting= lazy(
+  () => import("../features/School/pages/ObservationSetting")
+)
+const AttendanceSetting= lazy(
+  () => import("../features/School/pages/AttendanceSetting")
+)
+const Notification= lazy(
+  () => import("../features/School/pages/Notification")
+)
 
 // Cerapan Pages
 const TeacherCerapanKendiri = lazy(
@@ -315,14 +329,61 @@ export default function AppRoutes() {
             path="/ai/list"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
-                <AIList items={[]}/>
+                <AIList/>
               </RoleGuard>
             }
-          /><Route
+          />
+          <Route
             path="/ai/usage"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <AiUsageAnalytics/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <SchoolConfiguration/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/info"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <BasicInfo initialData={{
+                  name: "",
+                  address: "",
+                  timezone: "",
+                  language: "",
+                  currentAcademicYear: ""
+                }}/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/observation"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <ObservationSetting initialData={undefined}/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/attendance"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AttendanceSetting initialData={undefined}/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/notification"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <Notification initialData={undefined}/>
               </RoleGuard>
             }
           />

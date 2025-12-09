@@ -36,8 +36,8 @@ import {
 } from "../api";
 
 import { userApi } from "../../Users/api";
-import type { UserItem } from "../../Users/stores";
 import { School } from "@mui/icons-material";
+import type { UserItem } from "../../Users/type";
 
 // ---------------------------------------------------------------
 // Clean, organized subjects list

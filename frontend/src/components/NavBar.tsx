@@ -1,13 +1,16 @@
-import { AppBar, Avatar, Button, Container, Toolbar, Typography, Box } from "@mui/material";
+import { AppBar, Avatar, Button, Container, Toolbar, Typography, Box, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
-
+import { ChevronLeftIcon, MenuIcon } from "lucide-react";
+const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
 interface NavBarProps {
   brand?: string;
+  onMenuClick: () => void; 
+  sidebarOpen: boolean;
   // trailing?: ReactNode;
 }
 
-export default function NavBar({brand = "Smart School System"}: NavBarProps) {
+export default function NavBar({brand = "SISTEM SEKOLAH SK SRI SIAKAP", onMenuClick, sidebarOpen, }: NavBarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const handleLogout = () => {
@@ -29,10 +32,32 @@ export default function NavBar({brand = "Smart School System"}: NavBarProps) {
                 // justifyContent: "flex-start",
                 justifyContent: "space-between",
                 px: { xs: 2, sm: 4 },}}>
-                  
-            <Typography variant="h6" component="div" sx={{ fontWeight: 700, letterSpacing: 1 }}>
-              {brand}
-            </Typography>
+            <Box display="flex" alignItems="center" gap={2}>
+              <IconButton 
+                    color="inherit" 
+                    aria-label="toggle drawer" 
+                    onClick={onMenuClick} 
+                    edge="start"
+                    sx={{ 
+                      transform: sidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+                      transition: 'transform 0.3s',
+                      mr: 1 
+                  }}
+                >
+                    <MenuIcon />
+                </IconButton>
+              <Avatar
+                alt="School Logo"
+                src={SCHOOL_LOGO_URL} 
+                sx={{ width: 40, height: 40, bgcolor: "#90CAF9", color: "#0D47A1" }} 
+              >
+                {brand.charAt(0)} 
+              </Avatar>
+
+              <Typography variant="h6" component="div" sx={{ fontWeight: 700, letterSpacing: 1 }}>
+                {brand}
+              </Typography>
+            </Box>
 
             {/* <Box display="flex" alignItems="center" gap={2}>
               <div className="text-right">

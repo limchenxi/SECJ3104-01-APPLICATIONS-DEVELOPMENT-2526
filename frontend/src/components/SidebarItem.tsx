@@ -35,6 +35,7 @@ export const SidebarItem = {
     },
     { label: "Dashboard", to: "/dashboard/superadmin" },
     { label: "Pengurusan AI", to: "/ai" },
+    { label: "Setting Sekolah", to: "/school-setting"},
     { label: "Pengurusan Pengguna", to: "/users" },
   
     { label: "Profile", to: "/profile" },

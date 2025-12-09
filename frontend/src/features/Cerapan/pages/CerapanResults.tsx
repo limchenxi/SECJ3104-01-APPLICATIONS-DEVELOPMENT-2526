@@ -29,7 +29,6 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
-// Charts removed - no longer used
 import { getReportSummary, getAdminReportSummary, regenerateAiComment } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
 import useAuth from "../../../hooks/useAuth";
@@ -39,6 +38,14 @@ import jsPDF from "jspdf";
 
 const SCHOOL_NAME = 'SK SRI SIAKAP'; 
 const SCHOOL_CODE = 'ABA 3012';
+interface CategoryFeedbackItem {
+    code: string;
+    description: string;
+    performance_level: string;
+    feedback_malay: string;
+    feedback_english: string;
+}
+
 const PDFExportContent = ({ report, summary, teacherName,subCategoryCodes, scoreRowData }: { report: CerapanRecord, summary: ReportSummary, teacherName: string | undefined, subCategoryCodes: string[], scoreRowData: any[]}) => {
     if (!report || !summary) return null;
     const breakdown = summary.categories.breakdown.sort((a, b) => a.code.localeCompare(b.code));
@@ -48,7 +55,7 @@ const PDFExportContent = ({ report, summary, teacherName,subCategoryCodes, score
             backgroundColor: '#fff', 
             fontSize: '10pt', 
             fontFamily: 'Arial, sans-serif', 
-            width: '1100px' // 确保宽度足够大，用于横向 A4 导出
+            width: '1100px'
         }}>
             {/* Header / Info */}
             <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>TAPAK STANDARD 4</h1>
@@ -143,8 +150,8 @@ export default function CerapanResults() {
   const [fullTeacherName, setFullTeacherName] = useState<string | undefined>(undefined);
 
   // Determine if this is admin view
-  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/");
-
+  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
+  const isSuperAdminView = user?.role === "SUPERADMIN";
   useEffect(() => {
     loadReport();
   }, [id]);
@@ -196,7 +203,6 @@ export default function CerapanResults() {
     if (!summary || !report) return [];
     
     const formatDate = (dateValue: Date | string | null | undefined): string => {
-        // ... (使用你之前修复的 formatDate 逻辑，或将其定义为 CerapanResults 内部函数) ...
         if (!dateValue) return '-'; 
         const date = new Date(dateValue);
         if (isNaN(date.getTime()) || date.getFullYear() === 1970) return '-';
@@ -207,7 +213,6 @@ export default function CerapanResults() {
     const dateObs1 = formatDate(report.observation_1?.submittedAt);
     const dateObs2 = formatDate(report.observation_2?.submittedAt);
     
-    // 返回包含所有数据的数组
     return [
         { label: 'Cerapan Kendiri / Self', date: dateSelf, key: 'weightedSelf' as const, total: summary.categories.totals.weightedSelfTotal, taraf: summary.selfEvaluation.label },
         { label: 'Cerapan 1 / Obs 1', date: dateObs1, key: 'weighted1' as const, total: summary.categories.totals.weightedObservation1Total, taraf: summary.observation1.label},
@@ -217,90 +222,112 @@ export default function CerapanResults() {
 
   const parsedAiComment = useMemo(() => {
     if (!report?.aiComment) return null;
-    
     const isRefused = report.aiComment.includes('[MODEL REFUSED GENERATION]');
-    if (!isRefused) return { isRefused: false, text: report.aiComment }; // 正常评论
-
+    if (!isRefused) return { isRefused: false, text: report.aiComment, data: {} }; 
     const data: Record<string, string> = {};
-    
-    // 解析结构化回退数据
     report.aiComment.split('\n').forEach(line => {
-        const firstColonIndex = line.indexOf(':');
-        if (firstColonIndex > 0) {
-            let key = line.substring(0, firstColonIndex).trim();
-            const value = line.substring(firstColonIndex + 1).trim();
-            
-            // 简化键名，移除括号内容
-            key = key.replace(/\s*\(.*?\)\s*/g, '');
-            
-            if (key) {
-                data[key] = value;
-            }
+      const firstColonIndex = line.indexOf(':');
+      if (firstColonIndex > 0) {
+        let key = line.substring(0, firstColonIndex).trim();
+        const value = line.substring(firstColonIndex + 1).trim();
+        key = key.replace(/\s*\(.*?\)\s*/g, '');
+        if (key) {
+          data[key] = value;
         }
+      }
     });
-    return { isRefused: true, data: data, text: report.aiComment };
+    return { isRefused: true, data: data, text: report.aiComment }; 
   }, [report]);
   const isModelRefused = parsedAiComment?.isRefused === true;
 
-  const handleExportPdf = async () => {
+  const handleExportPdfReport = async () => {
     if (!report || !summary) {
         setError("Laporan tidak lengkap untuk eksport.");
         return;
     }
     
     try {
-        // 🚨 目标元素是隐藏的 PDF 容器
-        // 由于我们将其命名为 'pdf-export-content'，我们使用 document.getElementById
         const input = document.getElementById('pdf-export-content');
         if (!input) {
             setError("PDF content container not found.");
             return;
         }
-
         // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
         const canvas = await html2canvas(input, {
-            scale: 2, // 提高分辨率
+            scale: 2, 
             backgroundColor: "#ffffff",
             useCORS: true,
-            // 确保我们抓取的是隐藏元素的实际内容尺寸
         });
-        
         const imgData = canvas.toDataURL("image/png");
-
         // 2. 初始化 jsPDF
         // 使用 Landscape (横向) A4 格式
         const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
-        
         const imgProps = {
             width: pageWidth,
             height: (canvas.height * pageWidth) / canvas.width,
         };
-
         let heightLeft = imgProps.height;
         let position = 0;
-
         // 3. 将 Canvas 图像添加到 PDF 中并处理分页
         pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
         heightLeft -= pageHeight;
-
         while (heightLeft > 0) {
             position = heightLeft - imgProps.height;
             pdf.addPage();
             pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
             heightLeft -= pageHeight;
         }
-
         // 4. 保存文件
         const fileName = `Laporan_Cerapan_${report.subject}_${report.class}.pdf`;
         pdf.save(fileName.replace(/\s+/g, '_'));
-
     } catch (e: any) {
         console.error("PDF export failed:", e);
         setError(`Gagal menjana PDF: ${e.message || '未知错误'}`);
     }
 };
+  
+const handleExportPdfSubResult = async () => {
+    if (!report || !summary) {
+      setError("Laporan tidak lengkap untuk eksport.");
+      return;
+    } 
+    try {
+        // 🚨 目标元素是 Subcategory Card
+        const input = document.getElementById('sub-category-table-export');
+        if (!input) {
+            setError("Subcategory table container not found.");
+            return;
+        }
+        // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
+        const canvas = await html2canvas(input, {
+            scale: 2, 
+            backgroundColor: "#ffffff",
+            useCORS: true,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        // 2. 初始化 jsPDF
+        // 使用 Landscape (横向) A4 格式
+        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = {
+          width: pageWidth,
+          height: (canvas.height * pageWidth) / canvas.width,
+        };
+        // 3. 图像添加到 PDF 中 (这里不需要分页，因为它只是一个表格)
+        pdf.addImage(imgData, "PNG", 0, 0, imgProps.width, imgProps.height, undefined, "FAST");
+        // 4. 保存文件
+        const fileName = `Laporan_Subcategory_${report.subject}_${report.class}.pdf`;
+        pdf.save(fileName.replace(/\s+/g, '_'));
+    } catch (e: any) {
+        console.error("PDF subcategory export failed:", e);
+        setError(`Gagal menjana PDF subcategory: ${e.message || '未知错误'}`);
+    }
+  };
+
+
 
   if (loading) {
     return (
@@ -327,8 +354,6 @@ export default function CerapanResults() {
 
   const handleRegenerateComment = async () => {
     if (!report || !id) return;
-    
-    // 检查是否满足生成条件，防止浪费配额
     const isReadyForAI = report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted';
 
     if (!isReadyForAI && !window.confirm("Peringatan: Kendiri atau Cerapan 2 belum selesai. Anda pasti mahu teruskan regenerasi komen AI?")) {
@@ -337,10 +362,8 @@ export default function CerapanResults() {
 
     try {
         setLoading(true);
-        // 调用新的 API 接口
         await regenerateAiComment(id);
         
-        // 成功后重新加载报告数据以显示新的评论
         await loadReport(); 
         
     } catch (e: any) {
@@ -350,8 +373,6 @@ export default function CerapanResults() {
         setLoading(false);
     }
   };
-
-  // const isModelRefused = report.aiComment && report.aiComment.includes('[MODEL REFUSED GENERATION]');
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }} ref={exportRef}>
@@ -595,7 +616,7 @@ export default function CerapanResults() {
           </CardContent>
         </Card>
 
-        {/* AI COMMENT CARD: NEW SECTION */}
+        {/* AI COMMENT CARD */}
         {parsedAiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
           <Card
             raised
@@ -647,13 +668,13 @@ export default function CerapanResults() {
           </Card>
         )}
 
-        {/* Per-subcategory breakdown table (MUI Horizontal Refactor) */}
+        {/* Report table (MUI Horizontal Refactor) */}
         {(summary?.categories.breakdown?.length ?? 0) > 0 && (
           <Card raised>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
+              {/* <Typography variant="h6" sx={{ mb: 2 }}>
                 Skor Keseluruhan Berwajaran Mengikut Subkategori (4.x.x)
-              </Typography>
+              </Typography> */}
 
               {/* TableContainer 启用横向滚动 */}
               <TableContainer component={Box} sx={{ maxHeight: 600 }}>
@@ -741,6 +762,62 @@ export default function CerapanResults() {
           </Card>
          )}
 
+        {/* Per-subcategory breakdown table */}
+        {(summary?.categories.breakdown?.length ?? 0) > 0 && (
+          <Card raised id="sub-category-table-export">
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Skor Mengikut Subkategori (4.x.x)
+              </Typography>
+              <Box sx={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: 8 }}>Kod</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Weight</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Full Mark</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Achieved</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Weighted</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Achieved</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Weighted</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Achieved</th>
+                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Weighted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary!.categories.breakdown.map((row) => (
+                      <tr key={row.code}>
+                        <td style={{ padding: 8 }}>{row.code}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weight?.toFixed(0) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weightedSelf?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted1?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2?.toFixed(2) ?? 0}</td>
+                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted2?.toFixed(2) ?? 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td style={{ padding: 8, fontWeight: 600 }}>Jumlah</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>100</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedSelfTotal?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation1Total?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved?.toFixed(2) ?? 0}</td>
+                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation2Total?.toFixed(2) ?? 0}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
         <Box id="pdf-export-content" sx={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -1 }}>
             <PDFExportContent report={report} summary={summary} teacherName={fullTeacherName} subCategoryCodes={subCategoryCodes} scoreRowData={scoreRowData}/>
         </Box>
@@ -754,15 +831,7 @@ export default function CerapanResults() {
           >
             Kembali ke Dashboard
           </Button>
-          {/* <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate(isAdminView ? "/cerapan/admin" : "/cerapan/my-reports")}
-          >
-            {isAdminView ? "Lihat Tugasan Pentadbir" : "Lihat Semua Laporan"}
-          </Button> */}
-
-          {isAdminView && report && (
+          {isSuperAdminView && report && (
             <Button
               variant="contained"
               color="warning"
@@ -770,7 +839,7 @@ export default function CerapanResults() {
               onClick={handleRegenerateComment}
               disabled={loading}
             >
-              Paksa Regenerasi Komen AI
+              Regenerasi Komen AI
             </Button>
           )}
 
@@ -778,9 +847,18 @@ export default function CerapanResults() {
             variant="contained"
             color="secondary"
             size="large"
-            onClick={handleExportPdf}
+            onClick={handleExportPdfReport}
           >
-            Muat Turun PDF
+            Muat Turun PDF report
+          </Button>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            onClick={handleExportPdfSubResult}
+          >
+            Muat Turun PDF subcategory result
           </Button>
         </Stack>
       </Stack>
