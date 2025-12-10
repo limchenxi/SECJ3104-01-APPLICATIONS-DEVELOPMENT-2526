@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, type JSX } from "react";
+import { useState, useEffect, useCallback, type JSX } from "react";
 import {
   Box,
   Card,
@@ -22,46 +22,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import PersonIcon from "@mui/icons-material/Person";
 import { useAttendance } from "../../../hooks/useAttendance";
 import useAuth from "../../../hooks/useAuth";
-
-// --- Type Definitions ---
-
-// Allowed theme color keys for our application components. 
-// Expanded to include all standard MUI Button colors to satisfy the component's required prop type union.
-type ThemeColor = 'inherit' | 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
-
-// Define ActionId as a union type of the allowed string literals
-type ActionId = "in" | "out";
-
-interface Action {
-  id: ActionId;
-  label: string;
-  icon: JSX.Element;
-  // Narrowed type for data integrity, which is compatible with the expanded ThemeColor
-  color: 'success' | 'error'; 
-}
-
-interface HistoryEntry {
-  id: number;
-  action: ActionId; // Must be one of the literal strings in ActionId
-  timestamp: Date;
-}
-
-interface FormattedHistoryEntry {
-  label: string;
-  time: string;
-  icon: JSX.Element;
-  // This will now hold the final string path, e.g., 'success.main'
-  colorPath: string; 
-}
-
-interface SnackbarState {
-  open: boolean;
-  text: string;
-}
-
-// // Teacher mock data
-// const TEACHER_NAME: string = "Ms. Eleanor Vance";
-// const TEACHER_ID: string = "T-401";
+import { type ActionId, type Action, type HistoryEntry, type FormattedHistoryEntry, type SnackbarState} from "../type";
 
 // Only "Clock In" and "Clock Out"
 const ACTIONS: Action[] = [
@@ -92,7 +53,7 @@ export default function AttendancePage(): JSX.Element {
     return <></>;
   }
 
-  const { clockIn, loading, error } = useAttendance(user?.id);
+  const { clockIn, clockOut, fetchTodayAttendance, error, todayAttendance } = useAttendance(user?.id);
 
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, text: "" });
@@ -114,6 +75,18 @@ export default function AttendancePage(): JSX.Element {
     }
   }, [error]);
 
+  useEffect(() => {
+    if(todayAttendance) {
+      setHistory(todayAttendance);
+    }
+  }, [todayAttendance]);
+
+  useEffect(() => {
+    if(user?.id) {
+      fetchTodayAttendance();
+    }
+  }, [user?.id, fetchTodayAttendance]);
+
   const handleClockAction = useCallback(async (actionId: ActionId) => {
     if(!user.id) {
       setSnackbar({
@@ -127,28 +100,40 @@ export default function AttendancePage(): JSX.Element {
       try {
         const res = await clockIn();
         if(res?.timeIn) {
-          const newEntry: HistoryEntry = {
-            id: Date.now(),
-            action: "in",
-            timestamp: new Date(res.timeIn),
-          };
-
-          setHistory((prev) => [newEntry, ...prev].slice(0, 10));
-
           setSnackbar({
             open: true,
-            text: `Clock In successful at ${new Date(res.timeIn)}`
-          });
+            text: `Clock in successful at ${new Date(res.timeIn).toLocaleTimeString()}`,
+          })
         }
+        fetchTodayAttendance();
       }
-      catch(err) {
+      catch(err: any) {
         setSnackbar({
           open: true,
           text: `Clock in failed: ${error ?? 'Unknown error'}`,
         });
       }
     }
-  }, [clockIn, user?.id, error]);
+
+    if(actionId === "out") {
+      try {
+        const res = await clockOut();
+        if(res?.timeOut) {
+          setSnackbar({
+            open: true,
+            text: `Clock out successful at ${new Date(res.timeOut).toLocaleTimeString()}`,
+          })
+        }
+        fetchTodayAttendance();
+      }
+      catch(err: any) {
+        setSnackbar({
+          open: true,
+          text: `Clock in failed: ${error ?? 'Unknown error'}`,
+        });
+      }
+    }
+  }, [clockIn, clockOut, user?.id, error, fetchTodayAttendance]);
 
   const currentStatus: ActionId | "none" = history.length ? history[0].action : "none";
 
