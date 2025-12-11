@@ -3,14 +3,23 @@ import { Request } from "express";
 
 @Injectable()
 export class IpGuard implements CanActivate {
+    private isIpAllowed(clientIP: string, allowedIPs: string[]): boolean {
+        return allowedIPs.some(allowedPattern => {
+            if(allowedPattern === clientIP) {
+                return true;
+            }
+
+            if(allowedPattern.endsWith('*')) {
+                const requiredPrefix = allowedPattern.slice(0, -1);
+                return clientIP.startsWith(requiredPrefix);
+            }
+
+            return false;
+        });
+    }
+
     canActivate(context: ExecutionContext): boolean {
         const req: Request = context.switchToHttp().getRequest();
-        // let clientIP = req.ip || '';
-
-        // if (clientIP === '::1') clientIP = '127.0.0.1';
-        // if (clientIP.startsWith('::ffff:')) clientIP = clientIP.split(':').pop()!;
-
-        // console.log('Client IP:', clientIP);
 
         let clientIP = req.headers['x-forwarded-for'] as string | undefined;
 
@@ -22,16 +31,16 @@ export class IpGuard implements CanActivate {
             clientIP = clientIP.split(',')[0].trim();
         }
 
-        console.log('Client IP:', clientIP);
-
+        
         const allowedIPs = (process.env.PUBLIC_IP || '')
-            .split(',')
-            .map(ip => ip.trim())
-            .filter(ip => ip);
-
+        .split(',')
+        .map(ip => ip.trim())
+        .filter(ip => ip);
+        
+        console.log('Client IP:', clientIP);
         console.log('Allowed IPs:', allowedIPs);
 
-        if (!allowedIPs.includes(clientIP)) {
+        if (!this.isIpAllowed(clientIP, allowedIPs)) {
             throw new ForbiddenException();
         }
 
