@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Box,
   Card,
@@ -11,6 +11,13 @@ import {
   Alert,
   Grid,
   Chip,
+  TableCell,
+  TableFooter,
+  TableRow,
+  TableBody,
+  TableHead,
+  TableContainer,
+  Table,
 } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -22,12 +29,111 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
-// Charts removed - no longer used
-import { getReportSummary, getAdminReportSummary } from "../api/cerapanService";
+import { getReportSummary, getAdminReportSummary, regenerateAiComment } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import useAuth from "../../../hooks/useAuth";
+import { userApi } from "../../Users/api";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+
+const SCHOOL_NAME = 'SK SRI SIAKAP'; 
+const SCHOOL_CODE = 'ABA 3012';
+interface CategoryFeedbackItem {
+    code: string;
+    description: string;
+    performance_level: string;
+    feedback_malay: string;
+    feedback_english: string;
+}
+
+const PDFExportContent = ({ report, summary, teacherName,subCategoryCodes, scoreRowData }: { report: CerapanRecord, summary: ReportSummary, teacherName: string | undefined, subCategoryCodes: string[], scoreRowData: any[]}) => {
+    if (!report || !summary) return null;
+    const breakdown = summary.categories.breakdown.sort((a, b) => a.code.localeCompare(b.code));
+    return (
+        <div style={{ 
+            padding: '20px', 
+            backgroundColor: '#fff', 
+            fontSize: '10pt', 
+            fontFamily: 'Arial, sans-serif', 
+            width: '1100px'
+        }}>
+            {/* Header / Info */}
+            <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>TAPAK STANDARD 4</h1>
+            <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>PEMBELAJARAN DAN PEMUDAHCARAAN (PdPc)</h1>
+            <br />
+            <table style={{ width: '100%', marginBottom: '15px', borderCollapse: 'collapse' }}>
+                <tbody>
+                    <tr>
+                        <td style={{ width: '33%' }}><strong>Nama Guru:</strong> {teacherName || report.teacherId}</td>
+                        <td style={{ width: '33%' }}><strong>Sekolah:</strong> {SCHOOL_NAME} ({SCHOOL_CODE})</td>
+                        <td style={{ width: '33%' }}><strong>Sesi Pengisian:</strong> {report.period}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mata Pelajaran:</strong> {report.subject}</td>
+                        <td><strong>Kelas:</strong> {report.class}</td>
+                        <td><strong>Tarikh Laporan:</strong> {new Date().toLocaleDateString('ms-MY')}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* Score Table (Excel Format) */}
+            <h2 style={{ fontSize: '14pt', marginTop: '20px', marginBottom: '10px' }}>Skor Berwajaran Mengikut Subkategori (0-100)</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000' }}>
+                <thead>
+                    <tr style={{ backgroundColor: '#f0f0f0' }}>
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', minWidth: '150px' }}>Penilaian/Evaluation</th>
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', minWidth: '80px' }}>Tarikh/Date</th>
+                        {subCategoryCodes.map(code => (
+                            <th key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{code}</th>
+                        ))}
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', minWidth: '120px' }}>Jumlah Skor</th>
+                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>Taraf</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {scoreRowData.map(row => (
+                        <tr key={row.label}>
+                            <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>{row.label}</td>
+                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.date}</td>
+                            {subCategoryCodes.map(code => {
+                                const category = breakdown.find(c => c.code === code);
+                                const score = category ? category[row.key] : 0;
+                                return (
+                                    <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>
+                                        {score && score > 0 ? score.toFixed(2) : '-'}
+                                    </td>
+                                );
+                            })}
+                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>{row.total.toFixed(2)}</td>
+                            {/* Taraf label */}
+                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>{row.taraf}</td>
+                            {/* <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.label.includes('Cerapan 2') ? summary.overall.label : ''}</td> */}
+                        </tr>
+                    ))}
+                    {/* Footer Row for Wajaran */}
+                    <tr>
+                        <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold', backgroundColor: '#e0ee0e' }}>Wajaran / Weight (Total 100)</td>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', backgroundColor: '#e0e0e0' }}>-</td>
+                        {subCategoryCodes.map(code => {
+                            const category = breakdown.find(c => c.code === code);
+                            return (
+                                <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                                    {category ? category.weight.toFixed(0) : '-'}
+                                </td>
+                            );
+                        })}
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                            {summary.overall.triAverageWeighted.toFixed(2)}
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                            {summary.overall.label}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    );
+};
 
 export default function CerapanResults() {
   const theme = useTheme();
@@ -41,13 +147,28 @@ export default function CerapanResults() {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fullTeacherName, setFullTeacherName] = useState<string | undefined>(undefined);
 
   // Determine if this is admin view
-  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/");
-
+  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
+  const isSuperAdminView = user?.role === "SUPERADMIN";
   useEffect(() => {
     loadReport();
   }, [id]);
+
+  useEffect(() => {
+    const fetchTeacherName = async () => {
+      if (report?.teacherId) {
+        try {
+            const user = await userApi.getById(report.teacherId);
+              setFullTeacherName(user?.name);
+            } catch {
+                setFullTeacherName(report.teacherId); // 失败时使用 ID
+            }
+        }
+    };
+    fetchTeacherName();
+  }, [report?.teacherId]);
 
   const loadReport = async () => {
     if (!id) return;
@@ -72,49 +193,141 @@ export default function CerapanResults() {
   const obs2Total10 = summary?.categories.totals.observation2Score10Sum ?? 0;
   const hasObs1 = (summary?.observation1.count ?? 0) > 0;
   const hasObs2 = (summary?.observation2.count ?? 0) > 0;
+  const subCategoryCodes = useMemo(() => {
+    if (!summary?.categories.breakdown) return [];
+    return summary.categories.breakdown
+        .sort((a, b) => a.code.localeCompare(b.code))
+        .map(c => c.code);
+  }, [summary]);
+  const scoreRowData = useMemo(() => {
+    if (!summary || !report) return [];
+    
+    const formatDate = (dateValue: Date | string | null | undefined): string => {
+        if (!dateValue) return '-'; 
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime()) || date.getFullYear() === 1970) return '-';
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
+    };
+    
+    const dateSelf = formatDate(report.self_evaluation?.submittedAt);
+    const dateObs1 = formatDate(report.observation_1?.submittedAt);
+    const dateObs2 = formatDate(report.observation_2?.submittedAt);
+    
+    return [
+        { label: 'Cerapan Kendiri / Self', date: dateSelf, key: 'weightedSelf' as const, total: summary.categories.totals.weightedSelfTotal, taraf: summary.selfEvaluation.label },
+        { label: 'Cerapan 1 / Obs 1', date: dateObs1, key: 'weighted1' as const, total: summary.categories.totals.weightedObservation1Total, taraf: summary.observation1.label},
+        { label: 'Cerapan 2 / Obs 2', date: dateObs2, key: 'weighted2' as const, total: summary.categories.totals.weightedObservation2Total, taraf: summary.observation2.label},
+    ];
+  }, [summary, report]);
 
-  const handleExportPdf = async () => {
+  const parsedAiComment = useMemo(() => {
+    if (!report?.aiComment) return null;
+    const isRefused = report.aiComment.includes('[MODEL REFUSED GENERATION]');
+    if (!isRefused) return { isRefused: false, text: report.aiComment, data: {} }; 
+    const data: Record<string, string> = {};
+    report.aiComment.split('\n').forEach(line => {
+      const firstColonIndex = line.indexOf(':');
+      if (firstColonIndex > 0) {
+        let key = line.substring(0, firstColonIndex).trim();
+        const value = line.substring(firstColonIndex + 1).trim();
+        key = key.replace(/\s*\(.*?\)\s*/g, '');
+        if (key) {
+          data[key] = value;
+        }
+      }
+    });
+    return { isRefused: true, data: data, text: report.aiComment }; 
+  }, [report]);
+  const isModelRefused = parsedAiComment?.isRefused === true;
+
+  const handleExportPdfReport = async () => {
+    if (!report || !summary) {
+        setError("Laporan tidak lengkap untuk eksport.");
+        return;
+    }
+    
     try {
-      const input = exportRef.current;
-      if (!input) return;
-
-      // Use a white background to avoid transparency issues
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const imgProps = {
-        width: pageWidth,
-        height: (canvas.height * pageWidth) / canvas.width,
-      };
-
-      let heightLeft = imgProps.height;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgProps.height;
-        pdf.addPage();
+        const input = document.getElementById('pdf-export-content');
+        if (!input) {
+            setError("PDF content container not found.");
+            return;
+        }
+        // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
+        const canvas = await html2canvas(input, {
+            scale: 2, 
+            backgroundColor: "#ffffff",
+            useCORS: true,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        // 2. 初始化 jsPDF
+        // 使用 Landscape (横向) A4 格式
+        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = {
+            width: pageWidth,
+            height: (canvas.height * pageWidth) / canvas.width,
+        };
+        let heightLeft = imgProps.height;
+        let position = 0;
+        // 3. 将 Canvas 图像添加到 PDF 中并处理分页
         pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
         heightLeft -= pageHeight;
-      }
-
-      const fileName = `Laporan_Cerapan_${report?.subject || ''}_${report?.class || ''}.pdf`;
-      pdf.save(fileName.replace(/\s+/g, '_'));
-    } catch (e) {
-      console.error("PDF export failed", e);
-      setError("Gagal menjana PDF. Sila cuba lagi.");
+        while (heightLeft > 0) {
+            position = heightLeft - imgProps.height;
+            pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
+            heightLeft -= pageHeight;
+        }
+        // 4. 保存文件
+        const fileName = `Laporan_Cerapan_${report.subject}_${report.class}.pdf`;
+        pdf.save(fileName.replace(/\s+/g, '_'));
+    } catch (e: any) {
+        console.error("PDF export failed:", e);
+        setError(`Gagal menjana PDF: ${e.message || '未知错误'}`);
+    }
+};
+  
+const handleExportPdfSubResult = async () => {
+    if (!report || !summary) {
+      setError("Laporan tidak lengkap untuk eksport.");
+      return;
+    } 
+    try {
+        // 🚨 目标元素是 Subcategory Card
+        const input = document.getElementById('sub-category-table-export');
+        if (!input) {
+            setError("Subcategory table container not found.");
+            return;
+        }
+        // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
+        const canvas = await html2canvas(input, {
+            scale: 2, 
+            backgroundColor: "#ffffff",
+            useCORS: true,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        // 2. 初始化 jsPDF
+        // 使用 Landscape (横向) A4 格式
+        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = {
+          width: pageWidth,
+          height: (canvas.height * pageWidth) / canvas.width,
+        };
+        // 3. 图像添加到 PDF 中 (这里不需要分页，因为它只是一个表格)
+        pdf.addImage(imgData, "PNG", 0, 0, imgProps.width, imgProps.height, undefined, "FAST");
+        // 4. 保存文件
+        const fileName = `Laporan_Subcategory_${report.subject}_${report.class}.pdf`;
+        pdf.save(fileName.replace(/\s+/g, '_'));
+    } catch (e: any) {
+        console.error("PDF subcategory export failed:", e);
+        setError(`Gagal menjana PDF subcategory: ${e.message || '未知错误'}`);
     }
   };
+
+
 
   if (loading) {
     return (
@@ -139,7 +352,27 @@ export default function CerapanResults() {
     );
   }
 
-  // const isCompleted = report.self_evaluation.status === "submitted";
+  const handleRegenerateComment = async () => {
+    if (!report || !id) return;
+    const isReadyForAI = report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted';
+
+    if (!isReadyForAI && !window.confirm("Peringatan: Kendiri atau Cerapan 2 belum selesai. Anda pasti mahu teruskan regenerasi komen AI?")) {
+        return;
+    }
+
+    try {
+        setLoading(true);
+        await regenerateAiComment(id);
+        
+        await loadReport(); 
+        
+    } catch (e: any) {
+        console.error("AI Regeneration Failed:", e);
+        setError(`Gagal regenerasi komen AI: ${e.response?.data?.message || 'Sila semak konsol.'}`);
+    } finally {
+        setLoading(false);
+    }
+  };
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }} ref={exportRef}>
@@ -228,12 +461,10 @@ export default function CerapanResults() {
                         Kendiri (Self)
                       </Typography>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" component="span">
                       {summary?.selfEvaluation.status === 'submitted' ? (
                         <>
-                          <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
-                          {summary?.selfEvaluation.completionPercent.toFixed(0)}% lengkap
-                        </>
+                          <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />                        </>
                       ) : (
                         <Chip label="Belum Selesai" size="small" color="default" />
                       )}
@@ -266,7 +497,6 @@ export default function CerapanResults() {
                       {hasObs1 ? (
                         <>
                           <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
-                          {summary?.observation1.percent.toFixed(0)}%
                         </>
                       ) : (
                         <Chip label="Belum Selesai" size="small" color="default" />
@@ -305,7 +535,6 @@ export default function CerapanResults() {
                       {hasObs2 ? (
                         <>
                           <Chip label="Selesai" size="small" color="success" sx={{ mr: 1 }} />
-                          {summary?.observation2.percent.toFixed(0)}%
                         </>
                       ) : (
                         <Chip label="Belum Selesai" size="small" color="default" />
@@ -329,8 +558,7 @@ export default function CerapanResults() {
         </Card>
 
         {/* Overall Score Card */}
-        <Card
-          raised
+        <Card raised
           sx={{
             border: `2px solid ${theme.palette.success.light}`,
             background: `linear-gradient(135deg, ${theme.palette.success.light}30 0%, ${theme.palette.common.white} 100%)`,
@@ -341,15 +569,21 @@ export default function CerapanResults() {
               <Box sx={{ textAlign: "center", minWidth: 200 }}>
                 <Award size={48} style={{ color: theme.palette.success.main, marginBottom: 16 }} />
                 <Typography variant="h2" sx={{ color: theme.palette.success.main, fontWeight: "bold" }}>
-                  {hasObs1 || hasObs2 ? `${summary?.overall.percent ?? 0}%` : `${summary?.selfEvaluation.completionPercent ?? 0}%`}
+                  {(hasObs1 || hasObs2 || summary?.selfEvaluation.status === 'submitted') 
+                    ? `${summary?.overall.triAverageWeighted?.toFixed(2) ?? 0}%` 
+                    : `${summary?.selfEvaluation.completionPercent ?? 0}%`}
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 1 }}>
-                  {hasObs1 || hasObs2 ? 'Skor Keseluruhan (Cerapan)' : 'Kadar Lengkap Kendiri'}
+                    {/* 🚨 FIX: 更改标签以反映这是加权平均分 */}
+                      {(hasObs1 || hasObs2 || summary?.selfEvaluation.status === 'submitted') 
+                        ? 'Skor Keseluruhan (Purata Berwajaran)' 
+                        : 'Kadar Lengkap Kendiri'
+                    }
                 </Typography>
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} mt={2}>
                   <TrendingUp size={16} style={{ color: theme.palette.success.main }} />
                   <Typography variant="body2" color="success.main">
-                    Prestasi Cemerlang
+                    {summary?.overall.label}
                   </Typography>
                 </Stack>
               </Box>
@@ -370,10 +604,10 @@ export default function CerapanResults() {
                 ) : (
                   <>
                     <Typography variant="body2" color="text.secondary">
-                      Ringkasan: Purata peratus cerapan = <strong>{summary?.overall.percent ?? 0}%</strong>, Label = <strong>{summary?.overall.label ?? '-'}</strong>
+                      Purata Berwajaran: <strong>{summary?.overall.triAverageWeighted?.toFixed(2) ?? 0}%</strong>
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Jumlah skor normalisasi (0..10): {hasObs1 && <><strong>Obs1</strong>: {obs1Total10}</>} {hasObs2 && <> | <strong>Obs2</strong>: {obs2Total10}</>}
+                      Taraf Keseluruhan: <strong>{summary?.overall.label ?? '-'}</strong>
                     </Typography>
                   </>
                 )}
@@ -382,9 +616,155 @@ export default function CerapanResults() {
           </CardContent>
         </Card>
 
+        {/* AI COMMENT CARD */}
+        {parsedAiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
+          <Card
+            raised
+            sx={{
+              border: isModelRefused
+                ? `2px dashed ${theme.palette.warning.main}` 
+                : `2px solid ${theme.palette.primary.main}`,
+              bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
+            }}
+          >
+            <CardContent>
+              <Stack spacing={2}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
+                  <Typography variant="h6" sx={{ color: parsedAiComment.isRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
+                    {parsedAiComment.isRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
+                  </Typography>
+                </Stack>
+
+                {parsedAiComment.isRefused ? (
+                    <Stack spacing={1}>
+                        <Typography variant="body2" color="text.secondary">
+                            Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
+                        </Typography>
+                        
+                        {/* 提取并显示关键数据行 */}
+                        {Object.keys(parsedAiComment!.data).map((key) => {
+                          const value = parsedAiComment!.data[key];
+                          const label = key.includes('Maklum Balas') ? 'Maklum Balas' : key;
+                            
+                          return (
+                            <Typography key={key} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
+                              <Box component="span" sx={{ color: theme.palette.grey[600] }}>{label}:</Box> <strong>{value}</strong>
+                            </Typography>
+                          );
+                        })}
+                    </Stack>
+                ) : (
+                    // 🚨 【显示流畅评论】 - 仅在 AI 成功生成时显示
+                    <Typography 
+                        variant="body1" 
+                        sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
+                    >
+                        {parsedAiComment.text}
+                    </Typography>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Report table (MUI Horizontal Refactor) */}
+        {(summary?.categories.breakdown?.length ?? 0) > 0 && (
+          <Card raised>
+            <CardContent>
+              {/* <Typography variant="h6" sx={{ mb: 2 }}>
+                Skor Keseluruhan Berwajaran Mengikut Subkategori (4.x.x)
+              </Typography> */}
+
+              {/* TableContainer 启用横向滚动 */}
+              <TableContainer component={Box} sx={{ maxHeight: 600 }}>
+                <Table size="small" sx={{ minWidth: 1200 }}> {/* 确保 minWidth 强制横向 */}
+                <TableHead>
+                  <TableRow sx={{ bgcolor: theme.palette.grey[100] }}>
+                    <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>Penilaian/Evaluation</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 90 }}>Tarikh/Date</TableCell> 
+                      {subCategoryCodes.map(code => (
+                        <TableCell key={code} align="right" sx={{ fontWeight: 'bold' }}>{code}</TableCell>
+                      ))}
+                    <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 120 }}>Jumlah Skor</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>Taraf</TableCell> {/* 🚨 Taraf 列 */}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {scoreRowData.map((row) => (
+                    <TableRow key={row.label} hover>
+                      <TableCell sx={{ fontWeight: 'bold' }}>{row.label}</TableCell>
+                      <TableCell align="center">{row.date}</TableCell> {/* 🚨 日期内容 */}
+                      {subCategoryCodes.map(code => {
+                        const category = summary!.categories.breakdown.find(c => c.code === code);
+                        const score = category ? category[row.key] : 0;
+                        const isAchieved = score && score > 0;
+                        return (
+                        <TableCell 
+                          key={code} 
+                          align="right" 
+                          sx={{ color: isAchieved ? theme.palette.success.main : theme.palette.grey[500] }}
+                        >
+                          {isAchieved ? score.toFixed(2) : '-'}
+                        </TableCell>
+                        );
+                      })}
+                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>{row.total.toFixed(2)}</TableCell>
+                      <TableCell align="center">
+                        <Chip 
+                          label={row.taraf} 
+                          size="small" 
+                          color={row.taraf === 'CEMERLANG' ? 'success' : row.taraf === 'BAIK' ? 'primary' : 'warning'}
+                        />
+                      </TableCell> {/* 🚨 Taraf 内容 */}
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow sx={{ bgcolor: theme.palette.grey[200] }}>
+                    <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>PURATA KESELURUHAN (Wajaran)</TableCell>
+                    <TableCell colSpan={subCategoryCodes.length} align="right" sx={{ fontWeight: 'bold' }}>
+                      {/* 🚨 跨越 Subkategori 列 */}
+                      &nbsp;
+                    </TableCell> 
+                        <TableCell align="right" sx={{ fontWeight: 'bold', borderLeft: `1px solid ${theme.palette.divider}` }}>
+                            {summary!.overall.triAverageWeighted.toFixed(2)}
+                        </TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                          <Chip label={summary!.overall.label} size="small" color="secondary" />
+                        </TableCell>
+                      </TableRow>
+
+
+                      <TableRow sx={{ bgcolor: theme.palette.grey[50] }}>
+                        <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>Wajaran (%)</TableCell>
+                        {/* 渲染 Weight 总和 */}
+                        {summary!.categories.breakdown.map(category => (
+                          <TableCell key={category.code} align="center" sx={{ fontWeight: 'bold' }}>
+                            {category ? category.weight.toFixed(0) : '-'}
+                          </TableCell>
+                          ))}
+                        {/* {subCategoryCodes.map(code => {
+                          const category = summary!.categories.breakdown.find(c => c.code === code);
+                          return (
+                            <TableCell key={code} align="center" sx={{ fontWeight: 'bold' }}>
+                              {category ? category.weight.toFixed(0) : '-'}
+                            </TableCell>
+                          );
+                        })} */}
+                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>100</TableCell>
+                        <TableCell align="center">-</TableCell>
+                      </TableRow>
+                  </TableFooter>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+         )}
+
         {/* Per-subcategory breakdown table */}
         {(summary?.categories.breakdown?.length ?? 0) > 0 && (
-          <Card>
+          <Card raised id="sub-category-table-export">
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Skor Mengikut Subkategori (4.x.x)
@@ -397,13 +777,10 @@ export default function CerapanResults() {
                       <th style={{ textAlign: 'right', padding: 8 }}>Weight</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Full Mark</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri %</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Weighted</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 %</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Weighted</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 %</th>
                       <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Weighted</th>
                     </tr>
                   </thead>
@@ -414,13 +791,10 @@ export default function CerapanResults() {
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weight?.toFixed(0) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark?.toFixed(2) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percentSelf?.toFixed(2) ?? 0}%</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weightedSelf?.toFixed(2) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent1?.toFixed(2) ?? 0}%</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted1?.toFixed(2) ?? 0}</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.percent2?.toFixed(2) ?? 0}%</td>
                         <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted2?.toFixed(2) ?? 0}</td>
                       </tr>
                     ))}
@@ -431,13 +805,10 @@ export default function CerapanResults() {
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>100</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum?.toFixed(2) ?? 0}</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfPercent?.toFixed(2) ?? 0}%</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedSelfTotal?.toFixed(2) ?? 0}</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1Percent?.toFixed(2) ?? 0}%</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation1Total?.toFixed(2) ?? 0}</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2Percent?.toFixed(2) ?? 0}%</td>
                       <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation2Total?.toFixed(2) ?? 0}</td>
                     </tr>
                   </tfoot>
@@ -447,6 +818,9 @@ export default function CerapanResults() {
           </Card>
         )}
 
+        <Box id="pdf-export-content" sx={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -1 }}>
+            <PDFExportContent report={report} summary={summary} teacherName={fullTeacherName} subCategoryCodes={subCategoryCodes} scoreRowData={scoreRowData}/>
+        </Box>
 
         {/* Action Buttons */}
         <Stack direction="row" justifyContent="center" spacing={2}>
@@ -457,20 +831,34 @@ export default function CerapanResults() {
           >
             Kembali ke Dashboard
           </Button>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => navigate(isAdminView ? "/cerapan/admin" : "/cerapan/my-reports")}
-          >
-            {isAdminView ? "Lihat Tugasan Pentadbir" : "Lihat Semua Laporan"}
-          </Button>
+          {isSuperAdminView && report && (
+            <Button
+              variant="contained"
+              color="warning"
+              size="large"
+              onClick={handleRegenerateComment}
+              disabled={loading}
+            >
+              Regenerasi Komen AI
+            </Button>
+          )}
+
           <Button
             variant="contained"
             color="secondary"
             size="large"
-            onClick={handleExportPdf}
+            onClick={handleExportPdfReport}
           >
-            Muat Turun PDF
+            Muat Turun PDF report
+          </Button>
+
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            onClick={handleExportPdfSubResult}
+          >
+            Muat Turun PDF subcategory result
           </Button>
         </Stack>
       </Stack>

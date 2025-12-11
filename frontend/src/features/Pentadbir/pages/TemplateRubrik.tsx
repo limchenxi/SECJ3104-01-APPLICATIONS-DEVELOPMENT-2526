@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import type { TemplateRubric } from "../type";
 import { getTemplates, createTemplate, updateTemplate, deleteTemplate } from "../api/templateService";
+import { DocumentScanner } from "@mui/icons-material";
 
 export default function TemplateRubrik() {
   const navigate = useNavigate();
@@ -168,32 +169,36 @@ export default function TemplateRubrik() {
   };
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>        
+        {/* Header */}
         <Box>
-          <Typography variant="h4">Template Rubrik</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="h4" sx={{ mb: 0.5 }}><DocumentScanner color="primary" fontSize="large"/> Template Rubrik</Typography>
+          <Typography color="text.secondary">
             Urus template penilaian untuk cerapan guru. Perubahan akan dikongsi dengan semua pengguna.
           </Typography>
         </Box>
         <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={loading ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
-            onClick={handleRefresh}
-            disabled={loading}
-          >
-            {loading ? "Memuatkan..." : "Muat Semula"}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={20} />}
-            onClick={handleCreateTemplate}
-            disabled={loading}
-          >
-            Cipta Template Baharu
-          </Button>
+          <Box>
+            <Button
+              variant="outlined"
+              startIcon={loading ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              {loading ? "Memuatkan..." : "Muat Semula"}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={handleCreateTemplate}
+              disabled={loading}
+            >
+              Cipta Template Baharu
+            </Button>
+          </Box>
         </Stack>
+          <br />
       </Stack>
 
       {loading ? (
@@ -295,6 +300,7 @@ export default function TemplateRubrik() {
                     </Stack>
                   </CardContent>
                   
+                  <br />
                   <CardContent sx={{ pt: 0 }}>
                     <Stack direction="row" spacing={1} justifyContent="space-between">
                       <Button

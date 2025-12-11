@@ -53,6 +53,7 @@ export interface CerapanRecord {
   observation_2: ObservationSection;
   createdAt?: string;
   updatedAt?: string;
+  aiComment?: string;
 }
 
 // Computed summary structures returned by /cerapan/report/:id/summary

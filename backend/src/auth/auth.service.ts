@@ -13,20 +13,39 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    try {
+      const user = await this.validateUser(loginDto.email, loginDto.password);
 
-    if (!user) {
-      throw new BadRequestException('Invalid credentials');
-    }
-    return {
-      token: this.jwtService.sign(user),
-      user: {
-        name: user.name,
-        role: user.role,
+      if (!user) {
+        throw new BadRequestException(
+          'Invalid credentials or user does not exist',
+        );
+      }
+
+      // Sign JWT with _id for faster lookups in validate()
+      const token = this.jwtService.sign({
+        _id: (user._id as any).toString(),
         email: user.email,
-        id: (user._id as any).toString(),
-      },
-    };
+        role: user.role,
+      });
+
+      return {
+        token,
+        user: {
+          name: user.name,
+          role: user.role,
+          email: user.email,
+          id: (user._id as any).toString(),
+        },
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        `Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   async validateUser(
@@ -34,11 +53,19 @@ export class AuthService {
     password: string,
   ): Promise<Omit<User, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    if (user && (await bcrypt.compare(password, user.password))) {
-      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-      const { password, ...result } = user.toJSON();
-      return result as Omit<User, 'password'>;
+    if (!user) {
+      return null;
     }
-    return null;
+
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    // Return user without password field
+    const userObj = user.toJSON();
+    const { password: _, ...result } = userObj;
+    return result as Omit<User, 'password'>;
   }
 }

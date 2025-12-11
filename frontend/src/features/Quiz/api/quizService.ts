@@ -1,24 +1,5 @@
 import { backendClient } from "../../../utils/axios-client";
-
-export type QuizDifficulty = "easy" | "medium" | "hard";
-
-export interface QuizQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  answerIndex: number;
-}
-
-export interface QuizGenerationRequest {
-  topic: string;
-  difficulty: QuizDifficulty;
-  questionCount: number;
-}
-
-export interface QuizGenerationResponse {
-  questions: QuizQuestion[];
-  generatedAt: string;
-}
+import type { QuizGenerationRequest, QuizGenerationResponse, QuizHistory } from "../type";
 
 export const generateQuiz = async (
   payload: QuizGenerationRequest,
@@ -29,4 +10,21 @@ export const generateQuiz = async (
     payload,
   );
   return response.data;
+};
+
+const client = backendClient();
+
+export const getQuizHistory = async (): Promise<QuizHistory[]> => {
+  const res = await client.get("/quiz/history");
+  return res.data;
+};
+
+export const getQuizHistoryById = async (id: string): Promise<QuizHistory> => {
+  const res = await client.get(`/quiz/history/${id}`);
+  return res.data;
+};
+
+export const saveQuizHistory = async (payload: Partial<QuizHistory>): Promise<QuizHistory> => {
+  const res = await client.post("/quiz/history", payload);
+  return res.data;
 };

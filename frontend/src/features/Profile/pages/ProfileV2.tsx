@@ -1,10 +1,11 @@
-import { Avatar, Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, Typography } from "@mui/material";
+import { Avatar, Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, Stack, Typography } from "@mui/material";
 import { User, Mail, Phone, Briefcase, Calendar, Edit, Lock, School } from "lucide-react";
 import { profileStore } from "../store";
 import { loadProfile } from "../api";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@tanstack/react-store";
+import { AssignmentInd } from "@mui/icons-material";
 
 export default function Profile() {
   const profileState = useStore(profileStore);
@@ -28,16 +29,17 @@ export default function Profile() {
   if (!profile) return <Typography>No profile found.</Typography>;
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" color="primary" gutterBottom>
-          Profil Pengguna
-        </Typography>
-        <Typography color="text.secondary">
-          Maklumat peribadi dan tetapan akaun
-        </Typography>
-      </Box>
-
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>  
+        {/* Header */}
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <AssignmentInd color="primary" fontSize="large"/> Profil Pengguna
+          </Typography>
+          <Typography color="text.secondary">
+            Maklumat peribadi dan tetapan akaun
+          </Typography>
+        </Box>
       <Card sx={{ mb: 4 }}>
         <CardContent sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, alignItems: "center", gap: 3 }}>
           <Avatar
@@ -104,6 +106,7 @@ export default function Profile() {
           </Card>
         </Grid> */}
       </Grid>
+      </Stack>
     </Box>
   );
 }

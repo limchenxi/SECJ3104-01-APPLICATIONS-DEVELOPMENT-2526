@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { Cerapan, CerapanSchema } from './src/cerapan/cerapan.schema';
 
 async function run() {
-  await mongoose.connect('mongodb://localhost:27017/yourdbname');
+  await mongoose.connect('mongodb://localhost:27017/teacher_system');
   const CerapanModel = mongoose.model('Cerapan', CerapanSchema);
 
   const workbook = XLSX.readFile('samplecerapan.xlsx');

@@ -5,7 +5,6 @@ export const SidebarItem = {
     { label: "eRPH", to: "/rph" },
     { label: "AI Quiz", to: "/quiz" },
     { label: "Cerapan Kendiri", to: "/cerapan" },
-    { label: "Teaching Assignment", to: "/teaching-assignment" },
     { label: "Profile", to: "/profile" },
   ],
 
@@ -31,12 +30,14 @@ export const SidebarItem = {
       children: [
         { label: "Cerapan", to: "pentadbir/cerapan" },
         { label: "Template Rubrik", to: "pentadbir/template-rubrik" },
+        { label: "Teaching Assignment", to: "/teaching-assignment" },
       ],
     },
     { label: "Dashboard", to: "/dashboard/superadmin" },
     { label: "Pengurusan AI", to: "/ai" },
+    { label: "Setting Sekolah", to: "/school-setting"},
     { label: "Pengurusan Pengguna", to: "/users" },
-    { label: "Teaching Assignment", to: "/teaching-assignment" },
+  
     { label: "Profile", to: "/profile" },
   ],
 };

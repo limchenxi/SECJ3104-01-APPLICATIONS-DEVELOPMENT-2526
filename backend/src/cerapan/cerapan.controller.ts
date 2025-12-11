@@ -7,6 +7,8 @@ import {
   Body,
   UseGuards,
   Req,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { CerapanService } from './cerapan.service';
 import { SubmitCerapankendiriDto } from './dto/submit-cerapankendiri.dto';
@@ -14,24 +16,41 @@ import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { SelfStartEvaluationDto } from './dto/self-start-evaluation.dto';
 import { SubmitObservationDto } from './dto/submit-cerapan.dto';
 import { JwtAuthGuard } from '../auth/jwt.strategy';
+import { Cerapan } from './cerapan.schema';
 
 @Controller('cerapan') // Base route: /cerapan
 @UseGuards(JwtAuthGuard) // Protect all routes in this controller
 export class CerapanController {
   constructor(private readonly cerapanService: CerapanService) {}
 
+  // Pentadbir: Start Cerapan 1 after schedule is set
+  @Put('admin/start-observation-1/:id')
+  async startObservation1(@Param('id') evaluationId: string) {
+    return this.cerapanService.startObservation1ByAdmin(evaluationId);
+  }
+
   @Post('start')
   // @UseGuards(AdminAuthGuard) // You should protect this for Admins only
-  createEvaluation(@Body() dto: CreateEvaluationDto) {
+  async createEvaluation(@Body() dto: CreateEvaluationDto) {
     // Body will contain { teacherId, templateId, period }
-    return this.cerapanService.createEvaluation(dto);
+    try {
+      return await this.cerapanService.createEvaluation(dto);
+    } catch (err: any) {
+      if (err.code === 11000) {
+        throw new HttpException(
+          'Cerapan untuk guru, subjek dan kelas ini sudah wujud.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw err;
+    }
   }
   @Post('self-start')
   startSelfEvaluation(
     @Body() dto: SelfStartEvaluationDto,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.createTeacherSelfEvaluation(teacherId, dto);
   }
 
@@ -53,7 +72,6 @@ export class CerapanController {
     return this.cerapanService.getEvaluationByIdAdmin(evaluationId);
   }
 
-  
   @Put('observation-1/:id')
   // @UseGuards(AdminAuthGuard)
   submitObservation1(
@@ -61,12 +79,8 @@ export class CerapanController {
     @Body() dto: SubmitObservationDto,
     @Req() req: RequestWithUser,
   ) {
-    const adminId = req.user.name || (req.user._id as any).toString();
-    return this.cerapanService.submitObservation1(
-      evaluationId,
-      dto,
-      adminId,
-    );
+    const adminId = req.user.name || req.user._id.toString();
+    return this.cerapanService.submitObservation1(evaluationId, dto, adminId);
   }
 
   /**
@@ -80,12 +94,8 @@ export class CerapanController {
     @Body() dto: SubmitObservationDto,
     @Req() req: RequestWithUser,
   ) {
-    const adminId = req.user.name || (req.user._id as any).toString();
-    return this.cerapanService.submitObservation2(
-      evaluationId,
-      dto,
-      adminId,
-    );
+    const adminId = req.user.name || req.user._id.toString();
+    return this.cerapanService.submitObservation2(evaluationId, dto, adminId);
   }
 
   /**
@@ -98,10 +108,9 @@ export class CerapanController {
     return this.cerapanService.getAdminReportWithSummary(evaluationId);
   }
 
- 
   @Get('my-tasks')
   getMyPendingTasks(@Req() req: RequestWithUser) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getMyPendingTasks(teacherId);
   }
 
@@ -114,10 +123,9 @@ export class CerapanController {
     @Param('id') evaluationId: string,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getEvaluationForTask(evaluationId, teacherId);
   }
-
 
   @Put('self-evaluation/:id')
   submitSelfEvaluation(
@@ -125,7 +133,7 @@ export class CerapanController {
     @Body() dto: SubmitCerapankendiriDto, // { answers: [...] }
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.submitSelfEvaluation(
       evaluationId,
       dto,
@@ -136,7 +144,8 @@ export class CerapanController {
   @Put('schedule/:id')
   updateSchedule(
     @Param('id') evaluationId: string,
-    @Body() scheduleData: {
+    @Body()
+    scheduleData: {
       scheduledDate: string;
       scheduledTime: string;
       observerName: string;
@@ -150,17 +159,16 @@ export class CerapanController {
 
   @Get('my-reports')
   getMyReportHistory(@Req() req: RequestWithUser) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getMyReportHistory(teacherId);
   }
 
-  
   @Get('report/:id')
   getReportDetails(
     @Param('id') evaluationId: string,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getCompletedReport(evaluationId, teacherId);
   }
 
@@ -173,7 +181,15 @@ export class CerapanController {
     @Param('id') evaluationId: string,
     @Req() req: RequestWithUser,
   ) {
-    const teacherId = (req.user._id as any).toString();
+    const teacherId = req.user._id.toString();
     return this.cerapanService.getReportWithSummary(evaluationId, teacherId);
+  }
+
+  @Put('admin/regenerate-comment/:id')
+  async regenerateAiComment(
+    @Param('id') evaluationId: string,
+    @Req() req: RequestWithUser, // 包含用户信息的请求对象
+  ): Promise<Cerapan> {
+    return this.cerapanService.forceGenerateAiComment(evaluationId);
   }
 }

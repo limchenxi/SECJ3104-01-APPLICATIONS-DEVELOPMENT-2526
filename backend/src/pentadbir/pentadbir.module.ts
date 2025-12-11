@@ -9,8 +9,8 @@ import { TemplateRubric, TemplateRubricSchema } from './template.schema';
   imports: [
     UsersModule,
     MongooseModule.forFeature([
-      { name: TemplateRubric.name, schema: TemplateRubricSchema }
-    ])
+      { name: TemplateRubric.name, schema: TemplateRubricSchema },
+    ]),
   ],
   controllers: [PentadbirController],
   providers: [PentadbirService],

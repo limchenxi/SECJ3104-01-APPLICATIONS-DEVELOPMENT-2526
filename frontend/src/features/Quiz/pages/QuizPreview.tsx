@@ -8,7 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import type { QuizQuestion } from "../api/quizService";
+import type { QuizQuestion } from "../type";
 
 interface QuizPreviewProps {
   questions: QuizQuestion[];
@@ -43,9 +43,11 @@ export default function QuizPreview({
               <List dense disablePadding>
                 {question.options.map((option, optionIndex) => {
                   const isAnswer = optionIndex === question.answerIndex;
-                  return (
+                  const fontWeight = showAnswers && isAnswer ? 'bold' : 'normal';
+                  const optionLabel = `${String.fromCharCode(65 + optionIndex)}. ${option}`; 
+                    return (
                     <ListItem key={optionIndex} disableGutters>
-                      <ListItemText primary={option} />
+                      <ListItemText primary={optionLabel} primaryTypographyProps={{ sx: { fontWeight: fontWeight } }}/>
                       {showAnswers && isAnswer ? (
                         <Chip label="Jawapan" size="small" color="success" />
                       ) : null}

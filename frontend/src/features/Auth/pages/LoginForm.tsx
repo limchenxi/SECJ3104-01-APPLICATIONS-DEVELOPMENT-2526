@@ -28,12 +28,14 @@ export default function Login() {
       } else if (response?.user?.role === 'GURU') {
         navigate('/dashboard/guru', { replace: true });
       } else if (response?.user?.role === 'SUPERADMIN') {
-        navigate('/superadmin/dashboard', { replace: true });
+        navigate('/dashboard/superadmin', { replace: true });
       } else {
         navigate(redirectTo, { replace: true });
       }
     } catch (err: any) {
-      alert(err?.response?.data?.msg || "Login failed");
+      console.error("Login error:", err);
+      const errorMsg = err?.response?.data?.message || err?.message || "Login failed. Please check your email and password.";
+      alert(errorMsg);
     }
   };
 

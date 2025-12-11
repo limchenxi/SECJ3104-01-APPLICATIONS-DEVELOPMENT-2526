@@ -21,6 +21,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       isGlobal: true,
     }),
     MongooseModule.forRoot('mongodb://localhost:27017/teacher_system'),
+    AiModule,
     AuthModule,
     CerapanModule,
     //KedatanganModule,

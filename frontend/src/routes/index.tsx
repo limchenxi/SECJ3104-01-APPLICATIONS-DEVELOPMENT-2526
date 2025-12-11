@@ -13,7 +13,6 @@ const ProfilePage = lazy(() =>
   import("../features/Profile/pages/ProfileV2")
 );
 
-
 // Dashboard - all roles
 const GuruDashboard = lazy(
   () => import("../features/Dashboard/pages/GuruDashboard")
@@ -36,8 +35,9 @@ const KedatanganPage = lazy(() =>
 // }))
 import("../features/Kedatangan/pages/Kedatangan")
 );
+const RPH = lazy(() => import("../features/RPH/pages/index"));
 const RPHGenerator = lazy(
-  () => import("../features/RPH/pages/RPH_Generator")
+  () => import("../features/RPH/pages/New")
 );
 const QuizGenerator = lazy(
   () => import("../features/Quiz/pages/QuizGenerator")
@@ -53,18 +53,36 @@ const PentadbirTemplateRubrik = lazy(
 const PentadbirTemplateRubrikDetail = lazy(
   () => import("../features/Pentadbir/pages/TemplateRubrikDetail")
 );
-const PentadbirCerapanReport = lazy(
-  () => import("../features/Pentadbir/pages/CerapanReport")
-);
 
 //Superadmin Pages
 const UserList= lazy(
   () => import("../features/Users/pages/User")
 );
-const AIList= lazy(
-  () => import("../features/AI/pages/List")
+const AIManagementIndex= lazy(
+  () => import("../features/AI/pages/index")
 );
-  
+const AIList= lazy(
+  () => import("../features/AI/pages/model/ai-list")
+);
+const AiUsageAnalytics= lazy(
+  () => import("../features/AI/pages/usage/ai-usage")
+);
+const SchoolConfiguration= lazy(
+  () => import("../features/School/pages/SchoolConfiguration")
+);
+const BasicInfo= lazy(
+  () => import("../features/School/pages/BasicInfo")
+)
+const ObservationSetting= lazy(
+  () => import("../features/School/pages/ObservationSetting")
+)
+const AttendanceSetting= lazy(
+  () => import("../features/School/pages/AttendanceSetting")
+)
+const Notification= lazy(
+  () => import("../features/School/pages/Notification")
+)
+
 // Cerapan Pages
 const TeacherCerapanKendiri = lazy(
  () => import("../features/Cerapan/pages/TeacherCerapanKendiri")
@@ -84,6 +102,10 @@ const AdminObservationForm = lazy(
 const PentadbirCerapanForm = lazy(
   () => import("../features/Cerapan/pages/sample/Cerapan")
 );
+const TeacherReportHistory = lazy(
+  () => import("../features/Cerapan/pages/TeacherReportHistory")
+);
+
 const NotFound = lazy(() => import("./NotFound"));
 const ProtectedLayout = lazy(() => import("./ProtectedLayout"));
   
@@ -132,9 +154,24 @@ export default function AppRoutes() {
         <Route path="/" element={<ProtectedLayout />}>
           {/* <Route index element={<Dashboard />} /> */}
 
-          <Route path="/teaching-assignment" element={<TeachingAssignmentPage />} />
+          <Route 
+            path="/teaching-assignment" 
+            element={
+              <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
+                <TeachingAssignmentPage />
+              </RoleGuard>
+            } 
+          />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/edit" element={<EditProfile />} />
+              <Route
+                path="/pentadbir/cerapan/report/:id"
+                element={
+                  <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
+                    <CerapanResults />
+                  </RoleGuard>
+                }
+              />
 
           {/* GURU ROUTES */}
           <Route
@@ -155,6 +192,14 @@ export default function AppRoutes() {
           />
           <Route
             path="/rph"
+            element={
+              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
+                <RPH />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/rph/new"
             element={
               <RoleGuard roles={["SUPERADMIN", "GURU"]}>
                 <RPHGenerator />
@@ -211,6 +256,7 @@ export default function AppRoutes() {
               </RoleGuard>
             } 
           />
+          <Route path="/cerapan/my-reports" element={<TeacherReportHistory />} />
           
           {/* Pentadbir Routes */}
           <Route
@@ -233,7 +279,7 @@ export default function AppRoutes() {
             path="/cerapan/report/:id"
             element={
               <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
-                <PentadbirCerapanReport />
+                <CerapanResults />
               </RoleGuard>
             }
           />
@@ -264,7 +310,7 @@ export default function AppRoutes() {
           />
           {/* Super Admin */}
           <Route
-            path="/superadmin/dashboard"
+            path="/dashboard/superadmin"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <SuperAdminDashboard />
@@ -275,10 +321,73 @@ export default function AppRoutes() {
             path="/ai"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
-                <AIList items={[]}/>
+                <AIManagementIndex/>
               </RoleGuard>
             }
           />
+          <Route
+            path="/ai/list"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AIList/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/ai/usage"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AiUsageAnalytics/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <SchoolConfiguration/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/info"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <BasicInfo initialData={{
+                  name: "",
+                  address: "",
+                  timezone: "",
+                  language: "",
+                  currentAcademicYear: ""
+                }}/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/observation"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <ObservationSetting initialData={undefined}/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/attendance"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <AttendanceSetting initialData={undefined}/>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/school-setting/notification"
+            element={
+              <RoleGuard roles={["SUPERADMIN"]}>
+                <Notification initialData={undefined}/>
+              </RoleGuard>
+            }
+          />
+
           <Route
             path="/users"
             element={
