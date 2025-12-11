@@ -11,6 +11,7 @@ export const backendClient = (config?: BackendClientConfig) => {
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
     headers: {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
       ...(withAuth && { Authorization: `Bearer ${getAuthToken()}` }),
     },
   });

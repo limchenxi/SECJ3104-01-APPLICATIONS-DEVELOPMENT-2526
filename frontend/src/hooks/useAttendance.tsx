@@ -1,39 +1,96 @@
-import { useEffect } from "react";
-import { recordAttendance } from "../features/Kedatangan/api/kedatanganService";
+import { useState, useCallback } from "react";
+import { clockIn as clockInApi } from "../features/Kedatangan/api/clockInApi";
+import { clockOut as clockOutApi } from "../features/Kedatangan/api/clockOutApi";
+import { getAttendanceToday } from "../features/Kedatangan/api/getAttendanceTodayApi";
+import type { HistoryEntry } from "../features/Kedatangan/type";
 
-export default function useAttendance() {
-  useEffect(() => {
-    const autoRecordAttendance = async () => {
-      try {
-        // 获取公网 IP
-        const ip = await fetch("https://api.ipify.org?format=json")
-          .then(res => res.json())
-          .then(data => data.ip);
+interface UseAttendanceReturn {
+    clockIn: () => Promise<{ timeIn: string } | void>;
+    clockOut: () => Promise<{ timeOut: string} | void>;
+    fetchTodayAttendance: () => Promise<void>;
+    loading: boolean;
+    error: string | null;
+    todayAttendance: HistoryEntry[];
+}
 
-        // 校园网 IP 判断逻辑
-        const isCampusNetwork =
-          ip.startsWith("192.168.") ||
-          ip.startsWith("10.") ||
-          ip.startsWith("172.16.");
+export const useAttendance = (userID: string): UseAttendanceReturn => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [history, setHistory] = useState<HistoryEntry[]>([]);
 
-        if (isCampusNetwork) {
-          await recordAttendance({
-            userId: 0,
-            name: "Guru",
-            role: "Guru",
-            loginTime: new Date().toISOString(),
-            ipAddress: ip,
-            wifiSSID: "Campus-WiFi",
-          });
-          console.log("✅ Wi-Fi 自动打卡成功");
-        } else {
-          console.log("❌ 不在校园网，未打卡");
+    const clockIn = useCallback(async () => {
+        if(!userID) {
+            setError("User ID is missing");
+            return;
         }
-      } catch (err) {
-        console.error("❌ 自动打卡失败:", err);
-      }
-    };
 
-    autoRecordAttendance();
-  }, []);
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await clockInApi(userID);
+            return res;
+        } catch(err: any) {
+            setError(err.response?.data?.message || err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [userID]);
+
+    const clockOut = useCallback(async () => {
+        if(!userID) {
+            setError("User ID is missing");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await clockOutApi(userID);
+            return res;
+        }
+        catch(err: any) {
+            setError(err.response?.data?.message || err.message);
+            throw err;
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [userID]);
+
+    const fetchTodayAttendance = useCallback(async () => {
+        if(!userID) {
+            setError("User ID is missing");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await getAttendanceToday(userID);
+            if(res) {
+                const mapped: HistoryEntry[] = [];
+                if(res.timeIn) {
+                    mapped.push({ id: 1, action: "in", timestamp: new Date(res.timeIn) });
+                }
+
+                if(res.timeOut) {
+                    mapped.push({ id: 2, action: "out", timestamp: new Date(res.timeOut) });
+                }
+
+                setHistory(mapped.sort((a, b) => b.id - a.id));
+            }
+        }
+        catch(err: any) {
+            setError(err.response?.data?.message || err.message);
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [userID]);
+
+    return {clockIn, clockOut, fetchTodayAttendance, loading, error, todayAttendance: history};
 }
