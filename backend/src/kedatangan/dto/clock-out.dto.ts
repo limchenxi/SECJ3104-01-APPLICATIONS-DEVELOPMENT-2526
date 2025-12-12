@@ -5,6 +5,6 @@ export class ClockOutDTO {
     @IsString()
     userID: string;
     
-
+    @IsString()
     clockOutTime: string;
 }
