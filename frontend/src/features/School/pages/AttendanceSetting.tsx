@@ -3,27 +3,30 @@ import { useState, useMemo } from "react";
 import type { AttendanceSetting } from "../type";
 import { updatePartialSettings } from "../stores";
 
-const TimeFormatRegex = /^(0[1-9]|1[0-2]):[0-5][0-9]\s(AM|PM)$/; 
+const TimeFormatRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
 
-type AttendanceFormData = AttendanceSetting & {
-  automaticallyMarkAbsent?: boolean; 
+type AttendanceErrors = Partial<Record<keyof AttendanceSetting, string>>;
+
+const DEFAULT__ATTENDANCE: AttendanceSetting = {
+    workStartTime: '08:00 ', 
+    workEndTime: '17:00', 
+    lateThresholdMinutes: 15,
+    automaticallyMarkAbsent: false, 
 };
 
-type AttendanceErrors = Partial<Record<keyof AttendanceFormData, string>>;
-
-function validateAttendanceInfo(values: AttendanceFormData): AttendanceErrors {
+function validateAttendanceInfo(values: AttendanceSetting): AttendanceErrors {
   const errors: AttendanceErrors = {};
   
   if (!values.workStartTime) {
     errors.workStartTime = 'Work Start Time is required';
   } else if (!TimeFormatRegex.test(values.workStartTime)) {
-    errors.workStartTime = 'Format must be HH:MM AM/PM (e.g., 08:00 AM)';
+    errors.workStartTime = 'Format must be HH:MM (24-hour format).';
   }
 
   if (!values.workEndTime) {
     errors.workEndTime = 'Work End Time is required';
   } else if (!TimeFormatRegex.test(values.workEndTime)) {
-    errors.workEndTime = 'Format must be HH:MM AM/PM (e.g., 05:00 PM)';
+    errors.workEndTime = 'Format must be HH:MM (24-hour format).';
   }
 
   if (values.lateThresholdMinutes === undefined || values.lateThresholdMinutes === null) {
@@ -36,11 +39,12 @@ function validateAttendanceInfo(values: AttendanceFormData): AttendanceErrors {
 }
 
 type AttendanceSettingsTabProps = {
-  initialData: AttendanceFormData;
+  initialData: AttendanceSetting;
 };
 
 export default function AttendanceSettingsTab({ initialData }: AttendanceSettingsTabProps) {
-  const [formData, setFormData] = useState<AttendanceFormData>(initialData);
+  const validInitialData = initialData || DEFAULT__ATTENDANCE;
+  const [formData, setFormData] = useState<AttendanceSetting>(validInitialData);
   const [errors, setErrors] = useState<AttendanceErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'success' | 'error' | null>(null);
@@ -53,7 +57,7 @@ export default function AttendanceSettingsTab({ initialData }: AttendanceSetting
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
     
-    if (errors[name as keyof AttendanceFormData]) {
+    if (errors[name as keyof AttendanceSetting]) {
         setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
@@ -63,8 +67,13 @@ export default function AttendanceSettingsTab({ initialData }: AttendanceSetting
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveStatus(null);
+    const dataToSend = {
+        ...formData,
+        lateThresholdMinutes: Number(formData.lateThresholdMinutes || 0),
+        automaticallyMarkAbsent: !!formData.automaticallyMarkAbsent,
+    };
 
-    const validationErrors = validateAttendanceInfo(formData);
+    const validationErrors = validateAttendanceInfo(dataToSend);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -73,7 +82,7 @@ export default function AttendanceSettingsTab({ initialData }: AttendanceSetting
 
     setIsSubmitting(true);
     try {
-      await updatePartialSettings('attendanceSetting', formData); 
+      await updatePartialSettings('attendanceSetting', dataToSend); 
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000); 
     } catch (e) {
@@ -103,8 +112,8 @@ export default function AttendanceSettingsTab({ initialData }: AttendanceSetting
               value={formData.workStartTime}
               onChange={handleChange}
               error={Boolean(errors.workStartTime)}
-              helperText={errors.workStartTime || 'Format: 07:40 AM'}
-              placeholder="e.g. 07:40 AM"
+              helperText={errors.workStartTime || 'Format: HH:MM (e.g., 08:00)'}
+              placeholder="e.g. 08:00"
             />
           </Grid>
           <Grid size={12}>
@@ -115,8 +124,8 @@ export default function AttendanceSettingsTab({ initialData }: AttendanceSetting
               value={formData.workEndTime}
               onChange={handleChange}
               error={Boolean(errors.workEndTime)}
-              helperText={errors.workEndTime || 'Format: 05:00 PM'}
-              placeholder="e.g. 05:00 PM"
+              helperText={errors.workEndTime || 'Format: HH:MM (e.g., 17:00)'}
+              placeholder="e.g. 17:00"
             />
           </Grid>
           <Grid size={12}>

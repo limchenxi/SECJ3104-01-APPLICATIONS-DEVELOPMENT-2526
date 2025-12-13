@@ -1,4 +1,10 @@
-import { IsNumber, IsNotEmpty, Min, IsBoolean } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  Min,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ObservationSettingDTO {
@@ -14,6 +20,7 @@ export class ObservationSettingDTO {
   @Min(0)
   reminderDaysBefore: number;
 
+  @IsOptional()
   @IsBoolean()
   enableReminder: boolean;
 }

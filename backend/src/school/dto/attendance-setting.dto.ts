@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, Matches, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Matches,
+  IsNumber,
+  Min,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 const TimeFormatRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -21,4 +29,8 @@ export class AttendanceSettingDTO {
   @IsNotEmpty()
   @Min(0)
   lateThresholdMinutes: number;
+
+  @IsOptional()
+  @IsBoolean()
+  automaticallyMarkAbsent: boolean;
 }

@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class NotificationSettingDTO {
@@ -16,4 +16,10 @@ export class NotificationSettingDTO {
   @IsBoolean()
   @IsNotEmpty()
   inAppEnabled: boolean;
+
+  @Type(() => Number)
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  retentionDays: number;
 }

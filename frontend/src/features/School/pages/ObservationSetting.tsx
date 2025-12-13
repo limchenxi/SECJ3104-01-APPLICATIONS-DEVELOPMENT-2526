@@ -3,14 +3,15 @@ import { useState, useMemo } from "react";
 import type { ObservationSetting } from "../type";
 import { updatePartialSettings } from "../stores";
 
-type ObservationFormData = ObservationSetting & { 
-  enableAutoAssignment?: boolean;
-  enableObservationReminders?: boolean; 
+type ObservationErrors = Partial<Record<keyof ObservationSetting, string>>;
+
+const DEFAULT_OBSERVATION: ObservationSetting = {
+    defaultDurationMinutes: 60,
+    reminderDaysBefore: 1,
+    enableReminder: true, 
 };
 
-type ObservationErrors = Partial<Record<keyof ObservationFormData, string>>;
-
-function validateObservationInfo(values: ObservationFormData): ObservationErrors {
+function validateObservationInfo(values: ObservationSetting): ObservationErrors {
   const errors: ObservationErrors = {};
   
   if (values.defaultDurationMinutes === undefined || values.defaultDurationMinutes === null) {
@@ -29,11 +30,12 @@ function validateObservationInfo(values: ObservationFormData): ObservationErrors
 }
 
 type ObservationSettingsTabProps = {
-  initialData: ObservationFormData;
+  initialData: ObservationSetting;
 };
 
 export default function ObservationSettingsTab({ initialData }: ObservationSettingsTabProps) {
-  const [formData, setFormData] = useState<ObservationFormData>(initialData);
+  const validInitialData = initialData || DEFAULT_OBSERVATION;
+  const [formData, setFormData] = useState<ObservationSetting>(validInitialData);
   const [errors, setErrors] = useState<ObservationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'success' | 'error' | null>(null);
@@ -41,12 +43,11 @@ export default function ObservationSettingsTab({ initialData }: ObservationSetti
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target;
     
-    // 处理 Checkbox 的布尔值
     const newValue = type === 'checkbox' ? checked : (type === 'number' ? (value === '' ? undefined : Number(value)) : value);
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
     
-    if (errors[name as keyof ObservationFormData]) {
+    if (errors[name as keyof ObservationSetting]) {
         setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
@@ -56,8 +57,14 @@ export default function ObservationSettingsTab({ initialData }: ObservationSetti
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveStatus(null);
+    const dataToSend = {
+        ...formData,
+        defaultDurationMinutes: Number(formData.defaultDurationMinutes) || 0,
+        reminderDaysBefore: Number(formData.reminderDaysBefore) || 0,
+        enableReminder: !!formData.enableReminder,
+    };
 
-    const validationErrors = validateObservationInfo(formData);
+    const validationErrors = validateObservationInfo(dataToSend);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -66,8 +73,7 @@ export default function ObservationSettingsTab({ initialData }: ObservationSetti
 
     setIsSubmitting(true);
     try {
-      // 提交所有字段，让后端处理过滤和存储
-      await updatePartialSettings('observationSetting', formData); 
+      await updatePartialSettings('observationSetting', dataToSend); 
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000); 
     } catch (e) {
@@ -116,18 +122,18 @@ export default function ObservationSettingsTab({ initialData }: ObservationSetti
 
           <Grid size={12}>
             <Stack spacing={1}>
-                <FormControlLabel
+                {/* <FormControlLabel
                     control={<Checkbox 
                         name="enableAutoAssignment" 
                         checked={!!formData.enableAutoAssignment} 
                         onChange={handleChange} 
                     />}
                     label="Enable auto-assignment of observations"
-                />
+                /> */}
                 <FormControlLabel
                     control={<Checkbox 
-                        name="enableObservationReminders" 
-                        checked={!!formData.enableObservationReminders} 
+                        name="enableReminder" 
+                        checked={!!formData.enableReminder} 
                         onChange={handleChange} 
                     />}
                     label="Enable observation reminders"

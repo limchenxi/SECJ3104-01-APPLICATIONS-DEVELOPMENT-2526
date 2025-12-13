@@ -10,7 +10,7 @@ import { SchoolService } from './school.service';
 import { School } from './schemas/school.schema';
 import { UpdateSchoolDTO } from './dto/update-school.dto';
 
-@Controller('school-setting')
+@Controller('school/setting')
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class SchoolController {
   constructor(private readonly schoolService: SchoolService) {}

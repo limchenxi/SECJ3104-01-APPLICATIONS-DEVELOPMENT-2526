@@ -7,6 +7,7 @@ import { fetchSettings, schoolSettingsStore } from "../stores";
 import ObservationSettingsTab from "./ObservationSetting";
 import AttendanceSettingsTab from "./AttendanceSetting";
 import NotificationsTab from "./Notification";
+import { School } from "@mui/icons-material";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -40,6 +41,7 @@ export default function SchoolConfiguration() {
   };
 
   if (isLoading && !settings) {
+  // if (!settings || !settings.basicInfo || !settings.observationSetting || !settings.info ) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
         <CircularProgress />
@@ -54,34 +56,42 @@ export default function SchoolConfiguration() {
   if (!settings) return <Alert severity="info">No school settings found.</Alert>;
 
   return (
-    <Stack spacing={3}>
-      {/* HEADER */}
-      <Typography variant="h4" fontWeight="bold">School Configuration</Typography>
-      <Typography variant="body1" color="text.secondary">Manage your school settings and preferences</Typography>
-      
-      {/* TABS */}
-      <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="school settings tabs">
-          <Tab label="Basic Information" />
-          <Tab label="Observation Settings" />
-          <Tab label="Attendance Settings" />
-          <Tab label="Notifications" />
-        </Tabs>
-      </Box>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>  
+        {/* Header */}
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <School color="primary" fontSize="large"/> School Configuration
+          </Typography>
+          <Typography color="text.secondary">
+            Manage school settings and preferences
+          </Typography>
+        </Box>
 
-      {/* TAB CONTENT */}
-      <CustomTabPanel value={activeTab} index={0}>
-        <BasicInfoTab initialData={settings.basicInfo} />
-      </CustomTabPanel>
-      <CustomTabPanel value={activeTab} index={1}>
-        <ObservationSettingsTab initialData={settings.observationSetting} />
-      </CustomTabPanel>
-      <CustomTabPanel value={activeTab} index={2}>
-        <AttendanceSettingsTab initialData={settings.attendanceSetting} />
-      </CustomTabPanel>
-      <CustomTabPanel value={activeTab} index={3}>
-        <NotificationsTab initialData={settings.notificationSetting} />
-      </CustomTabPanel>
-    </Stack>
+        {/* TABS */}
+        <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={activeTab} onChange={handleTabChange} aria-label="school settings tabs">
+            <Tab label="Basic Information" />
+            <Tab label="Observation Settings" />
+            <Tab label="Attendance Settings" />
+            <Tab label="Notifications" />
+          </Tabs>
+        </Box>
+
+        {/* TAB CONTENT */}
+        <CustomTabPanel value={activeTab} index={0}>
+          <BasicInfoTab initialData={settings.basicInfo} />
+        </CustomTabPanel>
+        <CustomTabPanel value={activeTab} index={1}>
+          <ObservationSettingsTab initialData={settings.observationSetting} />
+        </CustomTabPanel>
+        <CustomTabPanel value={activeTab} index={2}>
+          <AttendanceSettingsTab initialData={settings.attendanceSetting} />
+        </CustomTabPanel>
+        <CustomTabPanel value={activeTab} index={3}>
+          <NotificationsTab initialData={settings.notificationSetting} />
+        </CustomTabPanel>
+      </Stack>
+    </Box>
   );
 }

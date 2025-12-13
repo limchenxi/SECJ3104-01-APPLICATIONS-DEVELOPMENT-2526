@@ -7,8 +7,9 @@ import {
   IconButton,
   Divider,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { Delete, Restore } from "@mui/icons-material";
 import type { RPH } from "../type";
+import { Bold } from "lucide-react";
 
 interface Props {
   onSelect: (item: RPH) => void;
@@ -37,8 +38,8 @@ const History = forwardRef(({ onSelect, onDelete }: Props, ref) => {
 
   return (
     <Box sx={{ width: 350 }}>
-      <Typography variant="h6" gutterBottom>
-        Sejarah RPH
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
+        <Restore/> Sejarah RPH
       </Typography>
 
       {list.map((item) => (
@@ -78,7 +79,7 @@ const History = forwardRef(({ onSelect, onDelete }: Props, ref) => {
                     onDelete(item._id);
                   }}
                 >
-                  <DeleteIcon />
+                  <Delete />
                 </IconButton>
               </Box>
             </Box>

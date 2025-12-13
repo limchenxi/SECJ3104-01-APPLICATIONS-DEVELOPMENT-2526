@@ -179,23 +179,25 @@ export default function TemplateRubrik() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={2}>
-          <Box>
-            <Button
-              variant="outlined"
-              startIcon={loading ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              {loading ? "Memuatkan..." : "Muat Semula"}
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Plus size={20} />}
-              onClick={handleCreateTemplate}
-              disabled={loading}
-            >
-              Cipta Template Baharu
-            </Button>
+          <Box sx={{p:3 }}>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                startIcon={loading ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                {loading ? "Memuatkan..." : "Muat Semula"}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Plus size={20} />}
+                onClick={handleCreateTemplate}
+                disabled={loading}
+              >
+                Cipta Template Baharu
+              </Button>
+            </Stack>
           </Box>
         </Stack>
           <br />

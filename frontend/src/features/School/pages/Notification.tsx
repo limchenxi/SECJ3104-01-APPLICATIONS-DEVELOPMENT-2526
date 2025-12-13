@@ -3,14 +3,16 @@ import { useState, useMemo } from "react";
 import type { NotificationSetting } from "../type";
 import { updatePartialSettings } from "../stores";
 
+type NotificationErrors = Partial<Record<keyof NotificationSetting, string>>;
 
-type NotificationFormData = NotificationSetting & {
-  retentionDays?: number; 
+const DEFAULT_NOTIFICATION: NotificationSetting = {
+    emailEnabled: true,
+    smsEnabled: false,
+    inAppEnabled: true,
+    retentionDays: 90, 
 };
 
-type NotificationErrors = Partial<Record<keyof NotificationFormData, string>>;
-
-function validateNotificationInfo(values: NotificationFormData): NotificationErrors {
+function validateNotificationInfo(values: NotificationSetting): NotificationErrors {
   const errors: NotificationErrors = {};
   
   if (values.retentionDays === undefined || values.retentionDays === null) {
@@ -23,11 +25,12 @@ function validateNotificationInfo(values: NotificationFormData): NotificationErr
 }
 
 type NotificationsTabProps = {
-  initialData: NotificationFormData;
+  initialData: NotificationSetting;
 };
 
 export default function NotificationsTab({ initialData }: NotificationsTabProps) {
-  const [formData, setFormData] = useState<NotificationFormData>(initialData);
+  const validInitialData = initialData || DEFAULT_NOTIFICATION;
+  const [formData, setFormData] = useState<NotificationSetting>(validInitialData);
   const [errors, setErrors] = useState<NotificationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'success' | 'error' | null>(null);
@@ -40,7 +43,7 @@ export default function NotificationsTab({ initialData }: NotificationsTabProps)
 
     setFormData(prev => ({ ...prev, [name]: newValue }));
     
-    if (errors[name as keyof NotificationFormData]) {
+    if (errors[name as keyof NotificationSetting]) {
         setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
@@ -50,8 +53,15 @@ export default function NotificationsTab({ initialData }: NotificationsTabProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveStatus(null);
+    const dataToSend = {
+        ...formData,
+        retentionDays: Number(formData.retentionDays || 0),
+        emailEnabled: !!formData.emailEnabled,
+        smsEnabled: !!formData.smsEnabled,
+        inAppEnabled: !!formData.inAppEnabled,
+    };
 
-    const validationErrors = validateNotificationInfo(formData);
+    const validationErrors = validateNotificationInfo(dataToSend);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -60,7 +70,7 @@ export default function NotificationsTab({ initialData }: NotificationsTabProps)
 
     setIsSubmitting(true);
     try {
-      await updatePartialSettings('notificationSetting', formData);
+      await updatePartialSettings('notificationSetting', dataToSend);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000); 
     } catch (e) {

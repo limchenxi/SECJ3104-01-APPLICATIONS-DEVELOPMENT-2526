@@ -342,7 +342,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/school-setting"
+            path="/school/setting"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <SchoolConfiguration/>
@@ -350,7 +350,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/school-setting/info"
+            path="/school/setting/info"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <BasicInfo initialData={{
@@ -364,7 +364,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/school-setting/observation"
+            path="/school/setting/observation"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <ObservationSetting initialData={undefined}/>
@@ -372,7 +372,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/school-setting/attendance"
+            path="/school/setting/attendance"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <AttendanceSetting initialData={undefined}/>
@@ -380,7 +380,7 @@ export default function AppRoutes() {
             }
           />
           <Route
-            path="/school-setting/notification"
+            path="/school/setting/notification"
             element={
               <RoleGuard roles={["SUPERADMIN"]}>
                 <Notification initialData={undefined}/>

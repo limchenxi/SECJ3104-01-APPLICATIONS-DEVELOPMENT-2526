@@ -17,12 +17,14 @@ export type AttendanceSetting = {
   workStartTime: string;
   workEndTime: string;
   lateThresholdMinutes: number;
+  automaticallyMarkAbsent: boolean;
 };
 // 4: Notification Setting
 export type NotificationSetting = {
   emailEnabled: boolean;
   smsEnabled: boolean;
   inAppEnabled: boolean;
+  retentionDays: number; 
 };
 
 export type SchoolSettings = {

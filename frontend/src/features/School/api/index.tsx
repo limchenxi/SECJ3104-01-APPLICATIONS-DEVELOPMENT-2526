@@ -4,7 +4,7 @@ import type { SchoolSettings, UpdateSchoolSettingsDTO } from "../type";
 
 const client = backendClient(); 
 
-const SCHOOL_SETTINGS_URL = '/school-settings';
+const SCHOOL_SETTINGS_URL = '/school/setting';
 
 export async function getSchoolSettings(): Promise<SchoolSettings> {
   const response = await client.get(SCHOOL_SETTINGS_URL);

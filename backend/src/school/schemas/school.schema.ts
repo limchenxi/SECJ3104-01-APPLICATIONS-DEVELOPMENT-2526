@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-// 1. Basic Info 子文档
+// 1. Basic Info
 class BasicInfo {
   @Prop({ required: true, trim: true, default: 'SK SRI SIAKAP' })
   name: string;
@@ -19,7 +19,7 @@ class BasicInfo {
   currentAcademicYear: string; // e.g., '2023/2024'
 }
 
-// 2. Observation Setting 子文档 (Cerapan Setting)
+// 2. Observation Setting (Cerapan Setting)
 class ObservationSetting {
   @Prop({ type: Number, default: 60 })
   defaultDurationMinutes: number; //MINUTE
@@ -31,7 +31,7 @@ class ObservationSetting {
   enableReminder: boolean;
 }
 
-// 3. Attendance Setting 子文档 (打卡设置)
+// 3. Attendance Setting (打卡设置)
 class AttendanceSetting {
   @Prop({ default: '08:00' })
   workStartTime: string; // 上班开始时间 (e.g., '08:00')
@@ -41,9 +41,12 @@ class AttendanceSetting {
 
   @Prop({ type: Number, default: 15 })
   lateThresholdMinutes: number; // 迟到阈值（分钟）
+
+  @Prop({ default: 'false' })
+  automaticallyMarkAbsent: boolean;
 }
 
-// 4. Notification Setting 子文档
+// 4. Notification Setting
 class NotificationSetting {
   @Prop({ default: true })
   emailEnabled: boolean;
@@ -53,6 +56,9 @@ class NotificationSetting {
 
   @Prop({ default: true })
   inAppEnabled: boolean;
+
+  @Prop({ type: Number, default: 90 })
+  retentionDays: number;
 }
 
 export type SchoolDocument = School & Document;

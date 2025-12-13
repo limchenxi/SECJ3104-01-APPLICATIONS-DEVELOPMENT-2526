@@ -14,6 +14,7 @@ import { PentadbirModule } from './pentadbir/pentadbir.module';
 import { TeachingAssignmentModule } from './teaching-assignment/teaching-assignment.module';
 import { AttendanceModule } from './kedatangan/attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SchoolModule } from './school/school.module';
 
 @Module({
   imports: [
@@ -24,7 +25,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     AiModule,
     AuthModule,
     CerapanModule,
-    //KedatanganModule,
     QuizModule,
     RphModule,
     UsersModule,
@@ -34,6 +34,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     TeachingAssignmentModule,
     AttendanceModule,
     ScheduleModule.forRoot(),
+    SchoolModule,
   ],
   controllers: [AppController],
   providers: [AppService],

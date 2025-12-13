@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import type { RPH } from "../type";
 import Display from "./Display";
 import History from "./History";
-import { Psychology } from "@mui/icons-material";
+import { Edit, Psychology } from "@mui/icons-material";
 
 export default function RPH() {
   const navigate = useNavigate();
@@ -74,7 +74,7 @@ export default function RPH() {
           {/* right：Display */}
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-              <Typography variant="h5">Editor RPH</Typography>
+              <Typography variant="h5" fontWeight="bold"><Edit/> Editor RPH</Typography>
 
               <Button
                 variant="contained"

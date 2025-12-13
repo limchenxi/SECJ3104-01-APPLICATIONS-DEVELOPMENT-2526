@@ -10,6 +10,13 @@ type BasicInfoTabProps = {
 const LANGUAGES = [{ value: 'ms-MY', label: 'Bahasa Malaysia' }, { value: 'en-US', label: 'English (US)' }, { value: 'zh-CN', label: '中文 (简体)' }];
 const TIMEZONES = [{ value: 'Asia/Kuala_Lumpur', label: 'Asia/Kuala_Lumpur' }, { value: 'Asia/Shanghai', label: 'Asia/Shanghai' }];
 
+const DEFAULT_BASIC_INFO: BasicInfo = {
+    name: 'SK SRI SIAKAP',
+    address: 'Simpang Tiga, 34300 Kuala Kurau, Perak',
+    timezone: 'Asia/Kuala_Lumpur', // 使用默认值防止渲染错误
+    language: 'ms-MY',
+    currentAcademicYear: new Date().getFullYear().toString(),
+};
 
 type Errors = Partial<Record<keyof BasicInfo, string>>;
 
@@ -33,7 +40,7 @@ function validateBasicInfo(values: BasicInfo): Errors {
 }
 
 export default function BasicInfoTab({ initialData }: BasicInfoTabProps) {
-	const [formData, setFormData] = useState<BasicInfo>(initialData);
+	const [formData, setFormData] = useState<BasicInfo>(initialData || DEFAULT_BASIC_INFO);
 	
 	const [errors, setErrors] = useState<Errors>({});
 	
