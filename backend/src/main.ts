@@ -83,8 +83,7 @@ async function bootstrap() {
     ], // add your frontend URLs here
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders:
-      'Content-Type, Accept, Authorization, ngrok-skip-browser-warning',
+    allowedHeaders: 'Content-Type, Accept, Authorization, ngrok-skip-browser-warning',
   });
   await app.listen(port);
   Logger.log(`App running on port ${port}`);

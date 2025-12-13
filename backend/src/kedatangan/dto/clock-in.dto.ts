@@ -5,6 +5,6 @@ export class ClockInDTO {
     @IsNotEmpty()
     userID: string;
 
-    // @IsDate()
+    @IsString()
     clockInTime: string;
 }
