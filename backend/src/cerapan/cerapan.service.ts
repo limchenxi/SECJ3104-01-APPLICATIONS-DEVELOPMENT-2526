@@ -169,6 +169,19 @@ export class CerapanService {
       .select('period templateId status subject class')
       .exec();
   }
+  async getPendingTasksCount(
+    teacherId: string,
+  ): Promise<{ totalPending: number }> {
+    // 统计所有自我评估状态不是 'submitted' 或 'completed' 的任务数量
+    const count = await this.cerapanModel
+      .countDocuments({
+        teacherId,
+        'self_evaluation.status': { $in: ['pending', 'in-progress'] },
+      })
+      .exec();
+
+    return { totalPending: count };
+  }
 
   /**
    * (ADMIN) Get evaluation by id for observation (no teacher restriction).

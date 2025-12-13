@@ -113,6 +113,11 @@ export class CerapanController {
     const teacherId = req.user._id.toString();
     return this.cerapanService.getMyPendingTasks(teacherId);
   }
+  @Get('my-tasks/count')
+  getMyPendingTasksCount(@Req() req: RequestWithUser) {
+    const teacherId = req.user._id.toString();
+    return this.cerapanService.getPendingTasksCount(teacherId);
+  }
 
   /**
    * (TEACHER) Get the details and questions for ONE pending task.

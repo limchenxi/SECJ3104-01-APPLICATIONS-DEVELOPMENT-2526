@@ -183,3 +183,8 @@ export const regenerateAiComment = async (
   );
   return response.data;
 };
+
+export const getPendingTasksCount = async (): Promise<{ totalPending: number }> => {
+  const response = await client().get<{ totalPending: number }>("/cerapan/my-tasks/count");
+  return response.data;
+};

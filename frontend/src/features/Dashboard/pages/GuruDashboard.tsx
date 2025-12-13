@@ -3,6 +3,11 @@ import { GridView, CalendarToday, Book, Star } from "@mui/icons-material";
 import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
 import { Clock, GraduationCap, FileText, User as UserIcon } from "lucide-react";
 import { userApi } from "../../Users/api"; 
+import { getPendingTasksCount } from "../../Cerapan/api/cerapanService";
+
+// ---------------------------------------------------------------
+// 辅助组件 (StatCard, QuickAction) - 保持不变
+// ---------------------------------------------------------------
 
 function StatCard({ title, value, icon: IconComponent, color }) {
   return (
@@ -48,11 +53,11 @@ function QuickAction({ label, to }) {
 // Guru Data Hook 
 // ---------------------------------------------------------------
 function useGuruDashboardData() {
+  const taskStatsPromise = getPendingTasksCount();
   const [data, setData] = useState({
     currentUserName: "Loading...",
     assignedClasses: 0,
-    upcomingReviews: 0,
-    cerapan: 0,
+    cerapan: 0, 
     loading: true,
     error: null as string | null,
   });
@@ -62,21 +67,26 @@ function useGuruDashboardData() {
       try {
         const userMePromise = userApi.getMe();
         const assignmentsPromise = userApi.getMyAssignments(); 
+        
+        // 模拟 Cerapan 统计
         const taskStatsPromise = new Promise(resolve => 
-             setTimeout(() => resolve({ reviews: 2,}), 300)
+             // 假设 cerapan 数量是 3
+             setTimeout(() => resolve({ cerapanPending: 3 }), 300) 
         );
+        
         const [userMe, assignmentsData, taskStats] = await Promise.all([
           userMePromise,
           assignmentsPromise,
           taskStatsPromise,
         ]);
+        
         const assignedClassesCount = assignmentsData.classes?.length || 0;
+        
         setData(prev => ({ 
           ...prev, 
           currentUserName: userMe.name, 
           assignedClasses: assignedClassesCount,
-          upcomingReviews: (taskStats as any).reviews,
-          cerapan: (taskStats as any).cerapan,
+          cerapan: (taskStats as any).totalPending || 0,
           loading: false 
         }));
       } catch (e) {
@@ -98,7 +108,7 @@ function useGuruDashboardData() {
 // ---------------------------------------------------------------
 
 export default function GuruDashboard() {
-  const { loading, error, currentUserName, assignedClasses, upcomingReviews, cerapan } = useGuruDashboardData();
+  const { loading, error, currentUserName, assignedClasses, cerapan } = useGuruDashboardData();
 
   const statsCards = useMemo(() => [
     {
@@ -108,24 +118,12 @@ export default function GuruDashboard() {
       color: "#1976d2", // Blue
     },
     {
-      title: "Tugasan Menunggu",
-      value: upcomingReviews,
-      icon: Clock,
-      color: "#ed6c02", // Orange (Warning)
-    },
-    {
       title: "Cerapan Perlu Dibuat",
       value: cerapan,
       icon: FileText,
       color: "#d32f2f", // Red (Danger)
     },
-    {
-      title: "AI Quiz Dibuat", 
-      value: 12, // 模拟值
-      icon: Star,
-      color: "#2e7d32", // Green (Success)
-    },
-  ], [assignedClasses, upcomingReviews, cerapan]);
+  ], [assignedClasses, cerapan]);
 
 
   if (loading) {
@@ -158,6 +156,7 @@ export default function GuruDashboard() {
         </Box>
 
         {/* Summary Cards */}
+        {/* 保持 4 列网格以保持整洁，但只展示 3 个核心数据 + 1 个状态数据 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {statsCards.map((card) => (
             <StatCard
@@ -169,8 +168,28 @@ export default function GuruDashboard() {
             />
           ))}
         </div>
-
-        {/* Quick Actions */}
+        
+        {/* Tugas Harian / Pending Tasks - 简化 */}
+        <div className="p-5 bg-white shadow rounded-lg">
+            <h2 className="font-semibold text-lg mb-4">Tugas Harian (Pending)</h2>
+            <ul className="space-y-3 text-sm">
+              <li className="flex justify-between border-b pb-2">
+                <CalendarToday color={cerapan > 0 ? "error" : "success"} sx={{ mr: 1 }} fontSize="small" />
+                <span>Cerapan Kendiri Perlu Disiapkan:</span>
+                <span className={`font-bold ${cerapan > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {cerapan > 0 ? `${cerapan} penilaian` : 'Selesai'}
+                </span>
+              </li>
+              {/* ❌ 移除 Semakan Tugasan Menunggu */}
+              <li className="flex justify-between border-b pb-2">
+                <UserIcon color="#1976d2" size={20} style={{ marginRight: 8 }} />
+                <span>Kehadiran Perlu Dikemaskini:</span>
+                <span className="font-bold text-blue-600">Hari ini</span>
+              </li>
+              {/* ❌ 移除 RPH Perlu Dibuat (如果您想保留，可以加回来，但您要求只保留 Cerapan 和 Kedatangan) */}
+            </ul>
+        </div>
+        {/* Quick Actions - 保持不变 */}
         <div className="p-5 bg-white shadow rounded-lg">
           <h2 className="font-semibold text-lg mb-4">Tindakan Pantas</h2>
 
@@ -181,30 +200,6 @@ export default function GuruDashboard() {
             <QuickAction label="Cerapan Kendiri" to="/cerapan" />
             <QuickAction label="Profile" to="/profile" />
           </div>
-        </div>
-        
-        {/* Tugas Harian / Pending Tasks */}
-        <div className="p-5 bg-white shadow rounded-lg">
-            <h2 className="font-semibold text-lg mb-4">Tugas Harian (Pending)</h2>
-            <ul className="space-y-3 text-sm">
-              <li className="flex justify-between border-b pb-2">
-                <CalendarToday color="error" sx={{ mr: 1 }} fontSize="small" />
-                <span>Cerapan perlu disiapkan:</span>
-                <span className="font-bold text-red-600">
-                  //
-                </span>
-              </li>
-              <li className="flex justify-between border-b pb-2">
-                <Book color="warning" sx={{ mr: 1 }} fontSize="small" />
-                <span>Semakan Tugasan Menunggu:</span>
-                <span className="font-bold text-orange-600">{upcomingReviews > 0 ? `${upcomingReviews} pelajar` : 'Tiada'}</span>
-              </li>
-              <li className="flex justify-between border-b pb-2">
-                <UserIcon color="#1976d2" size={20} style={{ marginRight: 8 }} />
-                <span>Kehadiran Perlu Dikemaskini:</span>
-                <span className="font-bold text-blue-600">Hari ini</span>
-              </li>
-            </ul>
         </div>
       </Stack>
     </Box>

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import RPHForm from "./Form";
 import type { RPHRequest } from "../type";
+import { ArrowBack } from "@mui/icons-material";
 
 export default function NewRPH() {
   const navigate = useNavigate();
@@ -30,10 +31,24 @@ export default function NewRPH() {
 
   return (
     <Box sx={{ width: "500px", mx: "auto", mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
+      <Box 
+        sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mb: 3 
+          }}
+        >
+      <Typography variant="h4">
         Jana RPH Baharu
       </Typography>
-
+      <Button
+        variant="outlined"
+        onClick={() => navigate("/rph")}
+      >
+        <ArrowBack/> Kembali ke RPH
+      </Button>
+    </Box>
       <RPHForm isSubmitting={loading} onSubmit={handleGenerate} />
     </Box>
   );

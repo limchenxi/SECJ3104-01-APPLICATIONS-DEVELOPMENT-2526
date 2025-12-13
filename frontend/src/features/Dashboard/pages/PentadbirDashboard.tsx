@@ -85,8 +85,8 @@ function usePentadbirDashboardData() {
       setData(prev => ({ 
         ...prev, 
         users,
-        assignments: assignmentsData, // 存储完整数组
-        cerapanStats: cerapanStats as any, // 存储 Cerapan 统计
+        assignments: assignmentsData, 
+        cerapanStats: cerapanStats as any, 
         loading: false 
        }));
 
@@ -105,12 +105,12 @@ function usePentadbirDashboardData() {
   const summary = useMemo(() => {
     const totalUsers = data.users.length;
     let guruCount = 0;
-    let pentadbirCount = 0; // 仅 PENTADBIR
+    let pentadbirCount = 0; 
 
     data.users.forEach(user => {
       if (user.role === "GURU") {
         guruCount++;
-      } else if (user.role === "PENTADBIR" || user.role === "SUPERADMIN") {
+      } else if (user.role === "PENTADBIR") {
         pentadbirCount++;
       }
     });
@@ -219,7 +219,7 @@ export default function PentadbirDashboard() {
             <h2 className="font-semibold text-lg mb-4">Ringkasan Pengurusan</h2>
             <ul className="space-y-3 text-sm">
               <li className="flex justify-between border-b pb-2">
-                <span>Jumlah Pentadbir & Superadmin:</span>
+                <span>Jumlah Pentadbir:</span>
                 <span className="font-bold">{summary.pentadbir}</span>
               </li>
               <li className="flex justify-between border-b pb-2">
