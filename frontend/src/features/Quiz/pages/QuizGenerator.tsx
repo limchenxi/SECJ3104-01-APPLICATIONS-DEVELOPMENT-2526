@@ -69,7 +69,7 @@ export default function QuizGeneratorPage() {
           <Tab
             label={
               <Stack direction="row" spacing={1} alignItems="center">
-                <ClipboardClock size={16} /> Sejarah Kuiz
+                <ClipboardClock size={16} /> Kuiz bank
               </Stack>
             }
           />

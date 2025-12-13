@@ -1,46 +1,212 @@
-import { useEffect, useState } from "react";
-// import axios from "axios";
-import type { AttendanceRecord } from "../../Kedatangan/type";
+import React, { useEffect, useMemo, useState } from "react";
+import { GridView, CalendarToday, Book, Star } from "@mui/icons-material";
+import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
+import { Clock, GraduationCap, FileText, User as UserIcon } from "lucide-react";
+import { userApi } from "../../Users/api"; 
 
-interface Activity {
-  type: "attendance" | "cerapan" | "quiz" | "rph";
-  message: string;
-  date: string;
+function StatCard({ title, value, icon: IconComponent, color }) {
+  return (
+    <Card 
+      sx={{ 
+        boxShadow: 3, 
+        borderLeft: `5px solid ${color}`, 
+        transition: '0.3s',
+        '&:hover': { 
+            boxShadow: 6 
+        } 
+      }}
+    >
+      <CardContent>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <Box>
+            <Typography color="text.secondary" variant="subtitle2">
+              {title}
+            </Typography>
+            <Typography variant="h5" fontWeight="bold">
+              {value}
+            </Typography>
+          </Box>
+          <IconComponent size={36} color={color} /> 
+        </Stack>
+      </CardContent>
+    </Card>
+  );
 }
 
+function QuickAction({ label, to }) {
+  return (
+    <a
+      href={to}
+      className="p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-center font-medium"
+    >
+      {label}
+    </a>
+  );
+}
+
+// ---------------------------------------------------------------
+// Guru Data Hook 
+// ---------------------------------------------------------------
+function useGuruDashboardData() {
+  const [data, setData] = useState({
+    currentUserName: "Loading...",
+    assignedClasses: 0,
+    upcomingReviews: 0,
+    cerapan: 0,
+    loading: true,
+    error: null as string | null,
+  });
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const userMePromise = userApi.getMe();
+        const assignmentsPromise = userApi.getMyAssignments(); 
+        const taskStatsPromise = new Promise(resolve => 
+             setTimeout(() => resolve({ reviews: 2,}), 300)
+        );
+        const [userMe, assignmentsData, taskStats] = await Promise.all([
+          userMePromise,
+          assignmentsPromise,
+          taskStatsPromise,
+        ]);
+        const assignedClassesCount = assignmentsData.classes?.length || 0;
+        setData(prev => ({ 
+          ...prev, 
+          currentUserName: userMe.name, 
+          assignedClasses: assignedClassesCount,
+          upcomingReviews: (taskStats as any).reviews,
+          cerapan: (taskStats as any).cerapan,
+          loading: false 
+        }));
+      } catch (e) {
+        console.error("Guru Dashboard data fetch error:", e);
+        setData(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: "Gagal memuat data dashboard. Sila semak konsol." 
+        }));
+      }
+    }
+    loadData();
+  }, []);
+  return data;
+}
+
+// ---------------------------------------------------------------
+// Main Component
+// ---------------------------------------------------------------
+
 export default function GuruDashboard() {
-    const [records, setRecords] = useState<AttendanceRecord[]>([]);
-    // const [attendanceRate, setAttendanceRate] = useState<number>(0);
-    // const [cerapanCount, setCerapanCount] = useState<number>(0);
-    // const [rphCount, setRphCount] = useState<number>(0);
-    // const [quizGenerated, setQuizGenerated] = useState<number>(0);
-    // const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const { loading, error, currentUserName, assignedClasses, upcomingReviews, cerapan } = useGuruDashboardData();
+
+  const statsCards = useMemo(() => [
+    {
+      title: "Jumlah Kelas",
+      value: assignedClasses,
+      icon: GraduationCap,
+      color: "#1976d2", // Blue
+    },
+    {
+      title: "Tugasan Menunggu",
+      value: upcomingReviews,
+      icon: Clock,
+      color: "#ed6c02", // Orange (Warning)
+    },
+    {
+      title: "Cerapan Perlu Dibuat",
+      value: cerapan,
+      icon: FileText,
+      color: "#d32f2f", // Red (Danger)
+    },
+    {
+      title: "AI Quiz Dibuat", 
+      value: 12, // 模拟值
+      icon: Star,
+      color: "#2e7d32", // Green (Success)
+    },
+  ], [assignedClasses, upcomingReviews, cerapan]);
+
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, maxWidth: "xl", mx: "auto", minHeight: "60vh", display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
-    <div>
-      <h2>📊 Kedatangan</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Nama</th>
-            <th>Role</th>
-            <th>Login Time</th>
-            <th>IP Address</th>
-            <th>SSID</th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((r) => (
-            <tr key={r.id}>
-              <td>{r.name}</td>
-              <td>{r.role}</td>
-              <td>{new Date(r.loginTime).toLocaleString()}</td>
-              <td>{r.ipAddress}</td>
-              <td>{r.wifiSSID}</td>
-            </tr>
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}> 
+        {/* Header */}
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5 }}>
+            <GridView color="primary" fontSize="large"/> Guru Dashboard
+          </Typography>
+          <Typography color="text.secondary" variant="h6">
+            Selamat datang, <span className="font-bold text-primary-main">{currentUserName}</span>!
+          </Typography>
+        </Box>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {statsCards.map((card) => (
+            <StatCard
+              key={card.title}
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              color={card.color}
+            />
           ))}
-        </tbody>
-      </table>
-    </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="p-5 bg-white shadow rounded-lg">
+          <h2 className="font-semibold text-lg mb-4">Tindakan Pantas</h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <QuickAction label="Kedatangan" to="/kedatangan" />
+            <QuickAction label="eRPH" to="/rph" />
+            <QuickAction label="AI Quiz" to="/quiz" />
+            <QuickAction label="Cerapan Kendiri" to="/cerapan" />
+            <QuickAction label="Profile" to="/profile" />
+          </div>
+        </div>
+        
+        {/* Tugas Harian / Pending Tasks */}
+        <div className="p-5 bg-white shadow rounded-lg">
+            <h2 className="font-semibold text-lg mb-4">Tugas Harian (Pending)</h2>
+            <ul className="space-y-3 text-sm">
+              <li className="flex justify-between border-b pb-2">
+                <CalendarToday color="error" sx={{ mr: 1 }} fontSize="small" />
+                <span>Cerapan perlu disiapkan:</span>
+                <span className="font-bold text-red-600">
+                  //
+                </span>
+              </li>
+              <li className="flex justify-between border-b pb-2">
+                <Book color="warning" sx={{ mr: 1 }} fontSize="small" />
+                <span>Semakan Tugasan Menunggu:</span>
+                <span className="font-bold text-orange-600">{upcomingReviews > 0 ? `${upcomingReviews} pelajar` : 'Tiada'}</span>
+              </li>
+              <li className="flex justify-between border-b pb-2">
+                <UserIcon color="#1976d2" size={20} style={{ marginRight: 8 }} />
+                <span>Kehadiran Perlu Dikemaskini:</span>
+                <span className="font-bold text-blue-600">Hari ini</span>
+              </li>
+            </ul>
+        </div>
+      </Stack>
+    </Box>
   );
 }

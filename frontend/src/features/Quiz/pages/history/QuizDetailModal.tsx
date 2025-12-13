@@ -28,6 +28,7 @@ interface QuizDetailModalProps {
 interface ContentData {
     title: string;
     subject: string;
+    year?: string;
     difficulty: string;
     questions?: any[]; // 测验内容
     flashcards?: any[]; // 闪卡内容
@@ -57,6 +58,7 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
             loadedData = {
                 title: snap.title || "Konten Dijana",
                 subject: snap.subject || "N/A",
+                year: snap.year || "N/A",
                 difficulty: snap.difficulty || "N/A",
                 questions: snap.questions,
                 flashcards: snap.flashcards,
@@ -70,7 +72,16 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
         try {
           const res = await fetch(`/api/quiz/${historyItem.quizId}`);
           if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
-          loadedData = await res.json();
+          const apiData = await res.json();
+          loadedData = {
+                title: apiData.title || "Kuiz Pangkalan Data",
+                subject: apiData.subject || "N/A",
+                difficulty: apiData.difficulty || "N/A",
+                year: apiData.year || "N/A",
+                questions: apiData.questions,
+                flashcards: apiData.flashcards,
+                createdAt: historyItem.createdAt,
+            };
         } catch (e) {
           console.error("Failed to load quiz by ID:", e);
           setError("Gagal memuat kuiz dari pangkalan data.");
@@ -78,8 +89,6 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
           return;
         }
       }
-
-      // setQuizData(loadedData);
       setContentData(loadedData);
       setLoading(false);
     };
@@ -92,15 +101,14 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
         setError(null);
     };
 
-  }, [open, historyItem]); // 依赖于 open 状态和 historyItem 变化
+  }, [open, historyItem]); 
 
-  // 处理导出 PDF
   const handleExport = () => {
     if (!contentData) return;
     if (contentData.flashcards && contentData.flashcards.length > 0) {
-      downloadFlashcardPDF(contentData); // 调用闪卡导出
+      downloadFlashcardPDF(contentData);
     } else if (contentData.questions && contentData.questions.length > 0) {
-      exportQuizToPDF(contentData); // 调用测验导出
+      exportQuizToPDF(contentData);
     } else {
         alert("Tiada data yang dapat dieksport.");
     }
@@ -123,16 +131,23 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
         
         {error && <Typography color="error">{error}</Typography>}
 
-        {/* 仅在数据加载成功且有题目时展示 QuizPreview */}
         {contentData && (
           <Box>
             <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-                Subjek: {contentData.subject || 'N/A'} | Kesukaran: {contentData.difficulty || 'N/A'}
+                Subjek: {contentData.subject || 'N/A'} 
+                {contentData.year && ` | Tahun: ${contentData.year} `}
+                | Kesukaran: {contentData.difficulty || 'N/A'}
             </Typography>
             
-            {isQuiz && <QuizPreview questions={contentData.questions} showAnswers={true} />}
+            {isQuiz && <QuizPreview 
+                questions={contentData.questions} 
+                showAnswers={true} 
+                subject={contentData.subject}
+                year={contentData.year}
+            />}
+            
             {isFlashcard && <FlashcardPreview flashcards={contentData.flashcards} />}
-
+            
             {!isQuiz && !isFlashcard && (
                 <Typography color="text.secondary">Tiada kandungan untuk dipaparkan.</Typography>
             )}
@@ -147,7 +162,6 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
       </DialogContent>
       
       <DialogActions>
-        {/* 导出按钮 */}
         <Button 
           onClick={handleExport} 
           disabled={!isQuiz && !isFlashcard || loading}
@@ -156,7 +170,6 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
           Eksport PDF
         </Button>
         
-        {/* 关闭按钮 */}
         <Button onClick={onClose} color="primary" variant="contained">
           Tutup
         </Button>

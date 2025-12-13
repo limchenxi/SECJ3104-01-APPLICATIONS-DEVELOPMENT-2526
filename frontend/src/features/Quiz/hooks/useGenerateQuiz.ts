@@ -95,8 +95,10 @@ export function useGenerateQuiz(generateApiUrl?: string) {
         const content = isFlashcard ? processedData.flashcards : processedData.questions;
         const snapshotData = {
           title: `Kad Imbas: ${payload.topic}`,
+          topic: payload.topic,
           subject: payload.subject || "N/A",
           difficulty: payload.difficulty || "medium",
+          year: payload.year,
           flashcards: content,
         };
         try { 
@@ -118,7 +120,7 @@ export function useGenerateQuiz(generateApiUrl?: string) {
         } catch (histErr) {
            console.error('❌ History Fetch Error:', histErr);
         }
-        reload(); // 🚨 确保 reload 总是被调用，即使保存历史失败
+        reload(); 
       }
             
     } catch (err: any) {
@@ -189,6 +191,8 @@ export function useGenerateQuiz(generateApiUrl?: string) {
       // 4) Save History Snapshot
       const snapshot = JSON.stringify({
         title: quizToSave.title,
+        topic: payload.topic,
+        year: payload.year,
         subject: quizToSave.subject,
         difficulty: quizToSave.difficulty,
         questions,

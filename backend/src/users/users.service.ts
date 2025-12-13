@@ -50,9 +50,13 @@ export class UsersService {
   }
 
   async updateUser(id: string, data: Partial<User>) {
-    return this.userModel
+    const updatedUser = await this.userModel
       .findByIdAndUpdate(id, data, { new: true })
       .select('-password');
+    if (!updatedUser) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return updatedUser;
   }
 
   async findAll() {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 
-export function useQuizHistory({ pollInterval = 8000 } = {}) {
+export function useQuizHistory({ pollInterval = 0 } = {}) {
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,14 +34,20 @@ export function useQuizHistory({ pollInterval = 8000 } = {}) {
     } finally {
       setLoading(false);
     }
-  }, [pollInterval]);
+  }, []);
 
   useEffect(() => {
     load();
-
-    const t = setInterval(load, pollInterval);
-    return () => clearInterval(t);
+    let t: number | undefined;
+    if (pollInterval > 0) {
+        t = setInterval(load, pollInterval);
+    }
+    
+    return () => {
+        if (t !== undefined) {
+            clearInterval(t);
+        }
+    };
   }, [load, pollInterval]);
-
   return { list, loading, error, reload: load };
 }

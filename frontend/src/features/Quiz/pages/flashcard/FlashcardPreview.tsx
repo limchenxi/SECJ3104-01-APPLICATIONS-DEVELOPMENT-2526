@@ -5,8 +5,8 @@ import {
   CardContent, 
   Typography, 
   Stack,
-  Button
 } from "@mui/material";
+import type { Flashcard } from "../../type";
 
 interface FlashcardPreviewProps {
   flashcards: Flashcard[];
@@ -31,7 +31,6 @@ function SingleFlashcard({ card, index }: { card: Flashcard; index: number }) {
         cursor: 'pointer', 
         p: 2, 
         transition: 'transform 0.5s',
-        // 增加一点透视效果，如果需要真正的3D翻转，需要更复杂的CSS
       }}
       onClick={handleFlip}
     >
@@ -45,7 +44,6 @@ function SingleFlashcard({ card, index }: { card: Flashcard; index: number }) {
             fontWeight="bold" 
             align="center"
           >
-            {/* 根据翻转状态显示正面或背面 */}
             {isFlipped ? card.back : card.front} 
           </Typography>
         </Box>

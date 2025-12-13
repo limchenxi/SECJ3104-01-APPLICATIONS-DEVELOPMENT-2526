@@ -1,4 +1,5 @@
 import {
+  Box,
   Card,
   CardContent,
   Chip,
@@ -34,7 +35,7 @@ export default function QuizPreview({
   return (
     <Stack spacing={2}>
       {questions.map((question, questionIndex) => (
-        <Card key={question.id} variant="outlined">
+        <Card key={question.id || questionIndex} variant="outlined">
           <CardContent>
             <Stack spacing={1}>
               <Typography variant="subtitle1">

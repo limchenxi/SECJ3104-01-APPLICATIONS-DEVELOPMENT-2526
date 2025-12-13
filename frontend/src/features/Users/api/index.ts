@@ -20,6 +20,11 @@ export const userApi = {
     return response.data;
   },
 
+  getMe: async (): Promise<UserItem> => {
+    const response = await client().get<UserItem>(`${basePath}/me`);
+    return response.data;
+  },
+
   create: async (userData: CreateUserPayload): Promise<UserItem> => {
     const response = await client().post<UserItem>(basePath, userData);
     return response.data;

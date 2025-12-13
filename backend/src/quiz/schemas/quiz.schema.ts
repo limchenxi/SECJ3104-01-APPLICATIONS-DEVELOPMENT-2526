@@ -34,6 +34,9 @@ export class Quiz extends Document {
   @Prop({ required: true })
   subject: string; // contoh: Science, Maths, BM
 
+  @Prop()
+  year: string;
+
   @Prop({ required: true, enum: ['easy', 'medium', 'hard'], default: 'medium' })
   difficulty: QuizDifficulty;
 

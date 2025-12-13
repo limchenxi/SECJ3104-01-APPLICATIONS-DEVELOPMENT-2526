@@ -15,24 +15,25 @@ import DownloadIcon from "@mui/icons-material/Download";
 import { useQuizHistory } from "../../hooks/useQuizHistory";
 import { exportQuizToPDF } from "../exportQuizToPdf";
 import { downloadFlashcardPDF } from "../flashcard/downloadFlashcardPDF";
+import { Savings } from "@mui/icons-material";
 
 export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void }) {
-  const { list, loading, error, reload } = useQuizHistory({ pollInterval: 8000 });
+  const { list, loading, error, reload } = useQuizHistory({ pollInterval: 0 });
 
   async function handleDeleteHistory(id: string) {
     if (!confirm("Padam rekod sejarah ini?")) return;
     try {
       const res = await fetch(`/api/quiz/history/${id}`, { method: "DELETE" });
       if (res.ok) {
-        reload(); // 删除成功后才重新加载列表
+        reload(); 
       } else {
         const errorText = await res.text();
         console.error("DELETE FAILED:", res.status, errorText);
-        alert(`Gagal padam rekod. Status: ${res.status}`);
+      //   alert(`Gagal padam rekod. Status: ${res.status}`);
       }
     } catch (err) {
       console.error("DELETE FETCH ERROR:", err);
-      alert("Ralat rangkaian ketika memadam.");
+      // alert("Ralat rangkaian ketika memadam.");
     }
 }
 
@@ -45,7 +46,6 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
     // if (quiz.snapshot && quiz.snapshot.questions && quiz.snapshot.questions.length > 0) {
     //     const snap = quiz.snapshot;
     //     quizObj = {
-    //         // 从历史记录和快照中提取元数据
     //         title: snap.title || "Kuiz Dijana",
     //         subject: snap.subject || "",
     //         createdAt: quiz.createdAt,
@@ -103,22 +103,35 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
   if (error) return <Typography color="error">Error loading history</Typography>;
 
   return (
-    <Box sx={{ width: 360, p: 2 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-        <Typography variant="h6">Sejarah Kuiz</Typography>
+    <Box sx={{p: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
+          <Savings/> Kuiz bank
+        </Typography>
         <Button size="small" onClick={reload}>Refresh</Button>
       </Box>
 
       {list.map((h: any) => (
-        <Card key={h._id} variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
-          <CardContent sx={{ p: 1.5 }}>
+        <Card key={h._id} variant="outlined" sx={{ mb: 4, borderRadius: 2, width: '100%'  }}>
+          <CardContent sx={{ p: 2 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Box>
-                <Typography fontWeight="bold">{h.generatedBy} • {new Date(h.createdAt).toLocaleString()}</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Jenis: 
-                  {h.contentType === 'flashcard' ? '🃏 Kad Imbas' : '📝 Kuiz'} 
+                <Typography fontWeight="bold">
+                    {h.snapshot.title || h.snapshot.topic || 'Konten Dijana'}
                 </Typography>
+                <Typography fontWeight="bold">
+                    {h.snapshot?.subject && `Subjek: ${h.snapshot.subject}`}
+                    {(h.snapshot?.subject && h.snapshot?.year) && ' • '}
+                    {h.snapshot?.year && `Tahun: ${h.snapshot.year}`}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 0.5 }}>
+                  {new Date(h.createdAt).toLocaleString()}
+                </Typography>
+                {h.snapshot?.topic && (
+                    <Typography variant="body1" sx={{ mt: 1, fontWeight: 'medium' }}>
+                        Topik: {h.snapshot.topic}
+                    </Typography>
+                )}
               </Box>
 
               <Box>
@@ -136,7 +149,8 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
 
             <Divider sx={{ my: 1 }} />
             <Typography variant="body2" color="text.secondary" noWrap>
-              {h.note || (h.snapshot ? "Snapshot available" : "No details")}
+              {/* {h.note || (h.snapshot ? "Snapshot available" : "No details")} */}
+              Jenis:{h.contentType === 'flashcard' ? '🃏 Kad Imbas' : '📝 Kuiz'} 
             </Typography>
           </CardContent>
         </Card>

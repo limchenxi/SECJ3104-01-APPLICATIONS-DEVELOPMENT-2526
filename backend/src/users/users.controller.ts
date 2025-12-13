@@ -17,12 +17,37 @@ import { JwtAuthGuard } from '../auth/jwt.strategy';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
+import { TeachingAssignmentService } from 'src/teaching-assignment/teaching-assignment.service';
 type RequestWithUser = any; // keep consistent with other controllers
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService: UsersService) {}
+  constructor(
+    private readonly userService: UsersService,
+    private readonly teachingAssignmentService: TeachingAssignmentService,
+  ) {}
+
+  @Get('me/assignments')
+  async getMyAssignments(@Req() req: RequestWithUser) {
+    const teacherId = req.user._id;
+    const assignmentsData =
+      await this.teachingAssignmentService.getAssignmentsByTeacherId(teacherId);
+    return assignmentsData;
+  }
+
+  @Get('me')
+  async getMyProfile(@Req() req: RequestWithUser) {
+    return this.userService.findById(req.user._id);
+  }
+
+  @Patch('me')
+  async updateMyProfile(
+    @Req() req: RequestWithUser,
+    @Body() updateDto: UpdateUserDto,
+  ) {
+    return this.userService.updateUser(req.user._id, updateDto);
+  }
 
   @Roles('SUPERADMIN', 'PENTADBIR')
   @Post()
@@ -49,41 +74,27 @@ export class UsersController {
   //   return this.userService.findById(req.user._id);
   // }
 
-  @Patch('me')
-  async updateMyProfile(
-    @Req() req: RequestWithUser,
-    @Body() updateDto: UpdateUserDto,
-  ) {
-    return this.userService.updateUser(req.user._id, updateDto);
-  }
-
-  @Roles('SUPERADMIN')
-  @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateUserDto, // 👈 使用 UpdateUserDto
-  ) {
-    return this.userService.updateUser(id, updateDto);
-  }
-
-  // Get all users (for admin)
+  // Get all users
   @Roles('SUPERADMIN', 'PENTADBIR')
   @Get()
   getAllUsers() {
     return this.userService.findAll();
+  }
+  @Roles('SUPERADMIN')
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() updateDto: UpdateUserDto) {
+    return this.userService.updateUser(id, updateDto);
+  }
+  @Roles('SUPERADMIN')
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.userService.deleteUser(id);
   }
 
   // Get user by ID
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findById(id);
-  }
-
-  @Roles('SUPERADMIN')
-  @Delete(':id')
-  async delete(@Param('id') id: string) {
-    // 注意：此处也需要权限守卫
-    return this.userService.deleteUser(id);
   }
 
   // Update teacher assignments (subjects & classes)

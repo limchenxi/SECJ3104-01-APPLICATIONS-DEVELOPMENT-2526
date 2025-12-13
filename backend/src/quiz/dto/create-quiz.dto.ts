@@ -10,6 +10,9 @@ export class CreateQuizDto {
   @IsString()
   subject: string;
 
+  @IsString()
+  year: string;
+
   difficulty: QuizDifficulty;
 
   @IsArray()

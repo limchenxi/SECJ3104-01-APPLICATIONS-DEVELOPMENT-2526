@@ -28,7 +28,20 @@ export class TeachingAssignmentService {
       active: boolean;
     }>,
   ): Promise<TeachingAssignment[]> {
-    return this.assignmentModel.find(filter).sort({ subject: 1, class: 1 }).exec();
+    return this.assignmentModel
+      .find(filter)
+      .sort({ subject: 1, class: 1 })
+      .exec();
+  }
+  async getAssignmentsByTeacherId(
+    teacherId: string,
+  ): Promise<{ subjects: string[]; classes: string[] }> {
+    const assignments = await this.getForTeacher(teacherId);
+
+    const subjects = [...new Set(assignments.map((a) => a.subject))];
+    const classes = [...new Set(assignments.map((a) => a.class))];
+
+    return { subjects, classes };
   }
 
   async findById(id: string): Promise<TeachingAssignment> {
@@ -53,12 +66,13 @@ export class TeachingAssignmentService {
     if (!res) throw new NotFoundException('Teaching assignment not found');
   }
 
-  async getForTeacher(
-    teacherId: string,
-  ): Promise<TeachingAssignment[]> {
+  async getForTeacher(teacherId: string): Promise<TeachingAssignment[]> {
     const query: any = { teacherId, active: true };
 
-    return this.assignmentModel.find(query).sort({ subject: 1, class: 1 }).exec();
+    return this.assignmentModel
+      .find(query)
+      .sort({ subject: 1, class: 1 })
+      .exec();
   }
 
   async getAvailableForCerapan(
