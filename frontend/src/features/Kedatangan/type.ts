@@ -1,6 +1,18 @@
 import { type JSX } from "react";
 
 export type ActionId = "in" | "out";
+export type HistoryRange = "today" | "7d" | "30d";
+export type HistoryRangeDetails = { id: HistoryRange; label: string; days: number };
+export type HistoryByDate = Record<string, HistoryEntry[]>;
+
+export interface AttendanceRecord {
+  id: string; 
+  userID: string;
+  timeIn: Date;
+  timeOut: Date;
+  attendanceType: "HADIR" | "LEWAT";
+  attendanceDate: Date;
+}
 
 export interface Action {
   id: ActionId;
@@ -11,7 +23,7 @@ export interface Action {
 }
 
 export interface HistoryEntry {
-  id: number;
+  id: string;
   action: ActionId; // Must be one of the literal strings in ActionId
   timestamp: Date;
 }
