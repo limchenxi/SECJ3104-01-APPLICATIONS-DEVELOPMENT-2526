@@ -9,4 +9,4 @@ export async function getAttendanceToday(userId: string) {
     } catch(err: any) {
         console.log("Failed to fetch attendance for user");
     }
-}
+}   

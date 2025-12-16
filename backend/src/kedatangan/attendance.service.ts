@@ -65,6 +65,28 @@ export class AttendanceService {
         return updateRecord.save();
     }
 
+    async getRecordsByRange(userId: string, startDate: Date, endDate: Date) {
+        const records = this.attendanceModel.find({
+            userID: userId,
+            attendanceDate: {
+                $gte: startDate,
+                $lte: endDate,
+            },
+        }).sort({attendanceDate: -1}).lean();
+
+        return records;
+    }
+
+    async getRecordsForSpecificDay(userId: string, targetDate: Date) {
+        const start = new Date(targetDate);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(targetDate);
+        end.setHours(23, 59, 59, 999);
+
+        return this.getRecordsByRange(userId, start, end);
+    }
+
     async getTodayRecord(userId: string) {
         const start = new Date();
         start.setHours(0, 0, 0, 0);

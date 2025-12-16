@@ -8,9 +8,9 @@ export default function Kedatangan() {
 
   const [allowed, setAllowed] = useState<boolean | null>(true);
 
-  useEffect(() => {
-    checkIP().then(setAllowed);
-  }, []);
+  // useEffect(() => {
+  //   checkIP().then(setAllowed);
+  // }, []);
 
   if(allowed === null) return <div><LoadingSpinner/></div>;
   if(!allowed) {
