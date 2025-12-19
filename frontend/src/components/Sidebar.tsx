@@ -2,6 +2,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  alpha,
   Box,
   Divider,
   List,
@@ -78,7 +79,7 @@ export default function Sidebar({
       borderRadius: theme.shape.borderRadius,
       transition: "background-color 0.1s ease",
       "&.active, &:hover": {
-        bgcolor: theme.palette.info.light,
+        bgcolor: alpha(theme.palette.info.main, 0.1),
         color: theme.palette.info.dark,
       },
       "&.active .MuiListItemIcon-root": {
@@ -220,7 +221,7 @@ export default function Sidebar({
                                 borderRadius: theme.shape.borderRadius,
                                 color: theme.palette.grey[700],
                                 "&.active, &:hover": { 
-                                    bgcolor: theme.palette.info.light,
+                                    bgcolor: alpha(theme.palette.info.main, 0.1),
                                     color: theme.palette.info.dark
                                 },
                             }}

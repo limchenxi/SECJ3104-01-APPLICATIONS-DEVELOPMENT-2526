@@ -179,61 +179,21 @@ export default function AppRoutes() {
           <Route
             path="/kedatangan"
             element={
-              <RoleGuard roles={["GURU"]}>
+              <RoleGuard roles={["GURU","PENTADBIR"]}>
                 <KedatanganPage />
               </RoleGuard>
             }
           />
-          <Route
-            path="/rph"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
-                <RPH />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/rph/new"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
-                <RPHGenerator />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/quiz"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
-                <QuizGenerator />
-              </RoleGuard>
-            }
-          />
+
+          <Route path="/rph" element={<RPH />} />
+          <Route path="/rph/new" element={<RPHGenerator />} />
+          <Route path="/quiz" element={<QuizGenerator />} />
+
           {/* Cerapan Routes */}
-          <Route
-            path="/cerapan"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
-                <TeacherCerapanKendiri />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/cerapan/task/:id"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
-                <SelfEvaluationForm />
-              </RoleGuard>
-            }
-          />
+          <Route path="/cerapan" element={<TeacherCerapanKendiri />} />
+          <Route path="/cerapan/task/:id" element={<SelfEvaluationForm />} />
           <Route path="/cerapan/results/:id" element={<CerapanResults />} />
-          <Route
-            path="/cerapan/admin"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "GURU"]}>
-                <AdminCerapanDashboard />
-              </RoleGuard>
-            }
-          />
+          <Route path="/cerapan/admin" element={<AdminCerapanDashboard />} />
           <Route
             path="/cerapan/admin/observation/:id"
             element={
@@ -250,10 +210,7 @@ export default function AppRoutes() {
               </RoleGuard>
             }
           />
-          <Route
-            path="/cerapan/my-reports"
-            element={<TeacherReportHistory />}
-          />
+          <Route path="/cerapan/my-reports" element={<TeacherReportHistory />} />
 
           {/* Pentadbir Routes */}
           <Route
@@ -390,7 +347,7 @@ export default function AppRoutes() {
           <Route
             path="/users"
             element={
-              <RoleGuard roles={["SUPERADMIN"]}>
+              <RoleGuard roles={["SUPERADMIN","PENTADBIR"]}>
                 <UserList />
               </RoleGuard>
             }
