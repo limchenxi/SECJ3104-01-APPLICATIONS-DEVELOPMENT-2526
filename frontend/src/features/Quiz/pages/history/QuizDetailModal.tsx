@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 
 import { exportQuizToPDF } from "../exportQuizToPdf"; // 导入导出函数
-import QuizPreview from "../QuizPreview";
+import QuizPreview from "../topic/QuizPreview";
 import { DownloadIcon } from "lucide-react";
 import { downloadFlashcardPDF } from "../flashcard/downloadFlashcardPDF";
 import FlashcardPreview from "../flashcard/FlashcardPreview";
@@ -32,6 +32,7 @@ interface ContentData {
     difficulty: string;
     questions?: any[]; // 测验内容
     flashcards?: any[]; // 闪卡内容
+    topic?: string;
 }
 
 
@@ -59,6 +60,7 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
                 title: snap.title || "Konten Dijana",
                 subject: snap.subject || "N/A",
                 year: snap.year || "N/A",
+                topic: snap.topic || "",
                 difficulty: snap.difficulty || "N/A",
                 questions: snap.questions,
                 flashcards: snap.flashcards,
@@ -78,6 +80,7 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
                 subject: apiData.subject || "N/A",
                 difficulty: apiData.difficulty || "N/A",
                 year: apiData.year || "N/A",
+                topic: apiData.topic || "",
                 questions: apiData.questions,
                 flashcards: apiData.flashcards,
                 createdAt: historyItem.createdAt,
@@ -114,7 +117,22 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
     }
   };
 
-  const dialogTitle = contentData?.title || "Butiran Kuiz";
+  // const dialogTitle = contentData?.title || "Butiran Kuiz";
+  const formattedTitle = (() => {
+    if (!contentData) return "Butiran Konten";
+    
+    // 提取主要主题名称，并清理掉任何前缀
+    const rawTitle = contentData.topic || contentData.title || "Konten Dijana";
+    const baseContentName = rawTitle.replace(/^(Kad Imbas|Kuiz|Kuiz —|Kad Imbas:)\s*/, '').trim();
+    
+    if (historyItem.contentType === 'flashcard') {
+        return `🃏 Kad Imbas: ${baseContentName}`;
+    }
+    if (historyItem.contentType === 'quiz-topic') {
+        return `📝 Kuiz: ${baseContentName}`;
+    }
+    return contentData.title;
+  })();
   const isQuiz = contentData?.questions && contentData.questions.length > 0;
   const isFlashcard = contentData?.flashcards && contentData.flashcards.length > 0;
   return (
@@ -124,7 +142,7 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
       maxWidth="md" 
       fullWidth
     >
-      <DialogTitle>{dialogTitle}</DialogTitle>
+      <DialogTitle>{formattedTitle}</DialogTitle>
       
       <DialogContent dividers>
         {loading && <Box textAlign="center" py={3}><CircularProgress /></Box>}

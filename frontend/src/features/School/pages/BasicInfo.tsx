@@ -7,7 +7,7 @@ type BasicInfoTabProps = {
 	initialData: BasicInfo;
 };
 
-const LANGUAGES = [{ value: 'ms-MY', label: 'Bahasa Malaysia' }, { value: 'en-US', label: 'English (US)' }, { value: 'zh-CN', label: '中文 (简体)' }];
+const LANGUAGES = [{ value: 'ms-MY', label: 'Bahasa Malaysia' }, { value: 'en-US', label: 'English (US)' }];
 const TIMEZONES = [{ value: 'Asia/Kuala_Lumpur', label: 'Asia/Kuala_Lumpur' }, { value: 'Asia/Shanghai', label: 'Asia/Shanghai' }];
 
 const DEFAULT_BASIC_INFO: BasicInfo = {
@@ -32,9 +32,9 @@ function validateBasicInfo(values: BasicInfo): Errors {
 	if (!values.timezone) {
 		errors.timezone = 'Timezone is required';
 	}
-	if (!values.language) {
-		errors.language = 'Language is required';
-	}
+	// if (!values.language) {
+	// 	errors.language = 'Language is required';
+	// }
 	
 	return errors;
 }
@@ -147,7 +147,7 @@ export default function BasicInfoTab({ initialData }: BasicInfoTabProps) {
 							{TIMEZONES.map((option) => (<MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>))}
 						</TextField>
 					</Grid>
-					<Grid size={6}>
+					{/* <Grid size={6}>
 						<TextField
 							select
 							fullWidth
@@ -160,7 +160,7 @@ export default function BasicInfoTab({ initialData }: BasicInfoTabProps) {
 						>
 							{LANGUAGES.map((option) => (<MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>))}
 						</TextField>
-					</Grid>
+					</Grid> */}
 				</Grid>
 
 				<Stack direction="row" justifyContent="flex-end" spacing={2}>

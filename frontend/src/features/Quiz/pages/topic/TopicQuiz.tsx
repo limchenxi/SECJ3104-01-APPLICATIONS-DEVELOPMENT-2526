@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Box, Card, Typography, Button, CircularProgress } from "@mui/material";
 import QuizForm from "../Form";
 import { useGenerateQuiz } from "../../hooks/useGenerateQuiz"; 
-import QuizPreview from "../QuizPreview";
-import { useQuizHistory } from "../../hooks/useQuizHistory";
+import QuizPreview from "./QuizPreview";
+// import { useQuizHistory } from "../../hooks/useQuizHistory";
 import { exportQuizToPDF } from "../exportQuizToPdf";
 
 export default function TopicQuizGenerator() {
@@ -15,7 +15,7 @@ export default function TopicQuizGenerator() {
     numQuestions: 5,
   });
   const { loading, error, data, generateAndSave } = useGenerateQuiz();
-  const { reload } = useQuizHistory({ pollInterval: 0 });
+  // const { reload } = useQuizHistory({ pollInterval: 0 });
 
   const handleGenerate = async () => {
     try {
@@ -71,7 +71,7 @@ export default function TopicQuizGenerator() {
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
             📘 Kuiz Dijana
           </Typography>
-          <QuizPreview questions={data.questions || []} showAnswers={true} />
+          <QuizPreview questions={data.questions || []} subject={data.subject} year={data.year} showAnswers={true} />
           {/* <Box sx={{ mt: 2, p: 1, border: '1px solid #ccc' }}>
             {data.questions && data.questions.length > 0 ? (
                 <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>

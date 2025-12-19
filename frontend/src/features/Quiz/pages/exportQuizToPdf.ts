@@ -22,6 +22,7 @@ export async function exportQuizToPDF(
         return;
     }
 
+    const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
     const title = options?.title || quiz.title || "Quiz Export";
     const finalTitle = escapeHtml(title);
     const pdfHeaderTitle = showAnswers ? finalTitle : `${finalTitle} (Tanpa Jawapan)`;
@@ -29,6 +30,14 @@ export async function exportQuizToPDF(
     // 使用内联样式，避免依赖外部 CSS 或 @media print
     const htmlContent = `
     <div id="pdf-content-wrapper" style="width: 210mm; padding: 20px; box-sizing: border-box; background: white;">
+        <div style="text-align: center; margin-bottom: 8px;">
+            <img 
+                src="${SCHOOL_LOGO_URL}" 
+                alt="Logo Sekolah"
+                style="max-width: 80px; height: auto; display: block; margin: 0 auto;"
+                onerror="this.style.display='none';" 
+            />
+        </div>
         <h1 style="font-size: 24px; margin-bottom: 5px; font-family: Arial, sans-serif; text-align: center;">SK SRI SIAKAP</h1>
         <h2 style="font-size: 18px; margin-bottom: 10px; font-family: Arial, sans-serif; text-align: center;">${pdfHeaderTitle}</h2>
 

@@ -17,7 +17,8 @@ export async function downloadFlashcardPDF(data: any, options?: { title?: string
     alert("Tiada data kad imbas untuk dieksport.");
     return;
   }
-
+  
+  const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
   const title = options?.title || data.title || "Flashcards";
   const finalTitle = escapeHtml(title);
   const subject = data.subject ? escapeHtml(data.subject) : "";
@@ -26,6 +27,14 @@ export async function downloadFlashcardPDF(data: any, options?: { title?: string
   // We create a grid layout (2 columns) suitable for printing and cutting
   const htmlContent = `
     <div id="pdf-flashcard-wrapper" style="width: 210mm; padding: 15mm; box-sizing: border-box; background: white; font-family: Arial, sans-serif;">
+      <div style="text-align: center; margin-bottom: 8px;">
+            <img 
+                src="${SCHOOL_LOGO_URL}" 
+                alt="Logo Sekolah"
+                style="max-width: 80px; height: auto; display: block; margin: 0 auto;"
+                onerror="this.style.display='none';" 
+            />
+        </div>
       <h1 style="font-size: 24px; margin-bottom: 5px; font-family: Arial, sans-serif; text-align: center;">SK SRI SIAKAP</h1>  
       <div style="text-align: center; margin-bottom: 20px;">
             <h1 style="font-size: 24px; margin: 0;">${finalTitle}</h1>

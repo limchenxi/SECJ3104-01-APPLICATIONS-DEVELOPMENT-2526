@@ -72,9 +72,9 @@ export default function SchoolConfiguration() {
         <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={activeTab} onChange={handleTabChange} aria-label="school settings tabs">
             <Tab label="Basic Information" />
-            <Tab label="Observation Settings" />
+            {/* <Tab label="Observation Settings" /> */}
             <Tab label="Attendance Settings" />
-            <Tab label="Notifications" />
+            {/* <Tab label="Notifications" /> */}
           </Tabs>
         </Box>
 
@@ -82,15 +82,15 @@ export default function SchoolConfiguration() {
         <CustomTabPanel value={activeTab} index={0}>
           <BasicInfoTab initialData={settings.basicInfo} />
         </CustomTabPanel>
-        <CustomTabPanel value={activeTab} index={1}>
+        {/* <CustomTabPanel value={activeTab} index={1}>
           <ObservationSettingsTab initialData={settings.observationSetting} />
-        </CustomTabPanel>
-        <CustomTabPanel value={activeTab} index={2}>
+        </CustomTabPanel> */}
+        <CustomTabPanel value={activeTab} index={1}>
           <AttendanceSettingsTab initialData={settings.attendanceSetting} />
         </CustomTabPanel>
-        <CustomTabPanel value={activeTab} index={3}>
+        {/* <CustomTabPanel value={activeTab} index={2}>
           <NotificationsTab initialData={settings.notificationSetting} />
-        </CustomTabPanel>
+        </CustomTabPanel> */}
       </Stack>
     </Box>
   );

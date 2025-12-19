@@ -12,6 +12,8 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useEffect, useState } from "react";
 
+const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
+
 interface Props {
   data: RPH | null;
   onSave?: (updated: RPH) => void;
@@ -28,7 +30,11 @@ export default function Display({ data, onSave }: Props) {
   }, [data]);
 
   if (!editable) {
-    return <Typography color="text.secondary">Tiada data untuk dipaparkan...</Typography>;
+    return (
+      <Typography color="text.secondary">
+        Tiada data untuk dipaparkan...
+      </Typography>
+    );
   }
 
   function updateSection(index: number, value: string) {
@@ -86,7 +92,11 @@ export default function Display({ data, onSave }: Props) {
             >
               Save
             </Button>
-            <Button variant="outlined" color="error" onClick={() => setIsEditing(false)}>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setIsEditing(false)}
+            >
               Cancel
             </Button>
           </>
@@ -100,9 +110,30 @@ export default function Display({ data, onSave }: Props) {
       {/* RPH Content */}
       <Card id="rph-display" variant="outlined" sx={{ borderRadius: 3, p: 2 }}>
         <CardContent>
-          <Typography variant="h6">{editable.title}</Typography>
-
-          <Typography variant="body2" color="text.secondary">
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            {/* Logo */}{" "}
+            <img
+              src={SCHOOL_LOGO_URL}
+              alt="Logo Sekolah"
+              style={{
+                maxWidth: "80px",
+                height: "auto",
+                display: "block",
+                margin: "0 auto",
+                marginBottom: "8px",
+              }}
+            />
+            {/* School Name */}{" "}
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 0.5 }}>
+              SK SRI SIAKAP {" "}
+            </Typography>
+            {/* RPH Title */}{" "}
+            <Typography variant="h6" color="text.primary">
+               {editable.title}{" "}
+            </Typography>
+           {" "}
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
             {editable.date} • {editable.duration}
           </Typography>
 

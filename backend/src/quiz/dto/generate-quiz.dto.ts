@@ -6,6 +6,10 @@ export class GenerateQuizDto {
   @IsString()
   topic: string;
 
+  @IsString()
+  year: string;
+
+  @IsString()
   difficulty: QuizDifficulty; // "easy" | "medium" | "hard"
 
   @IsNumber()

@@ -134,8 +134,8 @@ export default function AIModuleForm({
                 onChange={(e) => handleChange("provider", e.target.value)}
               >
                 <MenuItem value="Gemini">Gemini</MenuItem>
-                <MenuItem value="OpenAI">OpenAI</MenuItem>
-                <MenuItem value="Copilot">Copilot</MenuItem>
+                {/* <MenuItem value="OpenAI">OpenAI</MenuItem>
+                <MenuItem value="Copilot">Copilot</MenuItem> */}
               </Select>
             </FormControl>
 
