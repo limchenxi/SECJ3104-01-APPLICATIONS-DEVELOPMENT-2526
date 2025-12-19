@@ -1,3 +1,5 @@
+import type { UserRole } from "../Users/type";
+
 export interface Profile {
   id: string;
   name: string;
@@ -5,6 +7,6 @@ export interface Profile {
   gender: "Male" | "Female";
   ic: string;
   contactNumber?: string;
-  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
+  role: UserRole[];
   profilePicture?: string;
 }

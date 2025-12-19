@@ -120,10 +120,18 @@ function useDashboardData() {
     let pentadbirCount = 0;
     
     data.users.forEach(user => {
-      if (user.role === "GURU") {
-        guruCount++;
-      } else if (user.role === "PENTADBIR") {
+      // if (user.role === "GURU") {
+      //   guruCount++;
+      // } else if (user.role === "PENTADBIR") {
+      //   pentadbirCount++;
+      // }
+       const userRoles = Array.isArray(user.role) ? user.role : [];
+      const isManagement = userRoles.includes("PENTADBIR");
+      if (isManagement) {
         pentadbirCount++;
+        }
+      if (userRoles.includes("GURU") && !isManagement) {
+        guruCount++;
       }
     });
 

@@ -89,7 +89,8 @@ export default function TeachingAssignmentPage() {
       ]);
 
       setAssignments(assign);
-      setTeachers(teacherList.filter((t) => t.role === "GURU"));
+      // setTeachers(teacherList.filter((t) => t.role === "GURU"));
+      setTeachers(teacherList.filter((t) => (t.role || []).includes("GURU")));
     } catch {
       setError("Gagal memuat data. Sila cuba lagi.");
     } finally {

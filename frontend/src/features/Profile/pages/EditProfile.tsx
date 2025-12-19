@@ -15,18 +15,32 @@ import { useSnackbar } from "notistack";
 import { useStore } from "@tanstack/react-store";
 import { profileStore } from "../store";
 import { loadProfile, updateProfile } from "../api";
+import type { UserGender, UserRole } from "../../Users/type";
+
+const getRoleDisplay = (roles: UserRole[] | undefined): string => {
+  if (!roles || !Array.isArray(roles) || roles.length === 0) {
+    return "Tiada Peranan";
+  }
+  const roleOrder: UserRole[] = ["SUPERADMIN", "PENTADBIR", "GURU"];
+  const highestRole = roleOrder.find((r) => roles.includes(r));
+
+  return highestRole || roles.join(", ");
+};
 
 export default function EditProfile() {
   const profileState = useStore(profileStore);
-  const { data: profile, isLoading } = profileState;
+  const { data: profile, isLoading } = profileState as {
+    data: { role: UserRole[] } & any;
+    isLoading: boolean;
+  };
 
   const [form, setForm] = useState({
     name: "",
     email: "",
-    gender: "",
+    gender: "Male" as UserGender,
     ic: "",
     contactNumber: "",
-    role: "",
+    // role: "",
     profilePicture: "",
   });
 
@@ -47,38 +61,43 @@ export default function EditProfile() {
         gender: profile.gender || "",
         ic: profile.ic || "",
         contactNumber: profile.contactNumber || "",
-        role: profile.role || "",
+        // role: profile.role || "",
         profilePicture: profile.profilePicture || "",
       });
     }
   }, [profile]);
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (
+    field: keyof Omit<typeof form, "role">,
+    value: string
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
-  try {
+    try {
+      const roleArrayToSend =
+        profile?.role && Array.isArray(profile.role) ? profile.role : [];
+      await updateProfile({
+        name: form.name,
+        email: form.email,
+        gender: form.gender as "Male" | "Female",
+        ic: form.ic,
+        contactNumber: form.contactNumber,
+        // role: form.role as "GURU" | "PENTADBIR" | "SUPERADMIN",
+        role: roleArrayToSend as UserRole[],
+        profilePicture: form.profilePicture,
+      });
 
-    await updateProfile({
-      name: form.name,
-      email: form.email,
-      gender: form.gender as "Male" | "Female",
-      ic: form.ic,
-      contactNumber: form.contactNumber,
-      role: form.role as "GURU" | "PENTADBIR" | "SUPERADMIN",
-      profilePicture: form.profilePicture,
-    });
-
-    enqueueSnackbar("Profil berjaya dikemas kini!", { variant: "success" });
-    navigate("/profile");
-
-  } catch {
-    enqueueSnackbar("Gagal menyimpan perubahan", { variant: "error" });
-  }
-};
+      enqueueSnackbar("Profil berjaya dikemas kini!", { variant: "success" });
+      navigate("/profile");
+    } catch {
+      enqueueSnackbar("Gagal menyimpan perubahan", { variant: "error" });
+    }
+  };
 
   if (isLoading) return <CircularProgress />;
+  const roleDisplay = getRoleDisplay(profile.role);
 
   return (
     <Box sx={{ p: 4 }}>
@@ -115,6 +134,7 @@ export default function EditProfile() {
             value={form.ic}
             onChange={(e) => handleChange("ic", e.target.value)}
             fullWidth
+            disabled
           />
 
           <TextField
@@ -130,7 +150,7 @@ export default function EditProfile() {
 
           <TextField
             label="Peranan"
-            value={form.role}
+            value={roleDisplay}
             fullWidth
             InputProps={{ readOnly: true }}
             helperText="Peranan tidak boleh diubah"

@@ -1,4 +1,4 @@
-// connect to database and update class assignments 
+// connect to database and update class assignments
 import { connect, connection } from 'mongoose';
 
 const MONGO_URI = 'mongodb://localhost:27017/cerapan_guru';
@@ -10,9 +10,9 @@ async function updateTeacherAssignments() {
 
     const User = connection.collection('users');
 
-    // Update Cikgu Ahmad Abdullah 
+    // Update Cikgu Ahmad Abdullah
     const result = await User.updateOne(
-      { name: 'Cikgu Ahmad Abdullah' }, 
+      { name: 'Cikgu Ahmad Abdullah' },
       {
         $set: {
           subjects: ['Matematik', 'Sains', 'Bahasa Melayu'],
@@ -26,7 +26,13 @@ async function updateTeacherAssignments() {
     if (result.matchedCount === 0) {
       console.log('⚠️  No user found with name "Cikgu Ahmad Abdullah"');
       console.log('Listing all GURU users:');
-      const teachers = await User.find({ role: 'GURU' }).toArray();
+
+      const roleToFind = 'GURU';
+      const teachers = await User.find({
+        role: { $in: [roleToFind] },
+      }).toArray();
+
+      // const teachers = await User.find({ role: 'GURU' }).toArray();
       teachers.forEach((t: any) => {
         console.log(`  - ${t.name} (${t.email})`);
       });

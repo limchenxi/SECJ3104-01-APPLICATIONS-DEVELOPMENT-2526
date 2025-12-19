@@ -6,6 +6,17 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@tanstack/react-store";
 import { AssignmentInd } from "@mui/icons-material";
+import type { UserRole } from "../../Users/type";
+
+const getRoleDisplay = (roles: UserRole[] | undefined): string => {
+    if (!roles || !Array.isArray(roles) || roles.length === 0) {
+        return "Tiada Peranan";
+    }
+    const roleOrder: UserRole[] = ["SUPERADMIN", "PENTADBIR", "GURU"];
+    const highestRole = roleOrder.find(r => roles.includes(r));
+
+    return highestRole || roles.join(', ');
+};
 
 export default function Profile() {
   const profileState = useStore(profileStore);
@@ -27,7 +38,7 @@ export default function Profile() {
 
   // if (error) return <Typography color="error">{error}</Typography>;
   if (!profile) return <Typography>No profile found.</Typography>;
-
+  const roleDisplay = getRoleDisplay(profile.role);
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
       <Stack spacing={4}>  
@@ -54,7 +65,7 @@ export default function Profile() {
               {profile.name}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              {profile.role}
+              {roleDisplay}
             </Typography>
 
             <Box sx={{ display: "flex", gap: 2, justifyContent: { xs: "center", md: "flex-start" } }}>
@@ -86,7 +97,7 @@ export default function Profile() {
               <InfoItem icon={<Mail />} label="Emel" value={profile.email} />
               <InfoItem icon={<Mail />} label="Jantina" value={profile.gender} />
               <InfoItem icon={<Phone />} label="No. Telefon" value={profile.contactNumber ?? "-"} />
-              <InfoItem icon={<Briefcase />} label="Peranan" value={profile.role} />
+              <InfoItem icon={<Briefcase />} label="Peranan" value={roleDisplay} />
               <InfoItem icon={<Calendar />} label="IC" value={profile.ic} />
             </CardContent>
           </Card>

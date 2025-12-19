@@ -150,8 +150,13 @@ export default function CerapanResults() {
   const [fullTeacherName, setFullTeacherName] = useState<string | undefined>(undefined);
 
   // Determine if this is admin view
-  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
-  const isSuperAdminView = user?.role === "SUPERADMIN";
+  // const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
+  // const isSuperAdminView = user?.role === "SUPERADMIN";
+  const userRoles = user?.role || [];
+  const hasAdminRole = userRoles.includes("PENTADBIR") || userRoles.includes("SUPERADMIN");
+  const isAdminView = hasAdminRole || location.pathname.includes("/pentadbir/"); 
+  const isSuperAdminView = userRoles.includes("SUPERADMIN");
+  
   useEffect(() => {
     loadReport();
   }, [id]);

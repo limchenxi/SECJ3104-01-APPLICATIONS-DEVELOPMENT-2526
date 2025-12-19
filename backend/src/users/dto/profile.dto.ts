@@ -1,6 +1,5 @@
 import { IsOptional, IsString, IsEmail, IsEnum } from 'class-validator';
-import { Gender, Role } from './createUser.dto';
-
+import { Gender, Role } from '../schemas/user.schema';
 export class ProfileDto {
   @IsString()
   name: string;
@@ -15,7 +14,7 @@ export class ProfileDto {
   gender: Gender;
 
   @IsEnum(Role)
-  role: Role;
+  role: Role[];
 
   @IsOptional()
   @IsString()

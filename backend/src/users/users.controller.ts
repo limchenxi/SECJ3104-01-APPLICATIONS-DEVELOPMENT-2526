@@ -61,11 +61,6 @@ export class UsersController {
   //   return this.userService.findByEmail(email);
   // }
 
-  @Get('find-by-email')
-  findByEmail(@Query() query: FindByEmailDto) {
-    return this.userService.findByEmail(query.email);
-  }
-
   // Return the subjects and classes assigned to the logged-in teacher
   // @UseGuards(JwtAuthGuard)
   // @Get('me')
@@ -80,11 +75,13 @@ export class UsersController {
   getAllUsers() {
     return this.userService.findAll();
   }
-  @Roles('SUPERADMIN')
+
+  @Roles('SUPERADMIN', 'PENTADBIR')
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateDto: UpdateUserDto) {
     return this.userService.updateUser(id, updateDto);
   }
+
   @Roles('SUPERADMIN')
   @Delete(':id')
   async delete(@Param('id') id: string) {
@@ -95,6 +92,11 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findById(id);
+  }
+
+  @Get('find-by-email')
+  findByEmail(@Query() query: FindByEmailDto) {
+    return this.userService.findByEmail(query.email);
   }
 
   // Update teacher assignments (subjects & classes)

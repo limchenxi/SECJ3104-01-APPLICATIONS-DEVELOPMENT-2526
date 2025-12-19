@@ -1,10 +1,10 @@
-export type UserRole = "GURU" | "PENTADBIR" | "SUPERADMIN";
+import type { UserRole } from "../Users/type";
 
 export interface AuthUser {
   id?: string;
   email: string;
   name?: string;
-  role: UserRole;
+  role: UserRole[];
 }
 
 export interface AuthResponse {

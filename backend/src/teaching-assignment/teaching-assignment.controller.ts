@@ -21,6 +21,7 @@ type RequestWithUser = any;
 
 @Controller('teaching-assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('PENTADBIR', 'SUPERADMIN')
 export class TeachingAssignmentController {
   constructor(private readonly service: TeachingAssignmentService) {}
 
@@ -44,7 +45,6 @@ export class TeachingAssignmentController {
   }
 
   @Get()
-  @Roles('PENTADBIR', 'SUPERADMIN')
   async list(
     @Query('teacherId') teacherId?: string,
     @Query('subject') subject?: string,
@@ -61,14 +61,12 @@ export class TeachingAssignmentController {
 
   // Admin: create
   @Post()
-  @Roles('PENTADBIR', 'SUPERADMIN')
   async create(@Body() dto: CreateTeachingAssignmentDto) {
     return this.service.create(dto);
   }
 
   // Admin: update
   @Patch(':id')
-  @Roles('PENTADBIR', 'SUPERADMIN')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTeachingAssignmentDto,
@@ -78,7 +76,6 @@ export class TeachingAssignmentController {
 
   // Admin: delete
   @Delete(':id')
-  @Roles('PENTADBIR', 'SUPERADMIN')
   async remove(@Param('id') id: string) {
     await this.service.remove(id);
     return { success: true };

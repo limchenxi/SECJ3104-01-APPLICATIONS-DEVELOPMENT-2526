@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from './schemas/user.schema';
+import { Gender, Role, User } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 
 export type CreateUserInput = {
@@ -13,8 +13,8 @@ export type CreateUserInput = {
   email: string;
   password: string;
   ic: string;
-  gender: 'Male' | 'Female';
-  role: 'GURU' | 'PENTADBIR' | 'SUPERADMIN';
+  gender: Gender;
+  role: Role[];
   contactNumber?: string;
   profilePicture?: string;
 };

@@ -13,6 +13,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt.strategy';
 import { PentadbirService } from './pentadbir.service';
 import { CreateTemplateDto, UpdateTemplateDto } from './dto/template.dto';
+import { Role } from 'src/users/schemas/user.schema';
 
 type RequestWithUser = any; // This should match the definition in auth/types.d.ts
 
@@ -23,18 +24,34 @@ export class PentadbirController {
 
   // Check if user is PENTADBIR
   private checkPentadbirRole(req: RequestWithUser) {
-    if (req.user.role !== 'PENTADBIR') {
+    const userRoles: Role[] = req.user.role || [];
+
+    if (
+      !userRoles.includes(Role.PENTADBIR) &&
+      !userRoles.includes(Role.SUPERADMIN)
+    ) {
       throw new ForbiddenException('Access denied. PENTADBIR role required.');
     }
   }
 
   // Check if user can access templates (PENTADBIR or GURU)
   private checkTemplateAccess(req: RequestWithUser) {
-    if (!['PENTADBIR', 'GURU', 'SUPERADMIN'].includes(req.user.role)) {
+    const userRoles: Role[] = req.user.role || [];
+    const allowedRoles: Role[] = [Role.PENTADBIR, Role.GURU, Role.SUPERADMIN];
+    const hasAccess = allowedRoles.some((allowedRole) =>
+      userRoles.includes(allowedRole),
+    );
+
+    if (!hasAccess) {
       throw new ForbiddenException(
         'Access denied. PENTADBIR or GURU role required.',
       );
     }
+    // if (!['PENTADBIR', 'GURU', 'SUPERADMIN'].includes(req.user.role)) {
+    //   throw new ForbiddenException(
+    //     'Access denied. PENTADBIR or GURU role required.',
+    //   );
+    // }
   }
 
   @Get('dashboard')

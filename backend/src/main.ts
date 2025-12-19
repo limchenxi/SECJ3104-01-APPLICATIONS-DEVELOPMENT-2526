@@ -4,6 +4,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { UsersService } from './users/users.service';
 import { PentadbirService } from './pentadbir/pentadbir.service';
 import * as dotenv from 'dotenv';
+import { Gender, Role } from './users/schemas/user.schema';
 dotenv.config();
 
 const ensureAdminUser = async (usersService: UsersService) => {
@@ -12,7 +13,7 @@ const ensureAdminUser = async (usersService: UsersService) => {
   if (!existingGuru) {
     const name = process.env.DEFAULT_ADMIN_NAME ?? 'System Admin';
     const password = process.env.DEFAULT_ADMIN_PASSWORD ?? 'Admin@123456';
-    const role = 'GURU' as const; // Ensure role matches expected "guru" login
+    const role: Role[] = [Role.GURU];
     const ic = process.env.DEFAULT_ADMIN_IC ?? '000000000000';
     const genderEnv = process.env.DEFAULT_ADMIN_GENDER?.toLowerCase();
     const gender =
@@ -30,7 +31,7 @@ const ensureAdminUser = async (usersService: UsersService) => {
       password,
       role,
       ic,
-      gender,
+      gender: gender as Gender,
       contactNumber,
       profilePicture,
       // subjects: ['Matematik', 'Bahasa Melayu'],
@@ -54,9 +55,9 @@ const ensureAdminUser = async (usersService: UsersService) => {
       name: 'Pentadbir Admin',
       email: pentadbirEmail,
       password: 'Pentadbir@123',
-      role: 'PENTADBIR',
+      role: [Role.PENTADBIR],
       ic: '111111111111',
-      gender: 'Male',
+      gender: Gender.Male,
       contactNumber: '0123456789',
     });
     Logger.log(

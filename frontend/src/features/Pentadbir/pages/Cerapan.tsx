@@ -96,7 +96,8 @@ function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluatio
     }> = [];
 
     // Get all GURU teachers
-    const guruTeachers = teachers.filter(t => t.role === 'GURU');
+    // const guruTeachers = teachers.filter(t => t.role === 'GURU');
+    const guruTeachers = teachers.filter(t => (t.role || []).includes('GURU'));
 
     // Use teachingAssignments for subject/class lists
     // teachingAssignments must be available in this scope
@@ -464,7 +465,8 @@ export default function Cerapan() {
                     evaluation?: EvaluationRow;
                   }> = [];
 
-                  const guruTeachers = teachers.filter(t => t.role === 'GURU');
+                  // const guruTeachers = teachers.filter(t => t.role === 'GURU');
+                  const guruTeachers = teachers.filter(t => (t.role || []).includes('GURU'));
 
                   guruTeachers.forEach(teacher => {
                     // Get assignments for this teacher

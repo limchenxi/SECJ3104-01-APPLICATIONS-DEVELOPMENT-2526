@@ -63,6 +63,7 @@ export default function ScheduleObservation() {
       const response = await client.get<any[]>("/users");
       
       // Filter only teachers (GURU role)
+      // const teachers = response.data.filter((user: any) => user.role === "GURU");
       const teachers = response.data.filter((user: any) => user.role === "GURU");
       
       // Fetch all evaluations to match with teachers
