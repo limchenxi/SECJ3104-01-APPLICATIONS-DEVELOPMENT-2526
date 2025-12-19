@@ -1,73 +1,21 @@
 import { GridView } from "@mui/icons-material";
 import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
-import type { User } from "../../Users/type";
 import type { AIUsage } from "../../AI/type";
 import { useEffect, useMemo, useState } from "react";
 import { TeachingAssignmentAPI } from "../../TeachingAssignment/api";
 import { userApi } from "../../Users/api";
 import { BookOpen, ClipboardCheck, Users } from "lucide-react";
+import type { UserItem } from "../../Users/type";
+import { QuickAction, StatCard } from "./component";
 
 const AI_MODEL_DEFAULT = "Gemini";
 const AI_MODEL_VERSION = "gemini-2.5-flash";
 const AI_API_STATUS = "OK ✓";
 const AI_API_STATUS_COLOR = "text-green-600";
 
-// function SummaryCard({ title, value }) {
-//   return (
-//     <div className="p-5 bg-white shadow rounded-lg">
-//       <p className="text-gray-500">{title}</p>
-//       <p className="text-2xl font-bold">{value}</p>
-//     </div>
-//   );
-// }
-
-function StatCard({ title, value, icon: IconComponent, color }) {
-  return (
-    <Card 
-      sx={{ 
-        boxShadow: 3, 
-        borderLeft: `5px solid ${color}`, 
-        transition: '0.3s',
-        '&:hover': { 
-            boxShadow: 6 
-        } 
-      }}
-    >
-      <CardContent>
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography color="text.secondary" variant="subtitle2">
-              {title}
-            </Typography>
-            <Typography variant="h5" fontWeight="bold">
-              {value}
-            </Typography>
-          </Box>
-          <IconComponent size={36} color={color} />
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-}
-
-function QuickAction({ label, to }) {
-  return (
-    <a
-      href={to}
-      className="p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-center font-medium"
-    >
-      {label}
-    </a>
-  );
-}
-
-// ---------------------------------------------------------------
-// Data Fetching and Calculation Hook 
-// ---------------------------------------------------------------
-
 function useDashboardData() {
   const [data, setData] = useState({
-    users: [] as User[],
+    users: [] as UserItem[],
     aiUsage: [] as AIUsage[],
     assignments: 0,
     loading: true,
@@ -77,14 +25,8 @@ function useDashboardData() {
   useEffect(() => {
     async function loadData() {
       try {
-        // 1. 获取所有用户
         const usersPromise = userApi.getAll();
-        
-        // 2. 获取所有教学任务 (用于计算活跃度，尽管这里只计算总数)
-        // 假设 TeachingAssignmentAPI 存在
         const assignmentsPromise = TeachingAssignmentAPI.getAll(); 
-
-        // 3. 获取 AI 使用数据 (模拟调用您提供的 API)
         const usagePromise = fetch("/api/ai/usage").then(res => res.json());
 
         const [users, assignmentsData, aiUsage] = await Promise.all([
@@ -126,34 +68,31 @@ function useDashboardData() {
       //   pentadbirCount++;
       // }
        const userRoles = Array.isArray(user.role) ? user.role : [];
-      const isManagement = userRoles.includes("PENTADBIR");
-      if (isManagement) {
-        pentadbirCount++;
-        }
-      if (userRoles.includes("GURU") && !isManagement) {
+      if (userRoles.includes("GURU")) {
         guruCount++;
+      }
+      if (userRoles.includes("PENTADBIR")) {
+        pentadbirCount++;
       }
     });
 
     const totalAIGens = data.aiUsage.length;
     
-    // 计算最受欢迎的 AI 模块
     const usageCounts = data.aiUsage.reduce((acc, item) => {
         acc[item.usageType] = (acc[item.usageType] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
 
-    // 转换为数组并排序
-    const popularModules = Object.entries(usageCounts)
+    const AIModules = Object.entries(usageCounts)
       .sort(([, countA], [, countB]) => countB - countA)
-      .slice(0, 3); // 只取前三名
+      .slice(0, 4); // top 4 popular modules
 
     return {
       totalUsers: totalUsers.toLocaleString(),
-      guruActive: guruCount.toLocaleString(), // 假设所有 Guru 都是活跃的
+      guru: guruCount.toLocaleString(), 
       pentadbir: pentadbirCount.toLocaleString(),
       totalAIGens: totalAIGens.toLocaleString(),
-      popularModules,
+      AIModules,
     };
   }, [data.users, data.aiUsage]);
 
@@ -170,19 +109,19 @@ export default function SuperadminDashboard() {
       color: "#1976d2", // Blue (primary)
     },
     {
-      title: "Jumlah Guru",
-      value: summary.guruActive,
+      title: "Jumlah Pentadbir",
+      value: summary.pentadbir,
       icon: BookOpen,
       color: "#2e7d32", // Green (success)
     },
     {
-      title: "Jumlah Pentadbir", // 更改为 Pentadbir
-      value: summary.pentadbir,
+      title: "Jumlah Guru", 
+      value: summary.guru,
       icon: Users,
       color: "#ffc107", // Yellow/Amber
     },
     {
-      title: "Jumlah AI Generations", // 更改为 AI Generations
+      title: "Jumlah AI Generations",
       value: summary.totalAIGens,
       icon: ClipboardCheck,
       color: "#ed6c02", // Orange (warning)
@@ -238,12 +177,12 @@ export default function SuperadminDashboard() {
       {/* AI Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-5 bg-white shadow rounded-lg">
-          <h2 className="font-semibold text-lg mb-4">Modul AI Paling Popular</h2>
-          {summary.popularModules.length === 0 ? (
+          <h2 className="font-semibold text-lg mb-4">Modul AI Usage</h2>
+          {summary.AIModules.length === 0 ? (
                 <Typography color="text.secondary">Tiada data penggunaan AI.</Typography>
             ) : (
           <ul className="space-y-3">
-            {summary.popularModules.map(([moduleName, count]) => (
+            {summary.AIModules.map(([moduleName, count]) => (
               <li key={moduleName} className="flex justify-between border-b pb-2">
                 <span>{moduleName}</span>
                 <span className="font-bold">{count.toLocaleString()} kali</span>

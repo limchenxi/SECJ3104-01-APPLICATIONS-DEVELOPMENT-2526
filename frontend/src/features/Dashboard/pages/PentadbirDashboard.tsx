@@ -1,187 +1,206 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { GridView } from "@mui/icons-material";
-import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
-import { BookOpen, ClipboardCheck, Users, AlertCircle, LayoutTemplate } from "lucide-react";
-import type { User } from "../../Users/type";
-import type { AIUsage } from "../../AI/type";
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Grid,
+  Stack,
+  Typography,
+} from "@mui/material";
+import {
+  BookOpen,
+  ClipboardCheck,
+  Users,
+  LayoutTemplate,
+  GraduationCap,
+  FileText,
+} from "lucide-react";
 import { userApi } from "../../Users/api";
 import { TeachingAssignmentAPI } from "../../TeachingAssignment/api";
+import type { UserItem } from "../../Users/type";
+import { QuickAction, StatCard } from "./component";
+import { pentadbirService } from "../../Pentadbir/api/pentadbirService";
 
-// ---------------------------------------------------------------
-// 辅助组件 (StatCard, QuickAction) - 复用 Superadmin 的样式
-// ---------------------------------------------------------------
-
-function StatCard({ title, value, icon: IconComponent, color }) {
+const CustomChip = ({
+  label,
+  color,
+}: {
+  label: string;
+  color: "warning" | "error" | "success";
+}) => {
+  const colors = {
+    warning: { bg: "#fff3e0", text: "#e65100" },
+    error: { bg: "#fdecea", text: "#c62828" },
+    success: { bg: "#e8f5e9", text: "#2e7d32" },
+  };
+  const style = colors[color];
   return (
-    <Card 
-      sx={{ 
-        boxShadow: 3, 
-        borderLeft: `5px solid ${color}`, 
-        transition: '0.3s',
-        '&:hover': { 
-            boxShadow: 6 
-        } 
+    <span
+      style={{
+        backgroundColor: style.bg,
+        color: style.text,
+        padding: "2px 12px",
+        borderRadius: "16px",
+        fontSize: "0.75rem",
+        fontWeight: "bold",
       }}
     >
-      <CardContent>
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography color="text.secondary" variant="subtitle2">
-              {title}
-            </Typography>
-            <Typography variant="h5" fontWeight="bold">
-              {value}
-            </Typography>
-          </Box>
-          <IconComponent size={36} color={color} /> 
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-}
-
-function QuickAction({ label, to }) {
-  return (
-    <a
-      href={to}
-      className="p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-center font-medium"
-    >
       {label}
-    </a>
+    </span>
   );
-}
+};
 
-
-// ---------------------------------------------------------------
-// 增强的 Data Fetching and Calculation Hook (包含 Cerapan 模拟数据)
-// ---------------------------------------------------------------
-
-// 为了 Pentadbir Dashboard，我们需要 Cerapan 统计数据
 function usePentadbirDashboardData() {
   const [data, setData] = useState({
-    users: [] as User[],
-    aiUsage: [] as AIUsage[],
-     assignments: [] as any[], // 存储完整的 assignments 列表
-     loading: true,
-     error: null as string | null,
+    me: null as any,
+    users: [] as UserItem[],
+    evaluations: [] as any[],
+    myAssignments: { classes: [] as string[], subjects: [] as string[] },
+    loading: true,
+    error: null as string | null,
   });
 
   useEffect(() => {
     async function loadData() {
-    try {
-      const usersPromise = userApi.getAll();
-      const assignmentsPromise = TeachingAssignmentAPI.getAll(); 
+      try {
+        const [me, allUsers, allEvaluations] = await Promise.all([
+          userApi.getMe(),
+          userApi.getAll(),
+          pentadbirService.getAllEvaluations(),
+        ]);
 
-        const cerapanStatsPromise = new Promise(resolve => 
-             setTimeout(() => resolve({ total: 45, pending: 8 }), 500)
-        );
+        let myAssignments = {
+          classes: [] as string[],
+          subjects: [] as string[],
+        };
+        if (me.role?.includes("GURU")) {
+          myAssignments = await userApi.getMyAssignments();
+        }
 
-      const [users, assignmentsData, cerapanStats] = await Promise.all([
-        usersPromise,
-        assignmentsPromise,
-        cerapanStatsPromise,
-      ]);
-
-      setData(prev => ({ 
-        ...prev, 
-        users,
-        assignments: assignmentsData, 
-        cerapanStats: cerapanStats as any, 
-        loading: false 
-       }));
-
+        setData({
+          me,
+          users: allUsers,
+          evaluations: allEvaluations,
+          myAssignments,
+          loading: false,
+          error: null,
+        });
       } catch (e) {
-        console.error("Dashboard data fetch error:", e);
-        setData(prev => ({ 
-          ...prev, 
-          loading: false, 
-          error: "Gagal memuat data dashboard. Sila semak konsol." 
+        console.error("Dashboard Loading Error:", e);
+        setData((prev) => ({
+          ...prev,
+          loading: false,
+          error:
+            "Gagal memuatkan data dashboard. Sila pastikan fail API tersedia.",
         }));
-       }
+      }
     }
     loadData();
   }, []);
 
   const summary = useMemo(() => {
-    const totalUsers = data.users.length;
+    const users = data.users || [];
+    const evaluations = data.evaluations || [];
     let guruCount = 0;
-    let pentadbirCount = 0; 
+    let pentadbirCount = 0;
 
-    data.users.forEach(user => {
+    users.forEach((user) => {
       const userRoles = Array.isArray(user.role) ? user.role : [];
-      const isManagement = userRoles.includes("PENTADBIR");
-      if (isManagement) {
-        pentadbirCount++;
-        }
-      if (userRoles.includes("GURU") && !isManagement) {
-        guruCount++;
-      }
+      if (userRoles.includes("GURU")) guruCount++;
+      if (userRoles.includes("PENTADBIR")) pentadbirCount++;
     });
-    
-    // 从模拟数据中获取 Cerapan 统计
-    const totalCerapan = (data as any).cerapanStats?.total || 0;
-    const pendingReviews = (data as any).cerapanStats?.pending || 0;
 
+    const pendingForAdmin = evaluations.filter((e) => {
+      const obs1Status = e.observation_1?.status || e.obs1Status;
+      const obs2Status = e.observation_2?.status || e.obs2Status;
+      return (
+        obs1Status === "pending" ||
+        (obs1Status === "submitted" && obs2Status === "pending")
+      );
+    }).length;
+
+    const mySelfPending = evaluations.filter((e) => {
+      const isMe = e.teacherId === data.me?._id;
+      const selfStatus = e.self_evaluation?.status || e.selfStatus;
+      return isMe && selfStatus === "pending";
+    }).length;
 
     return {
-      totalUsers: totalUsers.toLocaleString(),
-      guruActive: guruCount.toLocaleString(), 
-      pentadbir: pentadbirCount.toLocaleString(),
-      totalAssignments: data.assignments.length.toLocaleString(),
-      totalCerapan: totalCerapan.toLocaleString(),
-      pendingReviews: pendingReviews.toLocaleString(),
-      // 保持 AI GENS 字段 (如果 Superadmin 也使用了这个 hook，尽管这里是 0)
-      totalAIGens: data.aiUsage.length.toLocaleString(), 
+      pentadbirCount,
+      guruCount,
+      pendingForAdmin,
+      myClassCount: data.myAssignments.classes?.length || 0,
+      mySelfPending,
     };
-  }, [data.users, data.assignments, (data as any).cerapanStats]);
-
-   return { ...data, summary };
+  }, [data]);
+  
+  return { ...data, summary };
 }
 
-
-// ---------------------------------------------------------------
-// Pentadbir Dashboard Main Component
-// ---------------------------------------------------------------
 export default function PentadbirDashboard() {
-  // 使用 Pentadbir 专用的 Hook
-  const { loading, error, summary } = usePentadbirDashboardData();
+  const { loading, error, summary, me } = usePentadbirDashboardData();
+  const isGuru = me?.role?.includes("GURU");
 
-  // Pentadbir 的 Stat Cards (包含 Cerapan/Tugasan)
-  const statsCards = [
-    {
-      title: "Jumlah Pengguna",
-      value: summary.totalUsers,
-      icon: Users,
-      color: "#1976d2", // Blue (primary)
-    },
-    {
-      title: "Jumlah Guru",
-      value: summary.guruActive,
-      icon: BookOpen,
-      color: "#2e7d32", // Green (success)
-    },
-    {
-      title: "Jumlah Tugasan", 
-      value: summary.totalAssignments,
-      icon: LayoutTemplate, // 更改图标以匹配 Tugasan
-      color: "#ffc107", // Yellow/Amber
-    },
-    {
-      title: "Jumlah Cerapan", 
-      value: summary.totalCerapan,
-      icon: ClipboardCheck,
-      color: "#ed6c02", // Orange (warning)
-    },
-  ];
+  const allStatsCards = useMemo(() => {
+    const baseCards = [
+      {
+        title: "Jumlah Pentadbir",
+        value: summary.pentadbirCount,
+        icon: Users,
+        color: "#1976d2",
+      },
+      {
+        title: "Jumlah Guru",
+        value: summary.guruCount,
+        icon: BookOpen,
+        color: "#2e7d32",
+      },
+      {
+        title: "Cerapan Tertangguh",
+        value: summary.pendingForAdmin,
+        icon: ClipboardCheck,
+        color: "#ffc107",
+      },
+    ];
+
+    if (isGuru) {
+      baseCards.push(
+        {
+          title: "Jumlah Kelas Saya",
+          value: summary.myClassCount,
+          icon: GraduationCap,
+          color: "#9c27b0", // 紫色
+        },
+        {
+          title: "Cerapan Kendiri",
+          value: summary.mySelfPending,
+          icon: FileText,
+          color: "#d32f2f", // 红色
+        }
+      );
+    }
+    return baseCards;
+  }, [summary, isGuru]);
 
   if (loading) {
     return (
-      <Box sx={{ p: 3, maxWidth: "xl", mx: "auto", minHeight: "60vh", display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <Box
+        sx={{
+          p: 3,
+          maxWidth: "xl",
+          mx: "auto",
+          minHeight: "60vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
   }
-  
+
   if (error) {
     return (
       <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
@@ -192,20 +211,30 @@ export default function PentadbirDashboard() {
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
-      <Stack spacing={4}> 
+      <Stack spacing={4}>
         {/* Header */}
         <Box>
           <Typography variant="h4" sx={{ mb: 0.5 }}>
-            <GridView color="primary" fontSize="large"/> Pentadbir Dashboard
+            <GridView color="primary" fontSize="large" /> Pentadbir Dashboard
           </Typography>
           <Typography color="text.secondary">
-            Selamat datang! Berikut ialah gambaran keseluruhan tugas pengurusan.
+            Selamat datang, <strong>{me?.name}</strong>.
           </Typography>
         </Box>
 
-        {/* Summary Cards - 使用 StatCard 数组进行渲染 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {statsCards.map((card) => (
+        <Box sx={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: 2, 
+            '& > *': { 
+                flex: { 
+                    xs: '1 1 100%',                                   // 手机端每行 1 个
+                    sm: '1 1 calc(50% - 16px)',                       // 平板端每行 2 个
+                    md: isGuru ? '1 1 calc(20% - 16px)' : '1 1 calc(33.33% - 16px)' // 电脑端 5 个或 3 个
+                } 
+            } 
+        }}>
+          {allStatsCards.map((card) => (
             <StatCard
               key={card.title}
               title={card.title}
@@ -214,48 +243,74 @@ export default function PentadbirDashboard() {
               color={card.color}
             />
           ))}
+        </Box>
+
+        <div className="p-5 bg-white shadow rounded-lg h-full">
+          <h2 className="font-semibold text-lg mb-4">Status Cerapan Semasa</h2>
+          <ul className="space-y-4">
+            <li className="flex justify-between items-center border-b pb-2">
+              <span>Menunggu Cerapan Pentadbir</span>
+              <CustomChip
+                label={`${summary.pendingForAdmin} Guru`}
+                color="warning"
+              />
+            </li>
+            {isGuru && (
+              <li className="flex justify-between items-center border-b pb-2">
+                <span>Cerapan Kendiri Saya</span>
+                <CustomChip
+                  label={
+                    summary.mySelfPending > 0 ? "Belum Selesai" : "Selesai"
+                  }
+                  color={summary.mySelfPending > 0 ? "error" : "success"}
+                />
+              </li>
+            )}
+          </ul>
         </div>
 
-        {/* Management Stats / Pending Reviews */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="p-5 bg-white shadow rounded-lg">
-            <h2 className="font-semibold text-lg mb-4">Ringkasan Pengurusan</h2>
-            <ul className="space-y-3 text-sm">
-              <li className="flex justify-between border-b pb-2">
-                <span>Jumlah Pentadbir:</span>
-                <span className="font-bold">{summary.pentadbir}</span>
-              </li>
-              <li className="flex justify-between border-b pb-2">
-                <span>Tugasan Mengajar Aktif:</span>
-                <span className="font-bold text-green-600">{summary.totalAssignments}</span>
-              </li>
-              <li className="flex justify-between border-b pb-2">
-                <span>Semakan Cerapan Tertangguh:</span>
-                <span className="font-bold text-red-600">{summary.pendingReviews}</span>
-              </li>
-            </ul>
-          </div>
-          
-          <div className="p-5 bg-white shadow rounded-lg">
-            <h2 className="font-semibold text-lg mb-4">Aktiviti Utama</h2>
-            <ul className="space-y-3 text-sm">
-              <li className="flex justify-between">
-                <ClipboardCheck color="#ed6c02" size={20} style={{ marginRight: 8 }} />
-                <span>Pengurusan Cerapan</span>
-                <a href="/pentadbir/cerapan" className="text-blue-600 font-bold hover:underline">Lihat</a>
-              </li>
-              <li className="flex justify-between">
-                <LayoutTemplate color="#ffc107" size={20} style={{ marginRight: 8 }} />
-                <span>Pengurusan Template Rubrik</span>
-                <a href="/pentadbir/template-rubrik" className="text-blue-600 font-bold hover:underline">Lihat</a>
-              </li>
-              <li className="flex justify-between">
-                <BookOpen color="#2e7d32" size={20} style={{ marginRight: 8 }} />
-                <span>Pengurusan Tugasan Mengajar</span>
-                <a href="/teaching-assignment" className="text-blue-600 font-bold hover:underline">Lihat</a>
-              </li>
-            </ul>
-          </div>
+        <div className="p-5 bg-white shadow rounded-lg">
+          <h2 className="font-semibold text-lg mb-4">Aktiviti Utama</h2>
+          <ul className="space-y-3 text-sm">
+            <li className="flex justify-between">
+              <ClipboardCheck
+                color="#ed6c02"
+                size={20}
+                style={{ marginRight: 8 }}
+              />
+              <span>Pengurusan Cerapan</span>
+              <a
+                href="/pentadbir/cerapan"
+                className="text-blue-600 font-bold hover:underline"
+              >
+                Lihat
+              </a>
+            </li>
+            <li className="flex justify-between">
+              <LayoutTemplate
+                color="#ffc107"
+                size={20}
+                style={{ marginRight: 8 }}
+              />
+              <span>Pengurusan Template Rubrik</span>
+              <a
+                href="/pentadbir/template-rubrik"
+                className="text-blue-600 font-bold hover:underline"
+              >
+                Lihat
+              </a>
+            </li>
+            <li className="flex justify-between">
+              <BookOpen color="#2e7d32" size={20} style={{ marginRight: 8 }} />
+              <span>Pengurusan Tugasan Mengajar</span>
+              <a
+                href="/teaching-assignment"
+                className="text-blue-600 font-bold hover:underline"
+              >
+                Lihat
+              </a>
+            </li>
+          </ul>
         </div>
 
         {/* Quick Actions */}
@@ -263,8 +318,14 @@ export default function PentadbirDashboard() {
           <h2 className="font-semibold text-lg mb-4">Tindakan Pantas</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickAction label="Pengurusan Cerapan" to="/pentadbir/cerapan" />
-            <QuickAction label="Template Rubrik" to="/pentadbir/template-rubrik" />
-            <QuickAction label="Teaching Assignment" to="/teaching-assignment" />
+            <QuickAction
+              label="Template Rubrik"
+              to="/pentadbir/template-rubrik"
+            />
+            <QuickAction
+              label="Teaching Assignment"
+              to="/teaching-assignment"
+            />
             <QuickAction label="Profile Saya" to="/profile" />
           </div>
         </div>
