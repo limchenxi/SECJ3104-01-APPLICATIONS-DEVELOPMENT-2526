@@ -9,6 +9,8 @@ import {
   UseGuards,
   Req,
   ForbiddenException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.strategy';
 import { PentadbirService } from './pentadbir.service';
@@ -20,7 +22,7 @@ type RequestWithUser = any; // This should match the definition in auth/types.d.
 @Controller('pentadbir')
 @UseGuards(JwtAuthGuard)
 export class PentadbirController {
-  constructor(private readonly pentadbirService: PentadbirService) {}
+  constructor(private readonly pentadbirService: PentadbirService) { }
 
   // Check if user is PENTADBIR
   private checkPentadbirRole(req: RequestWithUser) {
@@ -90,8 +92,17 @@ export class PentadbirController {
     @Req() req: RequestWithUser,
     @Body() createTemplateDto: CreateTemplateDto,
   ) {
-    this.checkPentadbirRole(req);
-    return this.pentadbirService.createTemplate(createTemplateDto);
+    try {
+      this.checkPentadbirRole(req);
+      console.log('Creating template with DTO:', JSON.stringify(createTemplateDto));
+      return await this.pentadbirService.createTemplate(createTemplateDto);
+    } catch (error) {
+      console.error('Error creating template:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(error.message || 'Failed to create template');
+    }
   }
 
   @Put('templates/:id')

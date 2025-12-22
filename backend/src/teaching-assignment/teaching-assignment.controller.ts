@@ -21,7 +21,6 @@ type RequestWithUser = any;
 
 @Controller('teaching-assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('PENTADBIR', 'SUPERADMIN')
 export class TeachingAssignmentController {
   constructor(private readonly service: TeachingAssignmentService) {}
 

@@ -21,11 +21,11 @@ import {
 import { ClipboardCheck, CheckCircle, BarChart3, Calendar, Eye } from "lucide-react";
 import { pentadbirService } from "../api/pentadbirService";
 import { userApi } from "../../Users/api";
-import type { UserItem } from "../../Users/stores";
 import { useNavigate } from "react-router-dom";
 import ScheduleObservationModal from "../components/ScheduleObservationModal";
 import ObservationCard from "../components/ObservationCard";
 import { ManageAccounts } from "@mui/icons-material";
+import type { UserItem } from "../../Users/type";
 
 interface EvaluationRow {
   id: string;
@@ -64,7 +64,7 @@ function TabPanel(props: TabPanelProps) {
 
 function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluations: EvaluationRow[], teachers: UserItem[], teachingAssignments: any[] }) {
   const navigate = useNavigate();
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "submitted": return "success";
@@ -115,9 +115,9 @@ function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluatio
         });
       } else {
         assignments.forEach((assignment: { subject: string; class: string; teacherId: string; active: boolean }) => {
-          const evaluation = evaluations.find(e => 
-            e.teacherId === teacher._id && 
-            e.subject === assignment.subject && 
+          const evaluation = evaluations.find(e =>
+            e.teacherId === teacher._id &&
+            e.subject === assignment.subject &&
             e.class === assignment.class
           );
           rows.push({
@@ -169,24 +169,24 @@ function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluatio
                     <TableCell>{row.class}</TableCell>
                     <TableCell>{row.evaluation?.period || '-'}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={getStatusLabel(row.evaluation?.selfStatus || 'pending')} 
-                        color={getStatusColor(row.evaluation?.selfStatus || 'pending')} 
-                        size="small" 
+                      <Chip
+                        label={getStatusLabel(row.evaluation?.selfStatus || 'pending')}
+                        color={getStatusColor(row.evaluation?.selfStatus || 'pending')}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={getStatusLabel(row.evaluation?.obs1Status || 'pending')} 
-                        color={getStatusColor(row.evaluation?.obs1Status || 'pending')} 
-                        size="small" 
+                      <Chip
+                        label={getStatusLabel(row.evaluation?.obs1Status || 'pending')}
+                        color={getStatusColor(row.evaluation?.obs1Status || 'pending')}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={getStatusLabel(row.evaluation?.obs2Status || 'pending')} 
-                        color={getStatusColor(row.evaluation?.obs2Status || 'pending')} 
-                        size="small" 
+                      <Chip
+                        label={getStatusLabel(row.evaluation?.obs2Status || 'pending')}
+                        color={getStatusColor(row.evaluation?.obs2Status || 'pending')}
+                        size="small"
                       />
                     </TableCell>
                     <TableCell align="center">
@@ -211,7 +211,7 @@ function OverviewTab({ evaluations, teachers, teachingAssignments }: { evaluatio
 
 function CerapanTable({ data, title }: { data: EvaluationRow[], title: string }) {
   const navigate = useNavigate();
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "submitted": return "success";
@@ -254,48 +254,50 @@ function CerapanTable({ data, title }: { data: EvaluationRow[], title: string })
                   <TableCell>{row.class}</TableCell>
                   <TableCell>{row.period}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={getStatusLabel(row.selfStatus)} 
-                      color={getStatusColor(row.selfStatus)} 
-                      size="small" 
+                    <Chip
+                      label={getStatusLabel(row.selfStatus)}
+                      color={getStatusColor(row.selfStatus)}
+                      size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={getStatusLabel(row.obs1Status)} 
-                      color={getStatusColor(row.obs1Status)} 
-                      size="small" 
+                    <Chip
+                      label={getStatusLabel(row.obs1Status)}
+                      color={getStatusColor(row.obs1Status)}
+                      size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={getStatusLabel(row.obs2Status)} 
-                      color={getStatusColor(row.obs2Status)} 
-                      size="small" 
+                    <Chip
+                      label={getStatusLabel(row.obs2Status)}
+                      color={getStatusColor(row.obs2Status)}
+                      size="small"
                     />
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
                       {/* {row.obs1Status === 'pending' && title.includes('Cerapan 1') && row.scheduledDate && row.scheduledTime && ( */}
                       {(row.obs1Status === 'pending') && row.id && (
-                        <Button 
-                          size="small" 
+                        <Button
+                          size="small"
                           variant="contained"
-                          color="primary"
+                          color={row.scheduledDate && row.scheduledTime ? "primary" : "inherit"}
+                          disabled={!(row.scheduledDate && row.scheduledTime)}
                           onClick={() => navigate(`/pentadbir/observation/${row.id}?type=1`)}
                         >
-                          Mula Cerapan 1
+                          {row.scheduledDate && row.scheduledTime ? "Mula Cerapan 1" : "Belum Dijadualkan"}
                         </Button>
                       )}
                       {/* {row.obs2Status === 'pending' && title.includes('Cerapan 2') && row.obs1Status === 'submitted' && row.scheduledDate && row.scheduledTime && ( */}
                       {row.obs2Status === 'pending' && title.includes('Cerapan 2') && row.obs1Status === 'submitted' && row.id && (
-                        <Button 
-                          size="small" 
+                        <Button
+                          size="small"
                           variant="contained"
-                          color="secondary"
+                          color={row.scheduledDate && row.scheduledTime ? "secondary" : "inherit"}
+                          disabled={!(row.scheduledDate && row.scheduledTime)}
                           onClick={() => navigate(`/pentadbir/observation/${row.id}?type=2`)}
                         >
-                          Mula Cerapan 2
+                          {row.scheduledDate && row.scheduledTime ? "Mula Cerapan 2" : "Belum Dijadualkan"}
                         </Button>
                       )}
                       {/* <Button size="small" startIcon={<Eye size={16} />} onClick={() => navigate(`/cerapan/report/${row.id}`)}>
@@ -328,11 +330,11 @@ export default function Cerapan() {
   const [activeTab, setActiveTab] = useState(0);
   const [scheduleFilter, setScheduleFilter] = useState(0); // 0: All, 1: Ready for Obs1, 2: Ready for Obs2
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<{ 
-    id: string; 
-    name: string; 
-    subjects: string[]; 
-    classes: string[]; 
+  const [selectedTeacher, setSelectedTeacher] = useState<{
+    id: string;
+    name: string;
+    subjects: string[];
+    classes: string[];
     evaluationId?: string;
     evaluationData?: {
       subject: string;
@@ -399,233 +401,238 @@ export default function Cerapan() {
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
-      <Stack spacing={4}>  
+      <Stack spacing={4}>
         <Box>
           <Typography variant="h4" sx={{ mb: 0.5 }}>
-            <ManageAccounts color="primary" fontSize="large"/> Pengurusan Cerapan Pengajaran
+            <ManageAccounts color="primary" fontSize="large" /> Pengurusan Cerapan Pengajaran
           </Typography>
         </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
-          <Tab label="Gambaran Keseluruhan" icon={<BarChart3 size={16} />} />
-          <Tab label="Cerapan 1" icon={<ClipboardCheck size={16} />} />
-          <Tab label="Cerapan 2" icon={<CheckCircle size={16} />} />
-          <Tab label="Jadual Cerapan" icon={<Calendar size={16} />} />
-        </Tabs>
-      </Box>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+            <Tab label="Gambaran Keseluruhan" icon={<BarChart3 size={16} />} />
+            <Tab label="Cerapan 1" icon={<ClipboardCheck size={16} />} />
+            <Tab label="Cerapan 2" icon={<CheckCircle size={16} />} />
+            <Tab label="Jadual Cerapan" icon={<Calendar size={16} />} />
+          </Tabs>
+        </Box>
 
-      <TabPanel value={activeTab} index={0}>
-        <OverviewTab evaluations={evaluations} teachers={teachers} teachingAssignments={teachingAssignments} />
-      </TabPanel>
+        <TabPanel value={activeTab} index={0}>
+          <OverviewTab evaluations={evaluations} teachers={teachers} teachingAssignments={teachingAssignments} />
+        </TabPanel>
 
-      <TabPanel value={activeTab} index={1}>
-        <CerapanTable 
-          data={evaluations.filter(e => 
-            e.obs1Status === 'pending'|| 
-            e.status === 'pending_self_evaluation')} 
-          title="Cerapan 1 - Sedia untuk Pentadbir" 
-        />
-      </TabPanel>
+        <TabPanel value={activeTab} index={1}>
+          <CerapanTable
+            data={evaluations.filter(e =>
+              e.obs1Status === 'pending' ||
+              e.status === 'pending_self_evaluation')}
+            title="Cerapan 1 - Sedia untuk Pentadbir"
+          />
+        </TabPanel>
 
-      <TabPanel value={activeTab} index={2}>
-        <CerapanTable 
-          data={evaluations.filter(e => e.obs1Status === 'submitted' && e.obs2Status === 'pending')} 
-          title="Cerapan 2 - Sedia untuk Pentadbir" 
-        />
-      </TabPanel>
+        <TabPanel value={activeTab} index={2}>
+          <CerapanTable
+            data={evaluations.filter(e => e.obs1Status === 'submitted' && e.obs2Status === 'pending')}
+            title="Cerapan 2 - Sedia untuk Pentadbir"
+          />
+        </TabPanel>
 
-      <TabPanel value={activeTab} index={3}>
-        <Box>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>Senarai Jadual Cerapan</Typography>
-              
-              {/* Sub-tabs for filtering */}
-              <Tabs 
-                value={scheduleFilter} 
-                onChange={(_, newValue) => setScheduleFilter(newValue)}
-                sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
-              >
-                <Tab label="Semua" />
-                <Tab label="Sedia Cerapan 1" />
-                <Tab label="Sedia Cerapan 2" />
-              </Tabs>
+        <TabPanel value={activeTab} index={3}>
+          <Box>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>Senarai Jadual Cerapan</Typography>
 
-              {/* Cards Grid */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {(() => {
-                  // Build rows for each teacher-subject-class combination
-                  const allRows: Array<{
-                    id: string;
-                    teacherName: string;
-                    teacherId: string;
-                    subject: string;
-                    class: string;
-                    evaluation?: EvaluationRow;
-                  }> = [];
+                {/* Sub-tabs for filtering */}
+                <Tabs
+                  value={scheduleFilter}
+                  onChange={(_, newValue) => setScheduleFilter(newValue)}
+                  sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+                >
+                  <Tab label="Semua" />
+                  <Tab label="Sedia Cerapan 1" />
+                  <Tab label="Sedia Cerapan 2" />
+                </Tabs>
 
-                  // const guruTeachers = teachers.filter(t => t.role === 'GURU');
-                  const guruTeachers = teachers.filter(t => (t.role || []).includes('GURU'));
+                {/* Cards Grid */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {(() => {
+                    // Build rows for each teacher-subject-class combination
+                    const allRows: Array<{
+                      id: string;
+                      teacherName: string;
+                      teacherId: string;
+                      subject: string;
+                      class: string;
+                      evaluation?: EvaluationRow;
+                    }> = [];
 
-                  guruTeachers.forEach(teacher => {
-                    // Get assignments for this teacher
-                    const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
-                    if (assignments.length === 0) {
-                      allRows.push({
-                        id: `${teacher._id}-none-none`,
-                        teacherName: teacher.name,
-                        teacherId: teacher._id || '',
-                        subject: '-',
-                        class: '-',
-                        evaluation: undefined
-                      });
-                    } else {
-                      assignments.forEach(assignment => {
-                        const evaluation = evaluations.find(e => 
-                          e.teacherId === teacher._id && 
-                          e.subject === assignment.subject && 
-                          e.class === assignment.class
-                        );
+                    // const guruTeachers = teachers.filter(t => t.role === 'GURU');
+                    const guruTeachers = teachers.filter(t => (t.role || []).includes('GURU'));
+
+                    guruTeachers.forEach(teacher => {
+                      // Get assignments for this teacher
+                      const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
+                      if (assignments.length === 0) {
                         allRows.push({
-                          id: `${teacher._id}-${assignment.subject}-${assignment.class}`,
+                          id: `${teacher._id}-none-none`,
                           teacherName: teacher.name,
                           teacherId: teacher._id || '',
-                          subject: assignment.subject,
-                          class: assignment.class,
-                          evaluation
+                          subject: '-',
+                          class: '-',
+                          evaluation: undefined
                         });
-                      });
-                    }
-                  });
+                      } else {
+                        assignments.forEach(assignment => {
+                          const evaluation = evaluations.find(e =>
+                            e.teacherId === teacher._id &&
+                            e.subject === assignment.subject &&
+                            e.class === assignment.class
+                          );
+                          allRows.push({
+                            id: `${teacher._id}-${assignment.subject}-${assignment.class}`,
+                            teacherName: teacher.name,
+                            teacherId: teacher._id || '',
+                            subject: assignment.subject,
+                            class: assignment.class,
+                            evaluation
+                          });
+                        });
+                      }
+                    });
 
-                  // Apply filter based on scheduleFilter
-                  const filteredRows = allRows.filter(row => {
-                    if (scheduleFilter === 0) return true; // Show all
-                    
-                    const obs1Status = row.evaluation?.obs1Status || 'pending';
-                    const obs2Status = row.evaluation?.obs2Status || 'pending';
-                    
-                    if (scheduleFilter === 1) {
-                      // Ready for Obs 1: obs1 is pending (no requirement for self status)
-                      return obs1Status === 'pending';
-                    }
-                    
-                    if (scheduleFilter === 2) {
-                      // Ready for Obs 2: obs1 is submitted, obs2 is pending
-                      return obs1Status === 'submitted' && obs2Status === 'pending';
-                    }
-                    
-                    return false;
-                  });
+                    // Apply filter based on scheduleFilter
+                    const filteredRows = allRows.filter(row => {
+                      const obs1Status = row.evaluation?.obs1Status || 'pending';
+                      const obs2Status = row.evaluation?.obs2Status || 'pending';
+                      const isCompleted = obs2Status === 'submitted' || row.evaluation?.status === 'marked';
 
-                  if (filteredRows.length === 0) {
-                    return (
-                      <Box sx={{ textAlign: 'center', py: 8 }}>
-                        <Typography color="text.secondary">
-                          {scheduleFilter === 0 
-                            ? "Tiada guru dalam sistem"
-                            : scheduleFilter === 1
-                            ? "Tiada guru sedia untuk Cerapan 1"
-                            : "Tiada guru sedia untuk Cerapan 2"}
-                        </Typography>
-                      </Box>
-                    );
-                  }
+                      if (scheduleFilter === 0) {
+                        // Show all EXCEPT completed
+                        return !isCompleted;
+                      }
 
-                  return filteredRows.map((row) => {
-                    // Determine observation type for display
-                    const observationType: "Cerapan 1" | "Cerapan 2" = 
-                      row.evaluation?.obs1Status === 'submitted' ? "Cerapan 2" : "Cerapan 1";
-                    
-                    // Check if scheduled
-                    const isScheduled = !!(row.evaluation?.scheduledDate && row.evaluation?.scheduledTime);
-                    
-                    return (
-                      <Box key={row.id} sx={{ mb: 2 }}>
-                        <ObservationCard
-                          teacherName={row.teacherName}
-                          subject={row.subject}
-                          className={row.class}
-                          observationType={observationType}
-                          observerName={row.evaluation?.observerName || "Pentadbir"}
-                          observerTitle="Guru Besar"
-                          rubric={row.evaluation?.templateRubric || "Cerapan PdPc 2025"}
-                          date={row.evaluation?.scheduledDate ? new Date(row.evaluation.scheduledDate).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                          time={row.evaluation?.scheduledTime || '-'}
-                          year={new Date().getFullYear().toString()}
-                          status={isScheduled ? "Telah dijadualkan" : "Belum dijadualkan"}
-                          onEdit={() => {
-                            const teacher = teachers.find(t => t._id === row.teacherId);
-                            console.log('Edit clicked for teacher:', teacher?.name);
-                            console.log('Evaluation:', row.evaluation);
-                            console.log('Evaluation ID:', row.evaluation?.id);
-                            if (teacher && teacher._id && row.evaluation) {
-                              // Get subjects/classes from assignments
-                              const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
-                              const subjects = [...new Set(assignments.map(a => a.subject))];
-                              const classes = [...new Set(assignments.map(a => a.class))];
-                              setSelectedTeacher({
-                                id: teacher._id,
-                                name: teacher.name,
-                                subjects,
-                                classes,
-                                evaluationId: row.evaluation?.id,
-                                evaluationData: {
-                                  subject: row.subject,
-                                  class: row.class,
-                                  obs1Status: row.evaluation.obs1Status,
-                                },
-                              });
-                              setScheduleModalOpen(true);
-                            }
-                          }}
-                          onDelete={() => {
-                            if (row.evaluation && window.confirm(`Padam cerapan untuk ${row.teacherName}?`)) {
-                              // Handle delete
-                              console.log('Delete:', row.evaluation.id);
-                            }
-                          }}
-                          onStart={() => {
-                            if (row.evaluation?.id) {
-                              // Navigate to observation form based on type
-                              if (observationType === "Cerapan 1") {
-                                navigate(`/pentadbir/observation/${row.evaluation.id}?type=1`);
-                              } else {
-                                navigate(`/pentadbir/observation/${row.evaluation.id}?type=2`);
+                      if (scheduleFilter === 1) {
+                        // Ready for Obs 1: obs1 is pending (no requirement for self status)
+                        return obs1Status === 'pending';
+                      }
+
+                      if (scheduleFilter === 2) {
+                        // Ready for Obs 2: obs1 is submitted, obs2 is pending
+                        return obs1Status === 'submitted' && obs2Status === 'pending';
+                      }
+
+                      return false;
+                    });
+
+                    if (filteredRows.length === 0) {
+                      return (
+                        <Box sx={{ textAlign: 'center', py: 8 }}>
+                          <Typography color="text.secondary">
+                            {scheduleFilter === 0
+                              ? "Tiada guru dalam sistem"
+                              : scheduleFilter === 1
+                                ? "Tiada guru sedia untuk Cerapan 1"
+                                : "Tiada guru sedia untuk Cerapan 2"}
+                          </Typography>
+                        </Box>
+                      );
+                    }
+
+                    return filteredRows.map((row) => {
+                      // Determine observation type for display
+                      const observationType: "Cerapan 1" | "Cerapan 2" =
+                        row.evaluation?.obs1Status === 'submitted' ? "Cerapan 2" : "Cerapan 1";
+
+                      // Check if scheduled
+                      const isScheduled = !!(row.evaluation?.scheduledDate && row.evaluation?.scheduledTime);
+
+                      return (
+                        <Box key={row.id} sx={{ mb: 2 }}>
+                          <ObservationCard
+                            teacherName={row.teacherName}
+                            subject={row.subject}
+                            className={row.class}
+                            observationType={observationType}
+                            observerName={row.evaluation?.observerName || "Pentadbir"}
+                            observerTitle="Guru Besar"
+                            rubric={row.evaluation?.templateRubric || "Cerapan PdPc 2025"}
+                            date={row.evaluation?.scheduledDate ? new Date(row.evaluation.scheduledDate).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                            time={row.evaluation?.scheduledTime || '-'}
+                            year={new Date().getFullYear().toString()}
+                            status={isScheduled ? "Telah dijadualkan" : "Belum dijadualkan"}
+                            onEdit={() => {
+                              const teacher = teachers.find(t => t._id === row.teacherId);
+                              console.log('Edit clicked for teacher:', teacher?.name);
+                              console.log('Evaluation:', row.evaluation);
+                              console.log('Evaluation ID:', row.evaluation?.id);
+                              if (teacher && teacher._id && row.evaluation) {
+                                // Get subjects/classes from assignments
+                                const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
+                                const subjects = [...new Set(assignments.map(a => a.subject))];
+                                const classes = [...new Set(assignments.map(a => a.class))];
+                                setSelectedTeacher({
+                                  id: teacher._id,
+                                  name: teacher.name,
+                                  subjects,
+                                  classes,
+                                  evaluationId: row.evaluation?.id,
+                                  evaluationData: {
+                                    subject: row.subject,
+                                    class: row.class,
+                                    obs1Status: row.evaluation.obs1Status,
+                                  },
+                                });
+                                setScheduleModalOpen(true);
                               }
-                            }
-                          }}
-                        />
-                      </Box>
-                    );
-                  });
-                })()}
-              </Box>
-            </CardContent>
-          </Card>
-          
-          {selectedTeacher && (
-            <ScheduleObservationModal
-              open={scheduleModalOpen}
-              onClose={() => {
-                setScheduleModalOpen(false);
-                setSelectedTeacher(null);
-              }}
-              teacherName={selectedTeacher.name}
-              subjectOptions={selectedTeacher.subjects}
-              classOptions={selectedTeacher.classes}
-              evaluationId={selectedTeacher.evaluationId}
-              evaluationData={selectedTeacher.evaluationData}
-              onSave={() => {
-                setScheduleModalOpen(false);
-                setSelectedTeacher(null);
-                loadData();
-              }}
-            />
-          )}
-        </Box>
-      </TabPanel>
+                            }}
+                            onDelete={() => {
+                              if (row.evaluation && window.confirm(`Padam cerapan untuk ${row.teacherName}?`)) {
+                                // Handle delete
+                                console.log('Delete:', row.evaluation.id);
+                              }
+                            }}
+                            onStart={() => {
+                              if (row.evaluation?.id && isScheduled) {
+                                // Navigate to observation form based on type
+                                if (observationType === "Cerapan 1") {
+                                  navigate(`/pentadbir/observation/${row.evaluation.id}?type=1`);
+                                } else {
+                                  navigate(`/pentadbir/observation/${row.evaluation.id}?type=2`);
+                                }
+                              }
+                            }}
+                          />
+                        </Box>
+                      );
+                    });
+                  })()
+                  }
+                </Box>
+              </CardContent>
+            </Card>
+
+            {selectedTeacher && (
+              <ScheduleObservationModal
+                open={scheduleModalOpen}
+                onClose={() => {
+                  setScheduleModalOpen(false);
+                  setSelectedTeacher(null);
+                }}
+                teacherName={selectedTeacher.name}
+                subjectOptions={selectedTeacher.subjects}
+                classOptions={selectedTeacher.classes}
+                evaluationId={selectedTeacher.evaluationId}
+                evaluationData={selectedTeacher.evaluationData}
+                onSave={() => {
+                  setScheduleModalOpen(false);
+                  setSelectedTeacher(null);
+                  loadData();
+                }}
+              />
+            )}
+          </Box>
+        </TabPanel>
       </Stack>
     </Box>
   );

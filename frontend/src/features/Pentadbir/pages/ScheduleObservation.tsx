@@ -61,11 +61,10 @@ export default function ScheduleObservation() {
       setLoading(true);
       const client = backendClient();
       const response = await client.get<any[]>("/users");
-      
-      // Filter only teachers (GURU role)
+
       // const teachers = response.data.filter((user: any) => user.role === "GURU");
       const teachers = response.data.filter((user: any) => user.role === "GURU");
-      
+
       // Fetch all evaluations to match with teachers
       let evaluations: any[] = [];
       try {
@@ -74,69 +73,126 @@ export default function ScheduleObservation() {
       } catch (err) {
         console.log("No evaluations found or error fetching tasks");
       }
-      
-      // Transform to schedule format
-      const teacherSchedules: ObservationSchedule[] = teachers.map((teacher: any) => {
-        // Find the most recent evaluation for this teacher
-        const teacherEval = evaluations
-          .filter((e: any) => e.teacherId === teacher._id)
-          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-        
-        if (teacherEval) {
-          // Map status to our schedule status
-          let scheduleStatus: ScheduleStatus = "Dijadualkan";
-          if (teacherEval.status === "completed") {
-            scheduleStatus = "Selesai";
-          }
-          
-          // Determine observation type based on status
-          let observationType: "Cerapan 1" | "Cerapan 2" = "Cerapan 1";
-          if (teacherEval.status === "pending_observation_2" || teacherEval.status === "completed") {
+
+      // // Transform to schedule format
+      // const teacherSchedules: ObservationSchedule[] = teachers.map((teacher: any) => {
+      //   // Find the most recent evaluation for this teacher
+      //   const teacherEval = evaluations
+      //     .filter((e: any) => e.teacherId === teacher._id)
+      //     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+      //   if (teacherEval) {
+      //     // Map status to our schedule status
+      //     let scheduleStatus: ScheduleStatus = "Dijadualkan";
+      //     if (teacherEval.status === "completed") {
+      //       scheduleStatus = "Selesai";
+      //     }
+
+      //     // Determine observation type based on status
+      //     let observationType: "Cerapan 1" | "Cerapan 2" = "Cerapan 1";
+      //     if (teacherEval.status === "pending_observation_2" || teacherEval.status === "completed") {
+      //       observationType = "Cerapan 2";
+      //     }
+
+      //     return {
+      //       id: teacher._id,
+      //       evaluationId: teacherEval._id,
+      //       teacherId: teacher._id,
+      //       teacherName: teacher.name,
+      //       subject: teacherEval.subject || teacher.subjects?.[0] || "-",
+      //       class: teacherEval.class || teacher.classes?.[0] || "-",
+      //       subjectOptions: Array.isArray(teacher.subjects) ? teacher.subjects : [],
+      //       classOptions: Array.isArray(teacher.classes) ? teacher.classes : [],
+      //       observationType: observationType,
+      //       scheduledDate: teacherEval.period || null,
+      //       scheduledTime: null,
+      //       observerName: "",
+      //       templateRubric: "",
+      //       notes: "",
+      //       status: scheduleStatus,
+      //       createdAt: teacherEval.createdAt || new Date().toISOString(),
+      //       updatedAt: teacherEval.updatedAt || new Date().toISOString(),
+      //     };
+      //   }
+
+      //   return {
+      //     id: teacher._id,
+      //     teacherId: teacher._id,
+      //     teacherName: teacher.name,
+      //     subject: teacher.subjects?.[0] || "-",
+      //     class: teacher.classes?.[0] || "-",
+      //     subjectOptions: Array.isArray(teacher.subjects) ? teacher.subjects : [],
+      //     classOptions: Array.isArray(teacher.classes) ? teacher.classes : [],
+      //     observationType: null,
+      //     scheduledDate: null,
+      //     scheduledTime: null,
+      //     observerName: "",
+      //     templateRubric: "",
+      //     notes: "",
+      //     status: "Belum Dijadualkan",
+      //     createdAt: new Date().toISOString(),
+      //     updatedAt: new Date().toISOString(),
+      //   };
+      // });
+      const assignmentRes = await client.get("/teaching-assignments");
+      const assignments = assignmentRes.data || [];
+
+      // 2. 获取现有的评估记录 (检查进度)
+      const evalRes = await client.get("/cerapan/admin/all-evaluations");
+      const evaluations = evalRes.data || [];
+
+      // 3. 获取用户映射 (显示名字)
+      const userRes = await client.get("/users");
+      const userMap = (userRes.data || []).reduce((acc: any, u: any) => ({ ...acc, [u._id]: u.name }), {});
+
+      // 4. 组装数据：基于 Teaching Assignment 映射每一行
+      const combinedSchedules: ObservationSchedule[] = assignments.map((assign: any) => {
+        // 查找此分配是否已有对应的 Cerapan 记录
+        const record = evaluations.find(
+          (e: any) => e.teacherId === assign.teacherId && e.subject === assign.subject && e.class === assign.class
+        );
+
+        let status: ScheduleStatus = "Belum Dijadualkan";
+        let observationType: "Cerapan 1" | "Cerapan 2" = "Cerapan 1";
+        const evaluationId = record?._id;
+
+        if (record) {
+          // 如果 Cerapan 1 已经提交，自动提示该安排 Cerapan 2
+          if (record.observation_1?.status === 'submitted') {
             observationType = "Cerapan 2";
           }
-          
-          return {
-            id: teacher._id,
-            evaluationId: teacherEval._id,
-            teacherId: teacher._id,
-            teacherName: teacher.name,
-            subject: teacherEval.subject || teacher.subjects?.[0] || "-",
-            class: teacherEval.class || teacher.classes?.[0] || "-",
-            subjectOptions: Array.isArray(teacher.subjects) ? teacher.subjects : [],
-            classOptions: Array.isArray(teacher.classes) ? teacher.classes : [],
-            observationType: observationType,
-            scheduledDate: teacherEval.period || null,
-            scheduledTime: null,
-            observerName: "",
-            templateRubric: "",
-            notes: "",
-            status: scheduleStatus,
-            createdAt: teacherEval.createdAt || new Date().toISOString(),
-            updatedAt: teacherEval.updatedAt || new Date().toISOString(),
-          };
+
+          // 检查“当前阶段”是否有排程日期
+          // 如果该记录已有排程，状态设为 'Dijadualkan'
+          const isScheduled = !!(record.scheduledDate && record.scheduledTime);
+
+          if (record.status === "marked") {
+            status = "Selesai";
+          } else if (isScheduled) {
+            status = "Dijadualkan";
+          }
         }
-        
+
         return {
-          id: teacher._id,
-          teacherId: teacher._id,
-          teacherName: teacher.name,
-          subject: teacher.subjects?.[0] || "-",
-          class: teacher.classes?.[0] || "-",
-          subjectOptions: Array.isArray(teacher.subjects) ? teacher.subjects : [],
-          classOptions: Array.isArray(teacher.classes) ? teacher.classes : [],
-          observationType: null,
-          scheduledDate: null,
-          scheduledTime: null,
-          observerName: "",
-          templateRubric: "",
-          notes: "",
-          status: "Belum Dijadualkan",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          id: assign._id, // Assignment ID 作为唯一标识
+          evaluationId,
+          teacherId: assign.teacherId,
+          teacherName: userMap[assign.teacherId] || "Unknown",
+          subject: assign.subject,
+          class: assign.class,
+          observationType,
+          scheduledDate: record?.scheduledDate || null,
+          scheduledTime: record?.scheduledTime || null,
+          observerName: record?.observerName || "",
+          templateRubric: record?.templateRubric || "",
+          notes: record?.notes || "",
+          status,
         };
       });
-      
-      setSchedules(teacherSchedules);
+
+      setSchedules(combinedSchedules);
+
+      // setSchedules(teacherSchedules);
       setError("");
     } catch (err) {
       console.error("Error loading teachers:", err);
@@ -159,7 +215,7 @@ export default function ScheduleObservation() {
       const client = backendClient();
       const templatesRes = await client.get("/pentadbir/templates");
       const templates = templatesRes.data;
-      
+
       // Find the template by name
       const template = templates.find((t: any) => t.name === formData.templateRubric);
       if (!template) {
@@ -181,18 +237,18 @@ export default function ScheduleObservation() {
           prev.map((s) =>
             s.id === selectedTeacher.id
               ? {
-                  ...s,
-                  observationType: formData.observationType,
-                  scheduledDate: formData.scheduledDate,
-                  scheduledTime: formData.scheduledTime,
-                  subject: formData.subject,
-                  class: formData.class,
-                  observerName: formData.observerName,
-                  templateRubric: formData.templateRubric,
-                  notes: formData.notes,
-                  status: "Dijadualkan",
-                  updatedAt: new Date().toISOString(),
-                }
+                ...s,
+                observationType: formData.observationType,
+                scheduledDate: formData.scheduledDate,
+                scheduledTime: formData.scheduledTime,
+                subject: formData.subject,
+                class: formData.class,
+                observerName: formData.observerName,
+                templateRubric: formData.templateRubric,
+                notes: formData.notes,
+                status: "Dijadualkan",
+                updatedAt: new Date().toISOString(),
+              }
               : s
           )
         );
@@ -208,33 +264,33 @@ export default function ScheduleObservation() {
 
         const newEvaluationId = record._id;
         await client.put(`/cerapan/schedule/${newEvaluationId}`, {
-            scheduledDate: formData.scheduledDate,
-            scheduledTime: formData.scheduledTime,
-            observerName: formData.observerName,
-            templateRubric: formData.templateRubric,
-            notes: formData.notes,
-            observationType: formData.observationType, // 应为 'Cerapan 1'
+          scheduledDate: formData.scheduledDate,
+          scheduledTime: formData.scheduledTime,
+          observerName: formData.observerName,
+          templateRubric: formData.templateRubric,
+          notes: formData.notes,
+          observationType: formData.observationType, // 应为 'Cerapan 1'
         });
         const cerapanService = await import("../../Cerapan/api/cerapanService"); // Corrected import
         await cerapanService.startObservation1ByAdmin(newEvaluationId);
-        
+
         setSchedules((prev) =>
           prev.map((s) =>
             s.id === selectedTeacher.id
               ? {
-                  ...s,
-                  evaluationId: newEvaluationId,
-                  observationType: formData.observationType,
-                  scheduledDate: formData.scheduledDate,
-                  scheduledTime: formData.scheduledTime,
-                  subject: formData.subject,
-                  class: formData.class,
-                  observerName: formData.observerName,
-                  templateRubric: formData.templateRubric,
-                  notes: formData.notes,
-                  status: "Dijadualkan",
-                  updatedAt: new Date().toISOString(),
-                }
+                ...s,
+                evaluationId: newEvaluationId,
+                observationType: formData.observationType,
+                scheduledDate: formData.scheduledDate,
+                scheduledTime: formData.scheduledTime,
+                subject: formData.subject,
+                class: formData.class,
+                observerName: formData.observerName,
+                templateRubric: formData.templateRubric,
+                notes: formData.notes,
+                status: "Dijadualkan",
+                updatedAt: new Date().toISOString(),
+              }
               : s
           )
         );
@@ -254,11 +310,11 @@ export default function ScheduleObservation() {
       s.subject.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredByStatus = 
+  const filteredByStatus =
     activeTab === 0 ? filteredSchedules :
-    activeTab === 1 ? filteredSchedules.filter(s => s.status === "Belum Dijadualkan") :
-    activeTab === 2 ? filteredSchedules.filter(s => s.status === "Dijadualkan") :
-    filteredSchedules.filter(s => s.status === "Selesai");
+      activeTab === 1 ? filteredSchedules.filter(s => s.status === "Belum Dijadualkan") :
+        activeTab === 2 ? filteredSchedules.filter(s => s.status === "Dijadualkan") :
+          filteredSchedules.filter(s => s.status === "Selesai");
 
   if (loading) {
     return (
@@ -275,7 +331,7 @@ export default function ScheduleObservation() {
           {error}
         </Alert>
       )}
-      
+
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Typography variant="h4">Jadualkan Cerapan Guru</Typography>
         <Button
@@ -346,10 +402,10 @@ export default function ScheduleObservation() {
                     <TableCell>
                       {schedule.scheduledDate
                         ? new Date(schedule.scheduledDate).toLocaleDateString("ms-MY", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
                         : "-"}
                     </TableCell>
                     <TableCell>{schedule.scheduledTime || "-"}</TableCell>
