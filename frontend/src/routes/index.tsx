@@ -91,15 +91,15 @@ const SelfEvaluationForm = lazy(
 const CerapanResults = lazy(
   () => import("../features/Cerapan/pages/CerapanResults")
 );
-const AdminCerapanDashboard = lazy(
-  () => import("../features/Cerapan/pages/AdminCerapanDashboard")
-);
+// const AdminCerapanDashboard = lazy(
+//   () => import("../features/Cerapan/pages/AdminCerapanDashboard")
+// );
 const AdminObservationForm = lazy(
   () => import("../features/Cerapan/pages/AdminObservationForm")
 );
-const PentadbirCerapanForm = lazy(
-  () => import("../features/Cerapan/pages/sample/Cerapan")
-);
+// const PentadbirCerapanForm = lazy(
+//   () => import("../features/Cerapan/pages/sample/Cerapan")
+// );
 const TeacherReportHistory = lazy(
   () => import("../features/Cerapan/pages/TeacherReportHistory")
 );
@@ -115,7 +115,7 @@ const LoginRoute = () => {
   if (!isInitialized || isLoading) {
     return <SuspenseFallback />;
   }
-   if (isAuthenticated) {
+  if (isAuthenticated) {
     const defaultPath = getDefaultPathByRole(user?.role);
     const redirectTo = resolveRedirectPath(searchParams.get("redirect"), defaultPath);
     return <Navigate to={redirectTo} replace />;
@@ -143,26 +143,18 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/" element={<ProtectedLayout />}>
-          <Route 
-            index 
-            element={<Navigate to={getDefaultPathByRole(user?.role)} replace />} 
+          <Route
+            index
+            element={<Navigate to={getDefaultPathByRole(user?.role)} replace />}
           />
 
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           <Route
             path="/teaching-assignment"
             element={
               <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
                 <TeachingAssignmentPage />
-              </RoleGuard>
-            }
-          />
-          <Route
-            path="/pentadbir/cerapan/report/:id"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
-                <CerapanResults />
               </RoleGuard>
             }
           />
@@ -179,7 +171,7 @@ export default function AppRoutes() {
           <Route
             path="/kedatangan"
             element={
-              <RoleGuard roles={["GURU","PENTADBIR"]}>
+              <RoleGuard roles={["GURU", "PENTADBIR"]}>
                 <KedatanganPage />
               </RoleGuard>
             }
@@ -193,7 +185,6 @@ export default function AppRoutes() {
           <Route path="/cerapan" element={<TeacherCerapanKendiri />} />
           <Route path="/cerapan/task/:id" element={<SelfEvaluationForm />} />
           <Route path="/cerapan/results/:id" element={<CerapanResults />} />
-          <Route path="/cerapan/admin" element={<AdminCerapanDashboard />} />
           <Route
             path="/cerapan/admin/observation/:id"
             element={
@@ -202,14 +193,7 @@ export default function AppRoutes() {
               </RoleGuard>
             }
           />
-          <Route
-            path="/cerapan/old"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
-                <PentadbirCerapanForm />
-              </RoleGuard>
-            }
-          />
+
           <Route path="/cerapan/my-reports" element={<TeacherReportHistory />} />
 
           {/* Pentadbir Routes */}
@@ -229,15 +213,7 @@ export default function AppRoutes() {
               </RoleGuard>
             }
           />
-          <Route
-            path="/cerapan/report/:id"
-            element={
-              <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
-                <CerapanResults />
-              </RoleGuard>
-            }
-          />
-          {/* Removed tugasan cerapan page */}
+
           <Route
             path="/pentadbir/observation/:id"
             element={
@@ -347,7 +323,7 @@ export default function AppRoutes() {
           <Route
             path="/users"
             element={
-              <RoleGuard roles={["SUPERADMIN","PENTADBIR"]}>
+              <RoleGuard roles={["SUPERADMIN", "PENTADBIR"]}>
                 <UserList />
               </RoleGuard>
             }
