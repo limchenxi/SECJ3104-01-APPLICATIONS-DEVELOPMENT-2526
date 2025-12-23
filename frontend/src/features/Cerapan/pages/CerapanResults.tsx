@@ -18,6 +18,8 @@ import {
   TableHead,
   TableContainer,
   Table,
+  TextField,
+  IconButton,
 } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -28,14 +30,145 @@ import {
   Award,
   TrendingUp,
   Clock,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
-import { getReportSummary, getAdminReportSummary, regenerateAiComment } from "../api/cerapanService";
+import { getReportSummary, getAdminReportSummary, regenerateAiComment, updateAiComment } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
 import useAuth from "../../../hooks/useAuth";
 import { userApi } from "../../Users/api";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import SubCategoryRadarCharts from "./SubCategoryRadarCharts";
+
+// New Component for AI Comment Card to handle edit logic cleaner
+const AiCommentCard = ({
+  parsedAiComment,
+  isModelRefused,
+  isAdminView,
+  onUpdateComment
+}: {
+  parsedAiComment: { isRefused: boolean, text: string, data: any },
+  isModelRefused: boolean,
+  isAdminView: boolean,
+  onUpdateComment: (newComment: string) => void
+}) => {
+  const theme = useTheme();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedComment, setEditedComment] = useState(parsedAiComment.text);
+
+  // Sync state if prop changes (e.g. regeneration)
+  useEffect(() => {
+    setEditedComment(parsedAiComment.text);
+  }, [parsedAiComment.text]);
+
+  const handleSave = () => {
+    onUpdateComment(editedComment);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedComment(parsedAiComment.text);
+    setIsEditing(false);
+  };
+
+  return (
+    <Card
+      raised
+      sx={{
+        border: isModelRefused
+          ? `2px dashed ${theme.palette.warning.main}`
+          : `2px solid ${theme.palette.primary.main}`,
+        bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
+      }}
+    >
+      <CardContent>
+        <Stack spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={1} justifyContent="space-between">
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
+              <Typography variant="h6" sx={{ color: parsedAiComment.isRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
+                {parsedAiComment.isRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
+              </Typography>
+            </Stack>
+            {isAdminView && !isEditing && (
+              <Button
+                startIcon={<Edit2 size={16} />}
+                size="small"
+                variant="outlined"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit
+              </Button>
+            )}
+          </Stack>
+
+          {isEditing ? (
+            <Box>
+              <TextField
+                fullWidth
+                multiline
+                minRows={4}
+                value={editedComment}
+                onChange={(e) => setEditedComment(e.target.value)}
+                sx={{ bgcolor: 'background.paper', mb: 2 }}
+              />
+              <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Button
+                  startIcon={<X size={16} />}
+                  variant="outlined"
+                  color="error"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  startIcon={<Save size={16} />}
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSave}
+                >
+                  Save
+                </Button>
+              </Stack>
+            </Box>
+          ) : (
+            <>
+              {parsedAiComment.isRefused ? (
+                <Stack spacing={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
+                  </Typography>
+
+                  {/* 提取并显示关键数据行 */}
+                  {Object.keys(parsedAiComment!.data).map((key) => {
+                    const value = parsedAiComment!.data[key];
+                    const label = key.includes('Maklum Balas') ? 'Maklum Balas' : key;
+
+                    return (
+                      <Typography key={key} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
+                        <Box component="span" sx={{ color: theme.palette.grey[600] }}>{label}:</Box> <strong>{value}</strong>
+                      </Typography>
+                    );
+                  })}
+                </Stack>
+              ) : (
+                <Typography
+                  variant="body1"
+                  sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
+                >
+                  {parsedAiComment.text}
+                </Typography>
+              )}
+            </>
+          )}
+
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
 
 const SCHOOL_NAME = 'SK SRI SIAKAP';
 const SCHOOL_CODE = 'ABA 3012';
@@ -634,54 +767,23 @@ export default function CerapanResults() {
 
         {/* AI COMMENT CARD */}
         {parsedAiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
-          <Card
-            raised
-            sx={{
-              border: isModelRefused
-                ? `2px dashed ${theme.palette.warning.main}`
-                : `2px solid ${theme.palette.primary.main}`,
-              bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
+          <AiCommentCard
+            parsedAiComment={parsedAiComment}
+            isModelRefused={isModelRefused}
+            isAdminView={isAdminView} // Pass admin view status
+            onUpdateComment={async (newComment) => {
+              try {
+                setLoading(true);
+                await updateAiComment(report._id, newComment);
+                await loadReport(); // Reload to get fresh data
+              } catch (e: any) {
+                console.error("Failed to update AI comment:", e);
+                setError("Gagal mengemaskini komen AI.");
+              } finally {
+                setLoading(false);
+              }
             }}
-          >
-            <CardContent>
-              <Stack spacing={2}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
-                  <Typography variant="h6" sx={{ color: parsedAiComment.isRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
-                    {parsedAiComment.isRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
-                  </Typography>
-                </Stack>
-
-                {parsedAiComment.isRefused ? (
-                  <Stack spacing={1}>
-                    <Typography variant="body2" color="text.secondary">
-                      Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
-                    </Typography>
-
-                    {/* 提取并显示关键数据行 */}
-                    {Object.keys(parsedAiComment!.data).map((key) => {
-                      const value = parsedAiComment!.data[key];
-                      const label = key.includes('Maklum Balas') ? 'Maklum Balas' : key;
-
-                      return (
-                        <Typography key={key} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
-                          <Box component="span" sx={{ color: theme.palette.grey[600] }}>{label}:</Box> <strong>{value}</strong>
-                        </Typography>
-                      );
-                    })}
-                  </Stack>
-                ) : (
-                  // 🚨 【显示流畅评论】 - 仅在 AI 成功生成时显示
-                  <Typography
-                    variant="body1"
-                    sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
-                  >
-                    {parsedAiComment.text}
-                  </Typography>
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+          />
         )}
 
         {/* Report table (MUI Horizontal Refactor) */}
@@ -834,7 +936,32 @@ export default function CerapanResults() {
           </Card>
         )}
 
-        {/* Radar Charts Breakdown */}
+        {/* Admin Edit Controls */}
+        {isAdminView && report && (
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            {hasObs1 && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<Edit2 size={16} />}
+                onClick={() => navigate(`/cerapan/admin/observation/${report._id}?type=1`)}
+              >
+                Kemaskini Cerapan 1
+              </Button>
+            )}
+            {hasObs2 && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<Edit2 size={16} />}
+                onClick={() => navigate(`/cerapan/admin/observation/${report._id}?type=2`)}
+              >
+                Kemaskini Cerapan 2
+              </Button>
+            )}
+          </Stack>
+        )}
+
         {/* Radar Charts Breakdown */}
         {summary && <SubCategoryRadarCharts summary={summary} />}
 

@@ -1093,4 +1093,18 @@ Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Det
     // 重新获取并返回更新后的评估
     return evaluation;
   }
+
+  async updateAiComment(
+    evaluationId: string,
+    comment: string,
+  ): Promise<Cerapan> {
+    const evaluation = await this.cerapanModel.findById(evaluationId);
+
+    if (!evaluation) {
+      throw new NotFoundException('Evaluation not found');
+    }
+
+    evaluation.aiComment = comment;
+    return evaluation.save();
+  }
 }

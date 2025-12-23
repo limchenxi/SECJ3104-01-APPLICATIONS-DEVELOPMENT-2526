@@ -1,7 +1,7 @@
 import { backendClient } from "../../../utils/axios-client";
-import type { 
-  CerapanRecord, 
-  SubmitSelfEvalDto, 
+import type {
+  CerapanRecord,
+  SubmitSelfEvalDto,
   SubmitObservationDto,
   StartEvaluationDto,
   ReportSummary,
@@ -186,5 +186,20 @@ export const regenerateAiComment = async (
 
 export const getPendingTasksCount = async (): Promise<{ totalPending: number }> => {
   const response = await client().get<{ totalPending: number }>("/cerapan/my-tasks/count");
+  return response.data;
+};
+
+/**
+ * (ADMIN) Update AI Comment manually.
+ * PUT /cerapan/admin/update-comment/:id
+ */
+export const updateAiComment = async (
+  id: string,
+  comment: string
+): Promise<CerapanRecord> => {
+  const response = await client().put<CerapanRecord>(
+    `/cerapan/admin/update-comment/${id}`,
+    { comment }
+  );
   return response.data;
 };
