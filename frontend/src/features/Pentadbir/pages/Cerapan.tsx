@@ -487,8 +487,8 @@ export default function Cerapan() {
                         assignments.forEach(assignment => {
                           const evaluation = evaluations.find(e =>
                             e.teacherId === teacher._id &&
-                            e.subject === assignment.subject &&
-                            e.class === assignment.class
+                            e.subject.trim().toLowerCase() === assignment.subject.trim().toLowerCase() &&
+                            e.class.trim().toLowerCase() === assignment.class.trim().toLowerCase()
                           );
                           allRows.push({
                             id: `${teacher._id}-${assignment.subject}-${assignment.class}`,
@@ -502,25 +502,31 @@ export default function Cerapan() {
                       }
                     });
 
-                  // Apply filter based on scheduleFilter
-                  const filteredRows = allRows.filter(row => {
-                    if (scheduleFilter === 0) return true; // Show all
-                    
-                    const obs1Status = row.evaluation?.obs1Status || 'pending';
-                    const obs2Status = row.evaluation?.obs2Status || 'pending';
-                    
-                    if (scheduleFilter === 1) {
-                      // Ready for Obs 1: obs1 is pending (no requirement for self status)
-                      return obs1Status === 'pending';
-                    }
-                    
-                    if (scheduleFilter === 2) {
-                      // Ready for Obs 2: obs1 is submitted, obs2 is pending
-                      return obs1Status === 'submitted' && obs2Status === 'pending';
-                    }
-                    
-                    return false;
-                  });
+                    // Apply filter based on scheduleFilter
+                    const filteredRows = allRows.filter(row => {
+                      const obs1Status = row.evaluation?.obs1Status || 'pending';
+                      const obs2Status = row.evaluation?.obs2Status || 'pending';
+
+                      // Check for completion status (submitted obs2 means done)
+                      const isCompleted = obs2Status === 'submitted' || row.evaluation?.status === 'marked';
+
+                      if (scheduleFilter === 0) {
+                        // Show all EXCEPT completed
+                        return !isCompleted;
+                      }
+
+                      if (scheduleFilter === 1) {
+                        // Ready for Obs 1: obs1 is pending (no requirement for self status)
+                        return obs1Status === 'pending';
+                      }
+
+                      if (scheduleFilter === 2) {
+                        // Ready for Obs 2: obs1 is submitted, obs2 is pending
+                        return obs1Status === 'submitted' && obs2Status === 'pending';
+                      }
+
+                      return false;
+                    });
 
                     if (filteredRows.length === 0) {
                       return (
@@ -536,99 +542,99 @@ export default function Cerapan() {
                       );
                     }
 
-                  return filteredRows.map((row) => {
-                    // Determine observation type for display
-                    const observationType: "Cerapan 1" | "Cerapan 2" = 
-                      row.evaluation?.obs1Status === 'submitted' ? "Cerapan 2" : "Cerapan 1";
-                    
-                    // Check if scheduled
-                    const isScheduled = !!(row.evaluation?.scheduledDate && row.evaluation?.scheduledTime);
-                    
-                    return (
-                      <Box key={row.id} sx={{ mb: 2 }}>
-                        <ObservationCard
-                          teacherName={row.teacherName}
-                          subject={row.subject}
-                          className={row.class}
-                          observationType={observationType}
-                          observerName={row.evaluation?.observerName || "Pentadbir"}
-                          observerTitle="Guru Besar"
-                          rubric={row.evaluation?.templateRubric || "Cerapan PdPc 2025"}
-                          date={row.evaluation?.scheduledDate ? new Date(row.evaluation.scheduledDate).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
-                          time={row.evaluation?.scheduledTime || '-'}
-                          year={new Date().getFullYear().toString()}
-                          status={isScheduled ? "Telah dijadualkan" : "Belum dijadualkan"}
-                          onEdit={() => {
-                            const teacher = teachers.find(t => t._id === row.teacherId);
-                            console.log('Edit clicked for teacher:', teacher?.name);
-                            console.log('Evaluation:', row.evaluation);
-                            console.log('Evaluation ID:', row.evaluation?.id);
-                            if (teacher && teacher._id && row.evaluation) {
-                              // Get subjects/classes from assignments
-                              const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
-                              const subjects = [...new Set(assignments.map(a => a.subject))];
-                              const classes = [...new Set(assignments.map(a => a.class))];
-                              setSelectedTeacher({
-                                id: teacher._id,
-                                name: teacher.name,
-                                subjects,
-                                classes,
-                                evaluationId: row.evaluation?.id,
-                                evaluationData: {
-                                  subject: row.subject,
-                                  class: row.class,
-                                  obs1Status: row.evaluation.obs1Status,
-                                },
-                              });
-                              setScheduleModalOpen(true);
-                            }
-                          }}
-                          onDelete={() => {
-                            if (row.evaluation && window.confirm(`Padam cerapan untuk ${row.teacherName}?`)) {
-                              // Handle delete
-                              console.log('Delete:', row.evaluation.id);
-                            }
-                          }}
-                          onStart={() => {
-                            if (row.evaluation?.id) {
-                              // Navigate to observation form based on type
-                              if (observationType === "Cerapan 1") {
-                                navigate(`/pentadbir/observation/${row.evaluation.id}?type=1`);
-                              } else {
-                                navigate(`/pentadbir/observation/${row.evaluation.id}?type=2`);
+                    return filteredRows.map((row) => {
+                      // Determine observation type for display
+                      const observationType: "Cerapan 1" | "Cerapan 2" =
+                        row.evaluation?.obs1Status === 'submitted' ? "Cerapan 2" : "Cerapan 1";
+
+                      // Check if scheduled
+                      const isScheduled = !!(row.evaluation?.scheduledDate && row.evaluation?.scheduledTime);
+
+                      return (
+                        <Box key={row.id} sx={{ mb: 2 }}>
+                          <ObservationCard
+                            teacherName={row.teacherName}
+                            subject={row.subject}
+                            className={row.class}
+                            observationType={observationType}
+                            observerName={row.evaluation?.observerName || "Pentadbir"}
+                            observerTitle="Guru Besar"
+                            rubric={row.evaluation?.templateRubric || "Cerapan PdPc 2025"}
+                            date={row.evaluation?.scheduledDate ? new Date(row.evaluation.scheduledDate).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                            time={row.evaluation?.scheduledTime || '-'}
+                            year={new Date().getFullYear().toString()}
+                            status={isScheduled ? "Telah dijadualkan" : "Belum dijadualkan"}
+                            onEdit={() => {
+                              const teacher = teachers.find(t => t._id === row.teacherId);
+                              console.log('Edit clicked for teacher:', teacher?.name);
+                              console.log('Evaluation:', row.evaluation);
+                              console.log('Evaluation ID:', row.evaluation?.id);
+                              if (teacher && teacher._id && row.evaluation) {
+                                // Get subjects/classes from assignments
+                                const assignments = teachingAssignments.filter(a => a.teacherId === teacher._id && a.active);
+                                const subjects = [...new Set(assignments.map(a => a.subject))];
+                                const classes = [...new Set(assignments.map(a => a.class))];
+                                setSelectedTeacher({
+                                  id: teacher._id,
+                                  name: teacher.name,
+                                  subjects,
+                                  classes,
+                                  evaluationId: row.evaluation?.id,
+                                  evaluationData: {
+                                    subject: row.subject,
+                                    class: row.class,
+                                    obs1Status: row.evaluation.obs1Status,
+                                  },
+                                });
+                                setScheduleModalOpen(true);
                               }
-                            }
-                          }}
-                        />
-                      </Box>
-                    );
-                  });
-                })()}
-              </Box>
-            </CardContent>
-          </Card>
-          
-          {selectedTeacher && (
-            <ScheduleObservationModal
-              open={scheduleModalOpen}
-              onClose={() => {
-                setScheduleModalOpen(false);
-                setSelectedTeacher(null);
-              }}
-              teacherName={selectedTeacher.name}
-              subjectOptions={selectedTeacher.subjects}
-              classOptions={selectedTeacher.classes}
-              evaluationId={selectedTeacher.evaluationId}
-              evaluationData={selectedTeacher.evaluationData}
-              onSave={() => {
-                setScheduleModalOpen(false);
-                setSelectedTeacher(null);
-                loadData();
-              }}
-            />
-          )}
-        </Box>
-      </TabPanel>
+                            }}
+                            onDelete={() => {
+                              if (row.evaluation && window.confirm(`Padam cerapan untuk ${row.teacherName}?`)) {
+                                // Handle delete
+                                console.log('Delete:', row.evaluation.id);
+                              }
+                            }}
+                            onStart={() => {
+                              if (row.evaluation?.id) {
+                                // Navigate to observation form based on type
+                                if (observationType === "Cerapan 1") {
+                                  navigate(`/pentadbir/observation/${row.evaluation.id}?type=1`);
+                                } else {
+                                  navigate(`/pentadbir/observation/${row.evaluation.id}?type=2`);
+                                }
+                              }
+                            }}
+                          />
+                        </Box>
+                      );
+                    });
+                  })()}
+                </Box>
+              </CardContent>
+            </Card>
+
+            {selectedTeacher && (
+              <ScheduleObservationModal
+                open={scheduleModalOpen}
+                onClose={() => {
+                  setScheduleModalOpen(false);
+                  setSelectedTeacher(null);
+                }}
+                teacherName={selectedTeacher.name}
+                subjectOptions={selectedTeacher.subjects}
+                classOptions={selectedTeacher.classes}
+                evaluationId={selectedTeacher.evaluationId}
+                evaluationData={selectedTeacher.evaluationData}
+                onSave={() => {
+                  setScheduleModalOpen(false);
+                  setSelectedTeacher(null);
+                  loadData();
+                }}
+              />
+            )}
+          </Box>
+        </TabPanel>
       </Stack>
     </Box>
   );
