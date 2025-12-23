@@ -485,8 +485,8 @@ export default function Cerapan() {
                         assignments.forEach(assignment => {
                           const evaluation = evaluations.find(e =>
                             e.teacherId === teacher._id &&
-                            e.subject === assignment.subject &&
-                            e.class === assignment.class
+                            e.subject.trim().toLowerCase() === assignment.subject.trim().toLowerCase() &&
+                            e.class.trim().toLowerCase() === assignment.class.trim().toLowerCase()
                           );
                           allRows.push({
                             id: `${teacher._id}-${assignment.subject}-${assignment.class}`,
