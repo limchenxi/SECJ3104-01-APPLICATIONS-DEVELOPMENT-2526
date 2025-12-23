@@ -46,15 +46,22 @@ export default function Sidebar({
   const location = useLocation();
 
   const highestRole = getHighestRole(user?.role);
-  const menu = highestRole ? SidebarItem[highestRole] : [];
+
+  const menu = React.useMemo(() => {
+    const baseMenu = highestRole ? SidebarItem[highestRole] : [];
+    if (highestRole === "PENTADBIR" && !user?.role?.includes("GURU")) {
+      return baseMenu.filter((item) => item.label !== "Modul Guru");
+    }
+    return baseMenu;
+  }, [highestRole, user?.role]);
 
   const width = isOpen ? drawerWidth : collapsedWidth;
   const headerTitle =
     highestRole === "SUPERADMIN"
       ? "Panel Super Admin"
       : highestRole === "PENTADBIR"
-      ? "Panel Pentadbir"
-      : "Panel Guru";
+        ? "Panel Pentadbir"
+        : "Panel Guru";
 
   // const getIcon = (label: string) => <Box sx={{ width: 24, height: 24, bgcolor: '#90CAF9', borderRadius: 1 }} />;
 
@@ -189,62 +196,61 @@ export default function Sidebar({
           const key = item.label || idx;
 
           return item.children ? (
-            <Accordion 
-              key={idx} 
+            <Accordion
+              key={idx}
               // key={key} 
-              disableGutters 
-              elevation={0} 
-              expanded={isOpen && expandedAccordion === item.label} 
-              onChange={isOpen ? handleAccordionChange(item.label) : undefined} 
-              sx={{ 
-                  "&:before": { display: "none" }, 
-                  bgcolor: 'background.paper'
+              disableGutters
+              elevation={0}
+              expanded={isOpen && expandedAccordion === item.label}
+              onChange={isOpen ? handleAccordionChange(item.label) : undefined}
+              sx={{
+                "&:before": { display: "none" },
+                bgcolor: 'background.paper'
               }}
             >
-                {/* Accordion Summary (Parent Link/Label) */}
-                {renderItemContent(item)}
-                {/* Accordion Details (Children) */}
-                {isOpen && (
-                    <AccordionDetails sx={{ p: 0, ml: 1 }}>
-                    {item.children.map((c, i) => 
-                      {
-                        const childKey = c.label || i;
-                        return c.to ? (
-                          <ListItemButton
-                            key={childKey}
-                            component={NavLink}
-                            to={c.to}
-                            sx={{
-                                pl: 4, // 增加内边距表示子项
-                                minHeight: 40,
-                                my: 0.2,
-                                borderRadius: theme.shape.borderRadius,
-                                color: theme.palette.grey[700],
-                                "&.active, &:hover": { 
-                                    bgcolor: alpha(theme.palette.info.main, 0.1),
-                                    color: theme.palette.info.dark
-                                },
-                            }}
-                        >
-                            <ListItemText primary={c.label} primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                        </ListItemButton>
-                        ) : (<ListItemText 
-                              key={childKey} 
-                              primary={c.label} 
-                              sx={{ p: 1.5, pl: 4, opacity: isOpen ? 1 : 0.8 }} 
-                              primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'text.primary' }}
-                            />);
-                      }
-                    )}
-                    </AccordionDetails>
-                )}
+              {/* Accordion Summary (Parent Link/Label) */}
+              {renderItemContent(item)}
+              {/* Accordion Details (Children) */}
+              {isOpen && (
+                <AccordionDetails sx={{ p: 0, ml: 1 }}>
+                  {item.children.map((c, i) => {
+                    const childKey = c.label || i;
+                    return c.to ? (
+                      <ListItemButton
+                        key={childKey}
+                        component={NavLink}
+                        to={c.to}
+                        sx={{
+                          pl: 4,
+                          minHeight: 40,
+                          my: 0.2,
+                          borderRadius: theme.shape.borderRadius,
+                          color: theme.palette.grey[700],
+                          "&.active, &:hover": {
+                            bgcolor: alpha(theme.palette.info.main, 0.1),
+                            color: theme.palette.info.dark
+                          },
+                        }}
+                      >
+                        <ListItemText primary={c.label} primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                      </ListItemButton>
+                    ) : (<ListItemText
+                      key={childKey}
+                      primary={c.label}
+                      sx={{ p: 1.5, pl: 4, opacity: isOpen ? 1 : 0.8 }}
+                      primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'text.primary' }}
+                    />);
+                  }
+                  )}
+                </AccordionDetails>
+              )}
             </Accordion>
           ) : (
-              <React.Fragment key={key}>
-                {renderItemContent(item)}
-              </React.Fragment> 
+            <React.Fragment key={key}>
+              {renderItemContent(item)}
+            </React.Fragment>
           )
-    })}
+        })}
       </List>
 
       {/* {role === "SUPERADMIN" && (
@@ -344,11 +350,11 @@ export default function Sidebar({
       //   </List>
       // )}
       {/* Footer */}
-       <Box sx={{ mt: 'auto', p: 2, textAlign: isOpen ? 'left' : 'center' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ opacity: isOpen ? 1 : 0 }}>
-                {isOpen ? 'Version 1.0.0' : 'V1.0'}
-            </Typography>
-       </Box>
+      <Box sx={{ mt: 'auto', p: 2, textAlign: isOpen ? 'left' : 'center' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ opacity: isOpen ? 1 : 0 }}>
+          {isOpen ? 'Version 1.0.0' : 'V1.0'}
+        </Typography>
+      </Box>
 
       {/* Logout */}
       {/* <ListItemButton component={NavLink} to="/logout">

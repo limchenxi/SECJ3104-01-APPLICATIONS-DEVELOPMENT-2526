@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import useAuth from "../../../hooks/useAuth";
 import {
   Box,
   Button,
@@ -16,15 +17,15 @@ import {
   FormControl,
   Alert,
   Select,
-  InputLabel, 
+  InputLabel,
 } from "@mui/material";
 import {
   DataGrid,
   type GridColDef,
   type GridRenderCellParams,
-  type GridRowModel, 
+  type GridRowModel,
 } from "@mui/x-data-grid";
-import { userApi} from "../api";
+import { userApi } from "../api";
 import { Pen, Plus, Trash2 } from "lucide-react";
 import { enqueueSnackbar } from "notistack";
 import { Edit, People } from "@mui/icons-material";
@@ -43,7 +44,7 @@ const initialNewUser = {
 };
 
 const confirmDelete = (message: string) => {
-    return window.confirm(message);
+  return window.confirm(message);
 };
 // const MOCK_USERS: UserItem[] = [
 //     { id: 'u1', name: 'Alice Smith', email: 'alice@test.com', role: ['GURU'], ic: '111', gender: 'Female' },
@@ -55,6 +56,7 @@ const confirmDelete = (message: string) => {
 
 export default function UserList() {
   const theme = useTheme();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -63,10 +65,16 @@ export default function UserList() {
   // const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   // const [userToDeleteId, setUserToDeleteId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState<CreateUserPayload>(initialNewUser);
-  
+
+  const availableRoleOptions = currentUser?.role?.includes("SUPERADMIN")
+    ? roleOptions
+    : roleOptions.filter(r => r !== "SUPERADMIN");
+
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (currentUser) {
+      fetchUsers();
+    }
+  }, [currentUser]);
 
   async function fetchUsers() {
     try {
@@ -74,13 +82,19 @@ export default function UserList() {
       // const data = MOCK_USERS as UserItem[];
       const data = await userApi.getAll();
 
-      const mappedData = data.map(u => ({ 
-          ...u, 
-          role: u.role || [], 
-          id: u.id || u._id || String(Math.random()) 
-      }));      
-      setUsers(mappedData); 
-      
+      let mappedData = data.map(u => ({
+        ...u,
+        role: u.role || [],
+        id: u.id || u._id || String(Math.random())
+      }));
+
+      // Filter: If current user is PENTADBIR (and NOT SUPERADMIN), hide SUPERADMIN users
+      if (currentUser?.role?.includes("PENTADBIR") && !currentUser?.role?.includes("SUPERADMIN")) {
+        mappedData = mappedData.filter(u => !u.role?.includes("SUPERADMIN"));
+      }
+
+      setUsers(mappedData);
+
     } catch (error) {
       console.error("Error fetching users:", error);
       enqueueSnackbar("Gagal memuat pengguna", { variant: "error" });
@@ -111,30 +125,30 @@ export default function UserList() {
   }
 
   const handleEditUser = useCallback(async (newRow: GridRowModel, oldRow: GridRowModel): Promise<GridRowModel> => {
-    const id = newRow.id as string; 
+    const id = newRow.id as string;
     const updatedFields: UpdateUserPayload = {};
 
     if (newRow.name !== oldRow.name) updatedFields.name = newRow.name;
-    if (newRow.email !== oldRow.email) updatedFields.email = newRow.email; 
+    if (newRow.email !== oldRow.email) updatedFields.email = newRow.email;
     // if (newRow.role !== oldRow.role) updatedFields.role = newRow.role as UserRole[];
     if (newRow.ic !== oldRow.ic) updatedFields.ic = newRow.ic;
-    if (newRow.gender !== oldRow.gender) updatedFields.gender = newRow.gender as UserGender; 
-    
+    if (newRow.gender !== oldRow.gender) updatedFields.gender = newRow.gender as UserGender;
+
     if (Object.keys(updatedFields).length === 0) {
-      return oldRow; 
+      return oldRow;
     }
 
     try {
-      await userApi.update(id, updatedFields); 
+      await userApi.update(id, updatedFields);
       enqueueSnackbar("Pengguna berjaya dikemaskini", { variant: "success" });
       return newRow;
     } catch (error) {
       console.error("Error updating user:", error);
       const errorMessage = (error as any).response?.data?.message || (error as any).message || "Gagal mengemaskini pengguna.";
       enqueueSnackbar(errorMessage, { variant: "error" });
-      throw error; 
+      throw error;
     }
-   }, []);
+  }, []);
 
   async function handleDeleteUser(id: string) {
     if (!confirmDelete("Adakah anda pasti ingin memadam pengguna ini?")) return;
@@ -149,76 +163,76 @@ export default function UserList() {
     }
   }
   const handleOpenRoleEdit = (user: UserItem) => {
-    setUserToEdit({...user});
+    setUserToEdit({ ...user });
     setOpenRoleDialog(true);
   };
-  
+
   const handleSaveRoleEdit = async () => {
     if (!userToEdit || userToEdit.role.length === 0) {
-        enqueueSnackbar("Pengguna mesti mempunyai sekurang-kurangnya satu peranan.", { variant: 'warning' });
-        return;
+      enqueueSnackbar("Pengguna mesti mempunyai sekurang-kurangnya satu peranan.", { variant: 'warning' });
+      return;
     }
-    
+
     try {
-        const payload: UpdateUserPayload = { role: userToEdit.role };
-        await userApi.update(userToEdit.id, payload); 
-        
-        enqueueSnackbar(`Peranan ${userToEdit.name} berjaya dikemaskini (Mock).`, { variant: 'success' });
-        setOpenRoleDialog(false);
-        setUserToEdit(null);
-        fetchUsers(); 
-    } catch(error) {
-        const errorMessage = (error as any).response?.data?.message || (error as any).message || "Gagal mengemaskini peranan.";
-        enqueueSnackbar(errorMessage, { variant: 'error' });
-        console.error("Role update failed:", error);
+      const payload: UpdateUserPayload = { role: userToEdit.role };
+      await userApi.update(userToEdit.id, payload);
+
+      enqueueSnackbar(`Peranan ${userToEdit.name} berjaya dikemaskini (Mock).`, { variant: 'success' });
+      setOpenRoleDialog(false);
+      setUserToEdit(null);
+      fetchUsers();
+    } catch (error) {
+      const errorMessage = (error as any).response?.data?.message || (error as any).message || "Gagal mengemaskini peranan.";
+      enqueueSnackbar(errorMessage, { variant: 'error' });
+      console.error("Role update failed:", error);
     }
   };
 
   const columns: GridColDef[] = [
     { field: "name", headerName: "Nama", flex: 1, editable: true },
     { field: "email", headerName: "Emel", flex: 1.2, editable: true },
-    { 
-      field: "role", 
-      headerName: "Peranan", 
-      flex: 1, 
-      editable: false, 
+    {
+      field: "role",
+      headerName: "Peranan",
+      flex: 1,
+      editable: false,
       renderCell: (params: GridRenderCellParams<UserItem, UserRole[]>) => {
         const roles = params.value;
         const hasRoles = roles && Array.isArray(roles) && roles.length > 0;
-        
+
         return (
           <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', py: 1, alignItems: 'center', height: '100%' }}>
             {hasRoles ? (
-                roles.map((role) => (
-                    <Chip 
-                    key={role} 
-                    label={role} 
-                    size="small" 
-                    sx={{
-                        bgcolor: role === 'SUPERADMIN' ? theme.palette.error.main + '20' : (role === 'PENTADBIR' ? theme.palette.warning.main + '20' : theme.palette.info.main + '20'),
-                        color: role === 'SUPERADMIN' ? theme.palette.error.dark : (role === 'PENTADBIR' ? theme.palette.warning.dark : theme.palette.info.dark),
-                        fontWeight: 'bold',
-                        height: 24,
-                    }}
-                    />
-                ))
+              roles.map((role) => (
+                <Chip
+                  key={role}
+                  label={role}
+                  size="small"
+                  sx={{
+                    bgcolor: role === 'SUPERADMIN' ? theme.palette.error.main + '20' : (role === 'PENTADBIR' ? theme.palette.warning.main + '20' : theme.palette.info.main + '20'),
+                    color: role === 'SUPERADMIN' ? theme.palette.error.dark : (role === 'PENTADBIR' ? theme.palette.warning.dark : theme.palette.info.dark),
+                    fontWeight: 'bold',
+                    height: 24,
+                  }}
+                />
+              ))
             ) : (
-                <Typography variant="caption" sx={{ color: theme.palette.grey[400] }}>
-                    Tiada Peranan
-                </Typography>
+              <Typography variant="caption" sx={{ color: theme.palette.grey[400] }}>
+                Tiada Peranan
+              </Typography>
             )}
           </Stack>
         );
       },
     },
     { field: "ic", headerName: "IC", flex: 1, editable: true },
-    { 
-      field: "gender", 
-      headerName: "Jantina", 
-      flex: 0.6, 
+    {
+      field: "gender",
+      headerName: "Jantina",
+      flex: 0.6,
       editable: true,
-      type: 'singleSelect', 
-      valueOptions: genderOptions, 
+      type: 'singleSelect',
+      valueOptions: genderOptions,
     },
     {
       field: "actions",
@@ -243,7 +257,7 @@ export default function UserList() {
               color="error"
               size="small"
               startIcon={<Trash2 size={16} />}
-              onClick={() => handleDeleteUser(params.id as string)} 
+              onClick={() => handleDeleteUser(params.id as string)}
               sx={{ minWidth: 0, p: '4px 8px' }}
             >
               Padam
@@ -260,7 +274,7 @@ export default function UserList() {
         {/* Header */}
         <Box>
           <Typography variant="h4" sx={{ mb: 0.5 }}>
-            <People color="primary" fontSize="large"/> Senarai Pengguna
+            <People color="primary" fontSize="large" /> Senarai Pengguna
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Pengurusan akaun pengguna (Semua pengguna boleh diuruskan)
@@ -287,7 +301,7 @@ export default function UserList() {
           </Box>
         ) : (
           <DataGrid
-            rows={users} 
+            rows={users}
             columns={columns}
             disableRowSelectionOnClick
             processRowUpdate={handleEditUser}
@@ -310,8 +324,8 @@ export default function UserList() {
                 // 如果想要更大，可以尝试 1.1rem 或 1.2rem
               },
               "& .MuiDataGrid-row": {
-                  minHeight: '52px !important', 
-                  maxHeight: 'none !important',
+                minHeight: '52px !important',
+                maxHeight: 'none !important',
               }
             }}
           />
@@ -341,28 +355,28 @@ export default function UserList() {
               required
             />
             <FormControl fullWidth sx={{ mt: 1 }}>
-                <InputLabel id="add-role-select-label">Peranan</InputLabel>
-                <Select
-                    labelId="arole-select-label"
-                    multiple 
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole[] })} 
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((value) => (
-                          <Chip key={value} label={value} size="small" />
-                        ))}
-                      </Box>
-                    )}
-                    label="Peranan"
-                >
-                        {roleOptions.map((option) => (
-                            <MenuItem key={option} value={option}>
-                                {option}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+              <InputLabel id="add-role-select-label">Peranan</InputLabel>
+              <Select
+                labelId="arole-select-label"
+                multiple
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole[] })}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} size="small" />
+                    ))}
+                  </Box>
+                )}
+                label="Peranan"
+              >
+                {availableRoleOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               label="IC"
               value={newUser.ic}
@@ -370,7 +384,7 @@ export default function UserList() {
               required
             />
             <TextField
-              select 
+              select
               label="Jantina"
               value={newUser.gender}
               onChange={(e) => setNewUser({ ...newUser, gender: e.target.value as UserGender })}
@@ -392,46 +406,46 @@ export default function UserList() {
         </Dialog>
         {/* Dialog Edit Peranan (Role) */}
         <Dialog open={openRoleDialog} onClose={() => setOpenRoleDialog(false)} fullWidth maxWidth="xs">
-            <DialogTitle>Edit Peranan Pengguna: {userToEdit?.name}</DialogTitle>
-            <DialogContent>
-                <FormControl fullWidth sx={{ mt: 1 }}>
-                    <InputLabel id="edit-role-select-label">Peranan</InputLabel>
-                    <Select
-                        labelId="edit-role-select-label"
-                        multiple 
-                        value={userToEdit?.role || []}
-                        onChange={(e) => {
-                            const newRoles = e.target.value as UserRole[];
-                            setUserToEdit(prev => prev ? ({ ...prev, role: newRoles }) : null);
-                        }}
-                        renderValue={(selected) => (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {selected.map((value) => (
-                                    <Chip key={value} label={value} size="small" />
-                                ))}
-                            </Box>
-                        )}
-                        label="Peranan"
-                    >
-                        {roleOptions.map((option) => (
-                            <MenuItem key={option} value={option}>
-                                {option}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-                {userToEdit?.role.includes("SUPERADMIN") && (
-                    <Alert severity="warning" sx={{ mt: 2 }}>
-                        Peranan SUPERADMIN memerlukan kebenaran khas.
-                    </Alert>
+          <DialogTitle>Edit Peranan Pengguna: {userToEdit?.name}</DialogTitle>
+          <DialogContent>
+            <FormControl fullWidth sx={{ mt: 1 }}>
+              <InputLabel id="edit-role-select-label">Peranan</InputLabel>
+              <Select
+                labelId="edit-role-select-label"
+                multiple
+                value={userToEdit?.role || []}
+                onChange={(e) => {
+                  const newRoles = e.target.value as UserRole[];
+                  setUserToEdit(prev => prev ? ({ ...prev, role: newRoles }) : null);
+                }}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} size="small" />
+                    ))}
+                  </Box>
                 )}
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpenRoleDialog(false)}>Batal</Button>
-                <Button variant="contained" onClick={handleSaveRoleEdit} color="primary" disabled={!userToEdit || userToEdit.role.length === 0}>
-                    Simpan Perubahan
-                </Button>
-            </DialogActions>
+                label="Peranan"
+              >
+                {availableRoleOptions.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {userToEdit?.role.includes("SUPERADMIN") && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Peranan SUPERADMIN memerlukan kebenaran khas.
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenRoleDialog(false)}>Batal</Button>
+            <Button variant="contained" onClick={handleSaveRoleEdit} color="primary" disabled={!userToEdit || userToEdit.role.length === 0}>
+              Simpan Perubahan
+            </Button>
+          </DialogActions>
         </Dialog>
       </Stack>
     </Box>
