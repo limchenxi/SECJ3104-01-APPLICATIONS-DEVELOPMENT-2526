@@ -119,7 +119,18 @@ export default function AdminObservationForm() {
         setLoading(true);
         const data = await getAdminEvaluationDetails(id);
         setTask(data);
-        setMarks({} as MarkForm);
+
+        // Pre-fill marks if they exist
+        const targetObs = observationType === 1 ? data.observation_1 : data.observation_2;
+        if (targetObs && targetObs.marks && targetObs.marks.length > 0) {
+          const prefilled: MarkForm = {};
+          targetObs.marks.forEach(m => {
+            prefilled[m.questionId] = { mark: m.mark };
+          });
+          setMarks(prefilled);
+        } else {
+          setMarks({} as MarkForm);
+        }
       } catch (err) {
         console.error("Error loading task:", err);
         setError("Gagal memuatkan data. Sila cuba lagi.");
@@ -177,13 +188,13 @@ export default function AdminObservationForm() {
       const payload: SubmitObservationDto = {
         marks: Object.entries(marks).map(([questionId, data]) => ({ questionId, mark: data.mark })),
       };
-      
+
       if (observationType === 1) {
         await submitObservation1(id, payload);
       } else {
         await submitObservation2(id, payload);
       }
-      
+
       // Successfully submitted, navigate to report
       navigate(`/cerapan/results/${id}`);
     } catch (err: any) {
@@ -362,7 +373,7 @@ export default function AdminObservationForm() {
 
           {/* Submit Button */}
           <Stack direction="row" justifyContent="flex-end" spacing={2}>
-            <Button variant="outlined" onClick={() => navigate("/cerapan/admin")} disabled={submitting}>Batal</Button>
+            <Button variant="outlined" onClick={() => navigate("/pentadbir/cerapan")} disabled={submitting}>Batal</Button>
             <Button
               type="submit"
               variant="contained"

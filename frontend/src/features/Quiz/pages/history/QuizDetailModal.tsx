@@ -180,13 +180,13 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
       </DialogContent>
       
       <DialogActions>
-        <Button 
+        {/* <Button 
           onClick={handleExport} 
           disabled={!isQuiz && !isFlashcard || loading}
           startIcon={<DownloadIcon />}
         >
           Eksport PDF
-        </Button>
+        </Button> */}
         
         <Button onClick={onClose} color="primary" variant="contained">
           Tutup

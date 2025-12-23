@@ -60,7 +60,7 @@ export default function List() {
             {reports.map((report) => (
               <li key={report._id}>
                 {/* Link to the "view report" page (you'll build this later) */}
-                <Link to={`/cerapan/report/${report._id}`}>
+                <Link to={`/cerapan/results/${report._id}`}>
                   Laporan untuk Tempoh: {report.period} (Status: {report.status})
                 </Link>
               </li>

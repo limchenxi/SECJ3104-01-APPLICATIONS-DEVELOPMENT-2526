@@ -22,9 +22,10 @@ type RequestWithUser = any;
 @Controller('teaching-assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TeachingAssignmentController {
-  constructor(private readonly service: TeachingAssignmentService) {}
+  constructor(private readonly service: TeachingAssignmentService) { }
 
   @Get('me')
+  @Roles('GURU', 'PENTADBIR', 'SUPERADMIN')
   async getMine(
     @Req() req: RequestWithUser,
     @Query('year') year?: string,
@@ -35,6 +36,7 @@ export class TeachingAssignmentController {
   }
 
   @Get('me/available-for-cerapan')
+  @Roles('GURU', 'PENTADBIR', 'SUPERADMIN')
   async getAvailableForCerapan(
     @Req() req: RequestWithUser,
     @Query('period') period: string,
@@ -44,6 +46,7 @@ export class TeachingAssignmentController {
   }
 
   @Get()
+  @Roles('PENTADBIR', 'SUPERADMIN')
   async list(
     @Query('teacherId') teacherId?: string,
     @Query('subject') subject?: string,
@@ -60,12 +63,14 @@ export class TeachingAssignmentController {
 
   // Admin: create
   @Post()
+  @Roles('PENTADBIR', 'SUPERADMIN')
   async create(@Body() dto: CreateTeachingAssignmentDto) {
     return this.service.create(dto);
   }
 
   // Admin: update
   @Patch(':id')
+  @Roles('PENTADBIR', 'SUPERADMIN')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTeachingAssignmentDto,
@@ -75,6 +80,7 @@ export class TeachingAssignmentController {
 
   // Admin: delete
   @Delete(':id')
+  @Roles('PENTADBIR', 'SUPERADMIN')
   async remove(@Param('id') id: string) {
     await this.service.remove(id);
     return { success: true };

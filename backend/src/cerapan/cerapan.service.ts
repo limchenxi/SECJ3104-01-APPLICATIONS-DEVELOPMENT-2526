@@ -933,44 +933,7 @@ export class CerapanService {
       taraf: this.getTarafLabel(b.weighted1 || b.weighted2 || b.weightedSelf),
     }));
 
-    // 定义强制 JSON Schema
-    const responseSchema = {
-      type: 'OBJECT',
-      properties: {
-        overall_summary_malay: { type: 'STRING' },
-        overall_summary_english: { type: 'STRING' },
-        detailed_feedback: {
-          type: 'ARRAY',
-          items: {
-            type: 'OBJECT',
-            properties: {
-              code: { type: 'STRING' },
-              strength_or_development: { type: 'STRING' }, // 'Strength' or 'Development'
-              feedback_malay: {
-                type: 'STRING',
-                description: 'One constructive observation sentence in Malay.',
-              },
-              feedback_english: {
-                type: 'STRING',
-                description:
-                  'One constructive observation sentence in English.',
-              },
-            },
-            required: [
-              'code',
-              'strength_or_development',
-              'feedback_malay',
-              'feedback_english',
-            ],
-          },
-        },
-      },
-      required: [
-        'overall_summary_malay',
-        'overall_summary_english',
-        'detailed_feedback',
-      ],
-    };
+    // Updated System Prompt for Malay-only output
 
     const createFallbackTemplate = (reason: string, detail: string = '') => {
       return `
@@ -984,62 +947,33 @@ export class CerapanService {
     `.trim();
     };
 
-    //     const systemPrompt = `
-    // You are a seasoned educational assessment expert.
-
-    // Your task is to help generate a generic teaching performance appraisal comment.
-
-    // Strict rules:
-    // 1. Do not identify real individuals; refer only to "this teacher".
-    // 2. Use only the provided data; do not invent new information.
-    // 3. The comment must be bilingual (Malay and English) in a single short paragraph.
-    // 4. The tone must be professional, encouraging, and focused on strengths plus one area for improvement.
-    // 5. Target length: approximately 200–300 characters or 2-3 concise sentences. The comment must be highly descriptive.
-    // `;
-    //     const userPrompt = `
-    // Generate a bilingual Malay + English appraisal comment.
-
-    // Requirements:
-    // - The comment must incorporate the full description of the strongest and weakest areas (e.g., use "Planning" and "Guiding students," not just "4.1.1" and "4.3.1").
-    // - Do not invent new information; base feedback strictly on the data below.
-    // - The tone must be constructive and encouraging.
-    // - Begin with the Overall Evaluation Label: ${label}
-    // - Highlight the strength: Use the full description for **${strongestArea}**.
-    // - Suggest improvement: Focus on the full description for **${weakestArea}**.
-    // - Keep it professional and encouraging
-
-    // Assessment Data:
-    // - Class: ${evaluation.class}
-    // - Overall Score: ${overallScore}%
-    // - Overall Taraf: ${label}
-    // - Strongest Area: ${strongestArea}
-    // - Weakest Area: ${weakestArea}
-
-    // Write the final comment now.
-    // `;
-    const summaryMalay = `Secara keseluruhan, prestasi guru ${evaluation.subject} ini dinilai pada tahap '${label}' (${overallScore.toFixed(2)}%), menunjukkan ${label === 'Cemerlang' || label === 'Baik' ? 'kekuatan yang konsisten dalam pelbagai aspek' : 'beberapa bidang utama yang memerlukan perhatian dan pembangunan segera'}.`;
-    const summaryEnglish = `Overall, this ${evaluation.subject} teacher's performance is rated as '${label}' (${overallScore.toFixed(2)}%), demonstrating ${label === 'Cemerlang' || label === 'Baik' ? 'consistent strengths across various aspects' : 'several key areas requiring immediate attention and development'}.`;
-
     const systemPrompt = `
-You are a bilingual educational assessment expert. Your task is to generate a structured performance report using clear text sections and Markdown list formatting.
-Your output MUST strictly follow the requested structure and data provided.
+You are an expert educational evaluator in Malaysia. Your task is to generate a professional performance review (Ulasan Cerapan) in **Bahasa Melayu** only.
+Your output must be structured, constructive, and based strictly on the provided data.
 `;
+
     const userPrompt = `
-Generate the bilingual appraisal report for the teacher of ${evaluation.subject}.
+Sila jana laporan cerapan untuk guru subjek ${evaluation.subject} ini.
 
-# 1. Ringkasan Keseluruhan (Overall Summary)
-Use the following pre-calculated summary text:
+DATA PRESTASI:
+- Taraf Keseluruhan: ${label} (${overallScore.toFixed(2)}%)
+- Kekuatan Utama: ${strongestArea}
+- Bidang Pembangunan: ${weakestArea}
 
-${summaryMalay}
-${summaryEnglish}
+ARAHAN STRUKTUR OUTPUT:
 
-# 2. Maklum Balas Terperinci (Detailed Feedback)
-For every category listed below, generate ONE bilingual bullet point of constructive feedback. The feedback must be informed by the score/Taraf provided in the data.
+# 1. Ringkasan Keseluruhan
+Tulis satu perenggan ringkasan (3-4 ayat).
+- Mulakan dengan menyatakan taraf keseluruhan dan markah.
+- Anda **MESTI** menyebut secara spesifik apa kekuatan utama guru ini (${strongestArea}).
+- Anda **MESTI** menyebut secara spesifik apa bidang yang perlu ditambah baik (${weakestArea}).
+- Nada haruslah profesional dan membina.
 
-Assessment Data (Reference):
-${JSON.stringify(detailedDataForAI, null, 2)}
+# 2. Maklum Balas Terperinci
+Senaraikan aspek-aspek berikut dengan ulasan membina (satu ayat setiap satu):
+${detailedDataForAI.map((d) => `- [${d.code}] ${d.desc}: Skor ${d.score.toFixed(1)} (${d.taraf})`).join('\n')}
 
-Write the final report now.
+Untuk setiap aspek di atas, berikan satu ulasan ringkas dalam Bahasa Melayu yang sesuai dengan skor tersebut.
 `;
     try {
       const response = await this.aiModel.generateContent({
@@ -1158,5 +1092,19 @@ Maklum Balas: Komen terperinci tidak dapat dijana kerana sekatan model AI. / Det
 
     // 重新获取并返回更新后的评估
     return evaluation;
+  }
+
+  async updateAiComment(
+    evaluationId: string,
+    comment: string,
+  ): Promise<Cerapan> {
+    const evaluation = await this.cerapanModel.findById(evaluationId);
+
+    if (!evaluation) {
+      throw new NotFoundException('Evaluation not found');
+    }
+
+    evaluation.aiComment = comment;
+    return evaluation.save();
   }
 }

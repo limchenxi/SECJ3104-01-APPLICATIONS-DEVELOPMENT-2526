@@ -21,7 +21,7 @@ import { Cerapan } from './cerapan.schema';
 @Controller('cerapan') // Base route: /cerapan
 @UseGuards(JwtAuthGuard) // Protect all routes in this controller
 export class CerapanController {
-  constructor(private readonly cerapanService: CerapanService) {}
+  constructor(private readonly cerapanService: CerapanService) { }
 
   // Pentadbir: Start Cerapan 1 after schedule is set
   @Put('admin/start-observation-1/:id')
@@ -196,5 +196,13 @@ export class CerapanController {
     @Req() req: RequestWithUser, // 包含用户信息的请求对象
   ): Promise<Cerapan> {
     return this.cerapanService.forceGenerateAiComment(evaluationId);
+  }
+
+  @Put('admin/update-comment/:id')
+  async updateAiComment(
+    @Param('id') evaluationId: string,
+    @Body() body: { comment: string },
+  ) {
+    return this.cerapanService.updateAiComment(evaluationId, body.comment);
   }
 }
