@@ -2,8 +2,13 @@
 import { MongooseModule } from '@nestjs/mongoose';
 import { NestFactory } from '@nestjs/core';
 import { Module } from '@nestjs/common';
-import { UsersService } from './src/users/users.service';
-import { User, UserSchema } from './src/users/schemas/user.schema';
+import { CreateUserInput, UsersService } from './src/users/users.service';
+import {
+  Gender,
+  Role,
+  User,
+  UserSchema,
+} from './src/users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -21,15 +26,15 @@ async function createAdminUser() {
 
     console.log('Creating admin user...');
 
-    const adminUser = await usersService.createUser({
+    const adminPayload: CreateUserInput = {
       name: 'Administrator',
       email: 'admin@pentadbir.edu.my',
       password: 'admin123',
       ic: '123456789012',
-      gender: 'Male',
-      role: 'PENTADBIR',
+      role: [Role.PENTADBIR],
+      gender: Gender.Male,
       contactNumber: '0123456789',
-    });
+    };
 
     console.log('✅ Admin user created successfully!');
     console.log('📧 Email: admin@pentadbir.edu.my');

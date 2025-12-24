@@ -38,7 +38,7 @@ export default function ObservationTasks() {
     try {
       const users = await userApi.getAll();
       const map: Record<string, string> = {};
-      users.forEach(u => { if (u.id) map[u.id] = u.name; });
+      users.forEach(u => { if (u._id) map[u._id] = u.name; });
       setUserMap(map);
     } catch (err) {
       console.error("Error loading users:", err);
@@ -104,9 +104,9 @@ export default function ObservationTasks() {
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
             <Typography variant="h6">Senarai Cerapan Perlu Dilengkapkan</Typography>
-            <Chip 
-              label={`${tasks.length} Tugasan`} 
-              color="primary" 
+            <Chip
+              label={`${tasks.length} Tugasan`}
+              color="primary"
               variant="outlined"
             />
           </Stack>
@@ -127,25 +127,28 @@ export default function ObservationTasks() {
                 <TableBody>
                   {tasks.map((task) => {
                     const statusInfo = getStatusInfo(task.status);
+                    const isScheduled = !!(task.scheduledDate && task.scheduledTime);
                     return (
                       <TableRow key={task._id}>
                         <TableCell>{userMap[task.teacherId] || task.teacherId}</TableCell>
                         <TableCell>{task.period}</TableCell>
                         <TableCell>
-                          <Chip 
-                            label={statusInfo.label} 
+                          <Chip
+                            label={statusInfo.label}
                             color={statusInfo.color}
                             size="small"
                           />
                         </TableCell>
                         <TableCell align="center">
                           <Button
-                            variant="outlined"
+                            variant={isScheduled ? "contained" : "outlined"}
+                            color={isScheduled ? "primary" : "inherit"}
                             size="small"
-                            startIcon={<Eye size={16} />}
-                            onClick={() => handleViewTask(task._id, statusInfo.type)}
+                            startIcon={isScheduled ? <Eye size={16} /> : undefined}
+                            disabled={!isScheduled}
+                            onClick={() => isScheduled && handleViewTask(task._id, statusInfo.type)}
                           >
-                            Buat Cerapan
+                            {isScheduled ? "Buat Cerapan" : "Belum Dijadualkan"}
                           </Button>
                         </TableCell>
                       </TableRow>

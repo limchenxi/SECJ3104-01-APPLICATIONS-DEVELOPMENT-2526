@@ -22,9 +22,10 @@ type RequestWithUser = any;
 @Controller('teaching-assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TeachingAssignmentController {
-  constructor(private readonly service: TeachingAssignmentService) {}
+  constructor(private readonly service: TeachingAssignmentService) { }
 
   @Get('me')
+  @Roles('GURU', 'PENTADBIR', 'SUPERADMIN')
   async getMine(
     @Req() req: RequestWithUser,
     @Query('year') year?: string,
@@ -35,6 +36,7 @@ export class TeachingAssignmentController {
   }
 
   @Get('me/available-for-cerapan')
+  @Roles('GURU', 'PENTADBIR', 'SUPERADMIN')
   async getAvailableForCerapan(
     @Req() req: RequestWithUser,
     @Query('period') period: string,

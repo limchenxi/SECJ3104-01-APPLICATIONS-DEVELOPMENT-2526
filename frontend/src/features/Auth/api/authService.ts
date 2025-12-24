@@ -1,6 +1,7 @@
 import { setAuthToken } from "../../../utils/auth";
 import { backendClient } from "../../../utils/axios-client";
 import type { Profile } from "../../Profile/type";
+import type { UserRole } from "../../Users/type";
 
 export const authService = {
   login: async (email: string, password: string) => {
@@ -9,7 +10,7 @@ export const authService = {
       token: string;
       user: {
         name: string;
-        role: "GURU" | "PENTADBIR" | "SUPERADMIN";
+        role: UserRole[];
       };
     }>("/auth/login", { email, password });
     setAuthToken(res.data.token);

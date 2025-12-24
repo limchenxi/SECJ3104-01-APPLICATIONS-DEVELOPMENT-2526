@@ -9,7 +9,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import type { QuizQuestion } from "../type";
+import type { QuizQuestion } from "../../type";
 
 interface QuizPreviewProps {
   questions: QuizQuestion[];

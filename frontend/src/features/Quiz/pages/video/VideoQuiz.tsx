@@ -10,7 +10,7 @@ import {
 import { DownloadIcon } from "lucide-react";
 import { useGenerateVideoQuiz } from "../../hooks/useGenerateVideoQuiz";
 import { exportQuizToPDF } from "../exportQuizToPdf";
-import QuizPreview from "../QuizPreview";
+import QuizPreview from "../topic/QuizPreview";
 
 
 export default function VideoQuizGenerator() {

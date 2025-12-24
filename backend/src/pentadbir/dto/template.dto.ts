@@ -1,9 +1,18 @@
 // src/pentadbir/dto/template.dto.ts
+import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
 
 export class CreateTemplateDto {
+  @IsString()
   name: string;
+
+  @IsString()
   description: string;
+
+  @IsNumber()
   scaleSkor: number;
+
+  @IsOptional()
+  @IsArray()
   categories?: any[];
 }
 

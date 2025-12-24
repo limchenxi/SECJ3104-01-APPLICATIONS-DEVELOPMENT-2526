@@ -18,6 +18,8 @@ import {
   TableHead,
   TableContainer,
   Table,
+  TextField,
+  IconButton,
 } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -28,111 +30,253 @@ import {
   Award,
   TrendingUp,
   Clock,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
-import { getReportSummary, getAdminReportSummary, regenerateAiComment } from "../api/cerapanService";
+import { getReportSummary, getAdminReportSummary, regenerateAiComment, updateAiComment } from "../api/cerapanService";
 import type { CerapanRecord, ReportSummary } from "../type";
 import useAuth from "../../../hooks/useAuth";
 import { userApi } from "../../Users/api";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import SubCategoryRadarCharts from "./SubCategoryRadarCharts";
 
-const SCHOOL_NAME = 'SK SRI SIAKAP'; 
-const SCHOOL_CODE = 'ABA 3012';
-interface CategoryFeedbackItem {
-    code: string;
-    description: string;
-    performance_level: string;
-    feedback_malay: string;
-    feedback_english: string;
+// New Component for AI Comment Card to handle edit logic cleaner
+const AiCommentCard = ({
+  parsedAiComment,
+  isModelRefused,
+  isAdminView,
+  onUpdateComment
+}: {
+  parsedAiComment: { isRefused: boolean, text: string, data: any },
+  isModelRefused: boolean,
+  isAdminView: boolean,
+  onUpdateComment: (newComment: string) => void
+}) => {
+  const theme = useTheme();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedComment, setEditedComment] = useState(parsedAiComment.text);
+
+  // Sync state if prop changes (e.g. regeneration)
+  useEffect(() => {
+    setEditedComment(parsedAiComment.text);
+  }, [parsedAiComment.text]);
+
+  const handleSave = () => {
+    onUpdateComment(editedComment);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedComment(parsedAiComment.text);
+    setIsEditing(false);
+  };
+
+  return (
+    <Card
+      raised
+      sx={{
+        border: isModelRefused
+          ? `2px dashed ${theme.palette.warning.main}`
+          : `2px solid ${theme.palette.primary.main}`,
+        bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
+      }}
+    >
+      <CardContent>
+        <Stack spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={1} justifyContent="space-between">
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
+              <Typography variant="h6" sx={{ color: parsedAiComment.isRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
+                {parsedAiComment.isRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
+              </Typography>
+            </Stack>
+            {isAdminView && !isEditing && (
+              <Button
+                startIcon={<Edit2 size={16} />}
+                size="small"
+                variant="outlined"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit
+              </Button>
+            )}
+          </Stack>
+
+          {isEditing ? (
+            <Box>
+              <TextField
+                fullWidth
+                multiline
+                minRows={4}
+                value={editedComment}
+                onChange={(e) => setEditedComment(e.target.value)}
+                sx={{ bgcolor: 'background.paper', mb: 2 }}
+              />
+              <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Button
+                  startIcon={<X size={16} />}
+                  variant="outlined"
+                  color="error"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  startIcon={<Save size={16} />}
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSave}
+                >
+                  Save
+                </Button>
+              </Stack>
+            </Box>
+          ) : (
+            <>
+              {parsedAiComment.isRefused ? (
+                <Stack spacing={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
+                  </Typography>
+
+                  {/* 提取并显示关键数据行 */}
+                  {Object.keys(parsedAiComment!.data).map((key) => {
+                    const value = parsedAiComment!.data[key];
+                    const label = key.includes('Maklum Balas') ? 'Maklum Balas' : key;
+
+                    return (
+                      <Typography key={key} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
+                        <Box component="span" sx={{ color: theme.palette.grey[600] }}>{label}:</Box> <strong>{value}</strong>
+                      </Typography>
+                    );
+                  })}
+                </Stack>
+              ) : (
+                <Typography
+                  variant="body1"
+                  sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
+                >
+                  {parsedAiComment.text}
+                </Typography>
+              )}
+            </>
+          )}
+
+        </Stack>
+      </CardContent>
+    </Card>
+  );
 }
 
-const PDFExportContent = ({ report, summary, teacherName,subCategoryCodes, scoreRowData }: { report: CerapanRecord, summary: ReportSummary, teacherName: string | undefined, subCategoryCodes: string[], scoreRowData: any[]}) => {
-    if (!report || !summary) return null;
-    const breakdown = summary.categories.breakdown.sort((a, b) => a.code.localeCompare(b.code));
-    return (
-        <div style={{ 
-            padding: '20px', 
-            backgroundColor: '#fff', 
-            fontSize: '10pt', 
-            fontFamily: 'Arial, sans-serif', 
-            width: '1100px'
-        }}>
-            {/* Header / Info */}
-            <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>TAPAK STANDARD 4</h1>
-            <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>PEMBELAJARAN DAN PEMUDAHCARAAN (PdPc)</h1>
-            <br />
-            <table style={{ width: '100%', marginBottom: '15px', borderCollapse: 'collapse' }}>
-                <tbody>
-                    <tr>
-                        <td style={{ width: '33%' }}><strong>Nama Guru:</strong> {teacherName || report.teacherId}</td>
-                        <td style={{ width: '33%' }}><strong>Sekolah:</strong> {SCHOOL_NAME} ({SCHOOL_CODE})</td>
-                        <td style={{ width: '33%' }}><strong>Sesi Pengisian:</strong> {report.period}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Mata Pelajaran:</strong> {report.subject}</td>
-                        <td><strong>Kelas:</strong> {report.class}</td>
-                        <td><strong>Tarikh Laporan:</strong> {new Date().toLocaleDateString('ms-MY')}</td>
-                    </tr>
-                </tbody>
-            </table>
+const SCHOOL_NAME = 'SK SRI SIAKAP';
+const SCHOOL_CODE = 'ABA 3012';
+const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
+interface CategoryFeedbackItem {
+  code: string;
+  description: string;
+  performance_level: string;
+  feedback_malay: string;
+  feedback_english: string;
+}
 
-            {/* Score Table (Excel Format) */}
-            <h2 style={{ fontSize: '14pt', marginTop: '20px', marginBottom: '10px' }}>Skor Berwajaran Mengikut Subkategori (0-100)</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000' }}>
-                <thead>
-                    <tr style={{ backgroundColor: '#f0f0f0' }}>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', minWidth: '150px' }}>Penilaian/Evaluation</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', minWidth: '80px' }}>Tarikh/Date</th>
-                        {subCategoryCodes.map(code => (
-                            <th key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{code}</th>
-                        ))}
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', minWidth: '120px' }}>Jumlah Skor</th>
-                        <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>Taraf</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {scoreRowData.map(row => (
-                        <tr key={row.label}>
-                            <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>{row.label}</td>
-                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.date}</td>
-                            {subCategoryCodes.map(code => {
-                                const category = breakdown.find(c => c.code === code);
-                                const score = category ? category[row.key] : 0;
-                                return (
-                                    <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>
-                                        {score && score > 0 ? score.toFixed(2) : '-'}
-                                    </td>
-                                );
-                            })}
-                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>{row.total.toFixed(2)}</td>
-                            {/* Taraf label */}
-                            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>{row.taraf}</td>
-                            {/* <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.label.includes('Cerapan 2') ? summary.overall.label : ''}</td> */}
-                        </tr>
-                    ))}
-                    {/* Footer Row for Wajaran */}
-                    <tr>
-                        <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold', backgroundColor: '#e0ee0e' }}>Wajaran / Weight (Total 100)</td>
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', backgroundColor: '#e0e0e0' }}>-</td>
-                        {subCategoryCodes.map(code => {
-                            const category = breakdown.find(c => c.code === code);
-                            return (
-                                <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
-                                    {category ? category.weight.toFixed(0) : '-'}
-                                </td>
-                            );
-                        })}
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
-                            {summary.overall.triAverageWeighted.toFixed(2)}
-                        </td>
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
-                            {summary.overall.label}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    );
+const PDFExportContent = ({ report, summary, teacherName, subCategoryCodes, scoreRowData }: { report: CerapanRecord, summary: ReportSummary, teacherName: string | undefined, subCategoryCodes: string[], scoreRowData: any[] }) => {
+  if (!report || !summary) return null;
+  const breakdown = summary.categories.breakdown.sort((a, b) => a.code.localeCompare(b.code));
+  return (
+    <div style={{
+      padding: '20px',
+      backgroundColor: '#fff',
+      fontSize: '10pt',
+      fontFamily: 'Arial, sans-serif',
+      width: '1100px'
+    }}>
+      {/* Header / Info */}
+      <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <img
+          src={SCHOOL_LOGO_URL}
+          alt="Logo Sekolah"
+          style={{ maxWidth: '80px', height: 'auto', display: 'block', margin: '0 auto' }}
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
+      </div>
+      <h1 style={{ fontSize: '24px', marginBottom: '5px', fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>SK SRI SIAKAP</h1>
+      <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>TAPAK STANDARD 4</h1>
+      <h1 style={{ fontSize: '18pt', textAlign: 'center', marginBottom: '15px' }}>PEMBELAJARAN DAN PEMUDAHCARAAN (PdPc)</h1>
+      <br />
+      <table style={{ width: '100%', marginBottom: '15px', borderCollapse: 'collapse' }}>
+        <tbody>
+          <tr>
+            <td style={{ width: '33%' }}><strong>Nama Guru:</strong> {teacherName || report.teacherId}</td>
+            <td style={{ width: '33%' }}><strong>Sekolah:</strong> {SCHOOL_NAME} ({SCHOOL_CODE})</td>
+            <td style={{ width: '33%' }}><strong>Sesi Pengisian:</strong> {report.period}</td>
+          </tr>
+          <tr>
+            <td><strong>Mata Pelajaran:</strong> {report.subject}</td>
+            <td><strong>Kelas:</strong> {report.class}</td>
+            <td><strong>Tarikh Laporan:</strong> {new Date().toLocaleDateString('ms-MY')}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Score Table (Excel Format) */}
+      <h2 style={{ fontSize: '14pt', marginTop: '20px', marginBottom: '10px' }}>Skor Berwajaran Mengikut Subkategori (0-100)</h2>
+      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#f0f0f0' }}>
+            <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', minWidth: '150px' }}>Penilaian/Evaluation</th>
+            <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', minWidth: '80px' }}>Tarikh/Date</th>
+            {subCategoryCodes.map(code => (
+              <th key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{code}</th>
+            ))}
+            <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', minWidth: '120px' }}>Jumlah Skor</th>
+            <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>Taraf</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scoreRowData.map(row => (
+            <tr key={row.label}>
+              <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>{row.label}</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.date}</td>
+              {subCategoryCodes.map(code => {
+                const category = breakdown.find(c => c.code === code);
+                const score = category ? category[row.key] : 0;
+                return (
+                  <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>
+                    {score && score > 0 ? score.toFixed(2) : '-'}
+                  </td>
+                );
+              })}
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>{row.total.toFixed(2)}</td>
+              {/* Taraf label */}
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>{row.taraf}</td>
+              {/* <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>{row.label.includes('Cerapan 2') ? summary.overall.label : ''}</td> */}
+            </tr>
+          ))}
+          {/* Footer Row for Wajaran */}
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold', backgroundColor: '#e0ee0e' }}>Wajaran / Weight (Total 100)</td>
+            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', backgroundColor: '#e0e0e0' }}>-</td>
+            {subCategoryCodes.map(code => {
+              const category = breakdown.find(c => c.code === code);
+              return (
+                <td key={code} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+                  {category ? category.weight.toFixed(0) : '-'}
+                </td>
+              );
+            })}
+            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+              {summary.overall.triAverageWeighted.toFixed(2)}
+            </td>
+            <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#e0e0e0' }}>
+              {summary.overall.label}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 export default function CerapanResults() {
@@ -150,8 +294,13 @@ export default function CerapanResults() {
   const [fullTeacherName, setFullTeacherName] = useState<string | undefined>(undefined);
 
   // Determine if this is admin view
-  const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
-  const isSuperAdminView = user?.role === "SUPERADMIN";
+  // const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
+  // const isSuperAdminView = user?.role === "SUPERADMIN";
+  const userRoles = user?.role || [];
+  const hasAdminRole = userRoles.includes("PENTADBIR") || userRoles.includes("SUPERADMIN");
+  const isAdminView = hasAdminRole || location.pathname.includes("/pentadbir/");
+  const isSuperAdminView = userRoles.includes("SUPERADMIN");
+
   useEffect(() => {
     loadReport();
   }, [id]);
@@ -160,12 +309,12 @@ export default function CerapanResults() {
     const fetchTeacherName = async () => {
       if (report?.teacherId) {
         try {
-            const user = await userApi.getById(report.teacherId);
-              setFullTeacherName(user?.name);
-            } catch {
-                setFullTeacherName(report.teacherId); // 失败时使用 ID
-            }
+          const user = await userApi.getById(report.teacherId);
+          setFullTeacherName(user?.name);
+        } catch {
+          setFullTeacherName(report.teacherId); // 失败时使用 ID
         }
+      }
     };
     fetchTeacherName();
   }, [report?.teacherId]);
@@ -176,7 +325,7 @@ export default function CerapanResults() {
     try {
       setLoading(true);
       // Use admin endpoint if admin, otherwise teacher endpoint
-      const data = isAdminView 
+      const data = isAdminView
         ? await getAdminReportSummary(id)
         : await getReportSummary(id);
       setReport(data.report);
@@ -196,34 +345,34 @@ export default function CerapanResults() {
   const subCategoryCodes = useMemo(() => {
     if (!summary?.categories.breakdown) return [];
     return summary.categories.breakdown
-        .sort((a, b) => a.code.localeCompare(b.code))
-        .map(c => c.code);
+      .sort((a, b) => a.code.localeCompare(b.code))
+      .map(c => c.code);
   }, [summary]);
   const scoreRowData = useMemo(() => {
     if (!summary || !report) return [];
-    
+
     const formatDate = (dateValue: Date | string | null | undefined): string => {
-        if (!dateValue) return '-'; 
-        const date = new Date(dateValue);
-        if (isNaN(date.getTime()) || date.getFullYear() === 1970) return '-';
-        return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
+      if (!dateValue) return '-';
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime()) || date.getFullYear() === 1970) return '-';
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/');
     };
-    
+
     const dateSelf = formatDate(report.self_evaluation?.submittedAt);
     const dateObs1 = formatDate(report.observation_1?.submittedAt);
     const dateObs2 = formatDate(report.observation_2?.submittedAt);
-    
+
     return [
-        { label: 'Cerapan Kendiri / Self', date: dateSelf, key: 'weightedSelf' as const, total: summary.categories.totals.weightedSelfTotal, taraf: summary.selfEvaluation.label },
-        { label: 'Cerapan 1 / Obs 1', date: dateObs1, key: 'weighted1' as const, total: summary.categories.totals.weightedObservation1Total, taraf: summary.observation1.label},
-        { label: 'Cerapan 2 / Obs 2', date: dateObs2, key: 'weighted2' as const, total: summary.categories.totals.weightedObservation2Total, taraf: summary.observation2.label},
+      { label: 'Cerapan Kendiri / Self', date: dateSelf, key: 'weightedSelf' as const, total: summary.categories.totals.weightedSelfTotal, taraf: summary.selfEvaluation.label },
+      { label: 'Cerapan 1 / Obs 1', date: dateObs1, key: 'weighted1' as const, total: summary.categories.totals.weightedObservation1Total, taraf: summary.observation1.label },
+      { label: 'Cerapan 2 / Obs 2', date: dateObs2, key: 'weighted2' as const, total: summary.categories.totals.weightedObservation2Total, taraf: summary.observation2.label },
     ];
   }, [summary, report]);
 
   const parsedAiComment = useMemo(() => {
     if (!report?.aiComment) return null;
     const isRefused = report.aiComment.includes('[MODEL REFUSED GENERATION]');
-    if (!isRefused) return { isRefused: false, text: report.aiComment, data: {} }; 
+    if (!isRefused) return { isRefused: false, text: report.aiComment, data: {} };
     const data: Record<string, string> = {};
     report.aiComment.split('\n').forEach(line => {
       const firstColonIndex = line.indexOf(':');
@@ -236,94 +385,94 @@ export default function CerapanResults() {
         }
       }
     });
-    return { isRefused: true, data: data, text: report.aiComment }; 
+    return { isRefused: true, data: data, text: report.aiComment };
   }, [report]);
   const isModelRefused = parsedAiComment?.isRefused === true;
 
   const handleExportPdfReport = async () => {
     if (!report || !summary) {
-        setError("Laporan tidak lengkap untuk eksport.");
-        return;
+      setError("Laporan tidak lengkap untuk eksport.");
+      return;
     }
-    
+
     try {
-        const input = document.getElementById('pdf-export-content');
-        if (!input) {
-            setError("PDF content container not found.");
-            return;
-        }
-        // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
-        const canvas = await html2canvas(input, {
-            scale: 2, 
-            backgroundColor: "#ffffff",
-            useCORS: true,
-        });
-        const imgData = canvas.toDataURL("image/png");
-        // 2. 初始化 jsPDF
-        // 使用 Landscape (横向) A4 格式
-        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgProps = {
-            width: pageWidth,
-            height: (canvas.height * pageWidth) / canvas.width,
-        };
-        let heightLeft = imgProps.height;
-        let position = 0;
-        // 3. 将 Canvas 图像添加到 PDF 中并处理分页
+      const input = document.getElementById('pdf-export-content');
+      if (!input) {
+        setError("PDF content container not found.");
+        return;
+      }
+      // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
+      const canvas = await html2canvas(input, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      // 2. 初始化 jsPDF
+      // 使用 Landscape (横向) A4 格式
+      const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = {
+        width: pageWidth,
+        height: (canvas.height * pageWidth) / canvas.width,
+      };
+      let heightLeft = imgProps.height;
+      let position = 0;
+      // 3. 将 Canvas 图像添加到 PDF 中并处理分页
+      pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgProps.height;
+        pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
         heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-            position = heightLeft - imgProps.height;
-            pdf.addPage();
-            pdf.addImage(imgData, "PNG", 0, position, imgProps.width, imgProps.height, undefined, "FAST");
-            heightLeft -= pageHeight;
-        }
-        // 4. 保存文件
-        const fileName = `Laporan_Cerapan_${report.subject}_${report.class}.pdf`;
-        pdf.save(fileName.replace(/\s+/g, '_'));
+      }
+      // 4. 保存文件
+      const fileName = `Laporan_Cerapan_${report.subject}_${report.class}.pdf`;
+      pdf.save(fileName.replace(/\s+/g, '_'));
     } catch (e: any) {
-        console.error("PDF export failed:", e);
-        setError(`Gagal menjana PDF: ${e.message || '未知错误'}`);
+      console.error("PDF export failed:", e);
+      setError(`Gagal menjana PDF: ${e.message || '未知错误'}`);
     }
-};
-  
-const handleExportPdfSubResult = async () => {
+  };
+
+  const handleExportPdfSubResult = async () => {
     if (!report || !summary) {
       setError("Laporan tidak lengkap untuk eksport.");
       return;
-    } 
+    }
     try {
-        // 🚨 目标元素是 Subcategory Card
-        const input = document.getElementById('sub-category-table-export');
-        if (!input) {
-            setError("Subcategory table container not found.");
-            return;
-        }
-        // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
-        const canvas = await html2canvas(input, {
-            scale: 2, 
-            backgroundColor: "#ffffff",
-            useCORS: true,
-        });
-        const imgData = canvas.toDataURL("image/png");
-        // 2. 初始化 jsPDF
-        // 使用 Landscape (横向) A4 格式
-        const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" }); 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgProps = {
-          width: pageWidth,
-          height: (canvas.height * pageWidth) / canvas.width,
-        };
-        // 3. 图像添加到 PDF 中 (这里不需要分页，因为它只是一个表格)
-        pdf.addImage(imgData, "PNG", 0, 0, imgProps.width, imgProps.height, undefined, "FAST");
-        // 4. 保存文件
-        const fileName = `Laporan_Subcategory_${report.subject}_${report.class}.pdf`;
-        pdf.save(fileName.replace(/\s+/g, '_'));
+      // 🚨 目标元素是 Subcategory Card
+      const input = document.getElementById('sub-category-table-export');
+      if (!input) {
+        setError("Subcategory table container not found.");
+        return;
+      }
+      // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
+      const canvas = await html2canvas(input, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      // 2. 初始化 jsPDF
+      // 使用 Landscape (横向) A4 格式
+      const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = {
+        width: pageWidth,
+        height: (canvas.height * pageWidth) / canvas.width,
+      };
+      // 3. 图像添加到 PDF 中 (这里不需要分页，因为它只是一个表格)
+      pdf.addImage(imgData, "PNG", 0, 0, imgProps.width, imgProps.height, undefined, "FAST");
+      // 4. 保存文件
+      const fileName = `Laporan_Subcategory_${report.subject}_${report.class}.pdf`;
+      pdf.save(fileName.replace(/\s+/g, '_'));
     } catch (e: any) {
-        console.error("PDF subcategory export failed:", e);
-        setError(`Gagal menjana PDF subcategory: ${e.message || '未知错误'}`);
+      console.error("PDF subcategory export failed:", e);
+      setError(`Gagal menjana PDF subcategory: ${e.message || '未知错误'}`);
     }
   };
 
@@ -357,20 +506,20 @@ const handleExportPdfSubResult = async () => {
     const isReadyForAI = report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted';
 
     if (!isReadyForAI && !window.confirm("Peringatan: Kendiri atau Cerapan 2 belum selesai. Anda pasti mahu teruskan regenerasi komen AI?")) {
-        return;
+      return;
     }
 
     try {
-        setLoading(true);
-        await regenerateAiComment(id);
-        
-        await loadReport(); 
-        
+      setLoading(true);
+      await regenerateAiComment(id);
+
+      await loadReport();
+
     } catch (e: any) {
-        console.error("AI Regeneration Failed:", e);
-        setError(`Gagal regenerasi komen AI: ${e.response?.data?.message || 'Sila semak konsol.'}`);
+      console.error("AI Regeneration Failed:", e);
+      setError(`Gagal regenerasi komen AI: ${e.response?.data?.message || 'Sila semak konsol.'}`);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -478,9 +627,9 @@ const handleExportPdfSubResult = async () => {
                 </Card>
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
-                <Card variant="outlined" sx={{ 
-                  bgcolor: hasObs1 ? theme.palette.success.light + '20' : theme.palette.grey[100], 
-                  borderColor: hasObs1 ? theme.palette.success.main : theme.palette.grey[300] 
+                <Card variant="outlined" sx={{
+                  bgcolor: hasObs1 ? theme.palette.success.light + '20' : theme.palette.grey[100],
+                  borderColor: hasObs1 ? theme.palette.success.main : theme.palette.grey[300]
                 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={1} mb={1}>
@@ -516,9 +665,9 @@ const handleExportPdfSubResult = async () => {
                 </Card>
               </Grid>
               <Grid size={{ xs: 12, sm: 4 }}>
-                <Card variant="outlined" sx={{ 
-                  bgcolor: hasObs2 ? theme.palette.success.light + '20' : theme.palette.grey[100], 
-                  borderColor: hasObs2 ? theme.palette.success.main : theme.palette.grey[300] 
+                <Card variant="outlined" sx={{
+                  bgcolor: hasObs2 ? theme.palette.success.light + '20' : theme.palette.grey[100],
+                  borderColor: hasObs2 ? theme.palette.success.main : theme.palette.grey[300]
                 }}>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={1} mb={1}>
@@ -569,16 +718,16 @@ const handleExportPdfSubResult = async () => {
               <Box sx={{ textAlign: "center", minWidth: 200 }}>
                 <Award size={48} style={{ color: theme.palette.success.main, marginBottom: 16 }} />
                 <Typography variant="h2" sx={{ color: theme.palette.success.main, fontWeight: "bold" }}>
-                  {(hasObs1 || hasObs2 || summary?.selfEvaluation.status === 'submitted') 
-                    ? `${summary?.overall.triAverageWeighted?.toFixed(2) ?? 0}%` 
+                  {(hasObs1 || hasObs2 || summary?.selfEvaluation.status === 'submitted')
+                    ? `${summary?.overall.triAverageWeighted?.toFixed(2) ?? 0}%`
                     : `${summary?.selfEvaluation.completionPercent ?? 0}%`}
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 1 }}>
-                    {/* 🚨 FIX: 更改标签以反映这是加权平均分 */}
-                      {(hasObs1 || hasObs2 || summary?.selfEvaluation.status === 'submitted') 
-                        ? 'Skor Keseluruhan (Purata Berwajaran)' 
-                        : 'Kadar Lengkap Kendiri'
-                    }
+                  {/* 🚨 FIX: 更改标签以反映这是加权平均分 */}
+                  {(hasObs1 || hasObs2 || summary?.selfEvaluation.status === 'submitted')
+                    ? 'Skor Keseluruhan (Purata Berwajaran)'
+                    : 'Kadar Lengkap Kendiri'
+                  }
                 </Typography>
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} mt={2}>
                   <TrendingUp size={16} style={{ color: theme.palette.success.main }} />
@@ -618,54 +767,23 @@ const handleExportPdfSubResult = async () => {
 
         {/* AI COMMENT CARD */}
         {parsedAiComment && (report.self_evaluation.status === 'submitted' && report.observation_2.status === 'submitted') && (
-          <Card
-            raised
-            sx={{
-              border: isModelRefused
-                ? `2px dashed ${theme.palette.warning.main}` 
-                : `2px solid ${theme.palette.primary.main}`,
-              bgcolor: isModelRefused ? theme.palette.warning.light + '20' : theme.palette.primary.light + '20',
+          <AiCommentCard
+            parsedAiComment={parsedAiComment}
+            isModelRefused={isModelRefused}
+            isAdminView={isAdminView} // Pass admin view status
+            onUpdateComment={async (newComment) => {
+              try {
+                setLoading(true);
+                await updateAiComment(report._id, newComment);
+                await loadReport(); // Reload to get fresh data
+              } catch (e: any) {
+                console.error("Failed to update AI comment:", e);
+                setError("Gagal mengemaskini komen AI.");
+              } finally {
+                setLoading(false);
+              }
             }}
-          >
-            <CardContent>
-              <Stack spacing={2}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Award size={24} style={{ color: isModelRefused ? theme.palette.warning.dark : theme.palette.primary.main }} />
-                  <Typography variant="h6" sx={{ color: parsedAiComment.isRefused ? theme.palette.warning.dark : theme.palette.primary.main, fontWeight: 700 }}>
-                    {parsedAiComment.isRefused ? 'Maklum Balas Terstruktur (AI) ' : 'AI Comment / Komen AI'}
-                  </Typography>
-                </Stack>
-
-                {parsedAiComment.isRefused ? (
-                    <Stack spacing={1}>
-                        <Typography variant="body2" color="text.secondary">
-                            Makluman: Komen terperinci tidak dapat dijana kerana sekatan model AI. Data analisis prestasi dipaparkan di bawah:
-                        </Typography>
-                        
-                        {/* 提取并显示关键数据行 */}
-                        {Object.keys(parsedAiComment!.data).map((key) => {
-                          const value = parsedAiComment!.data[key];
-                          const label = key.includes('Maklum Balas') ? 'Maklum Balas' : key;
-                            
-                          return (
-                            <Typography key={key} variant="body1" sx={{ pl: 2, fontWeight: 500 }}>
-                              <Box component="span" sx={{ color: theme.palette.grey[600] }}>{label}:</Box> <strong>{value}</strong>
-                            </Typography>
-                          );
-                        })}
-                    </Stack>
-                ) : (
-                    // 🚨 【显示流畅评论】 - 仅在 AI 成功生成时显示
-                    <Typography 
-                        variant="body1" 
-                        sx={{ whiteSpace: 'pre-line', fontStyle: 'italic', lineHeight: 1.8 }}
-                    >
-                        {parsedAiComment.text}
-                    </Typography>
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+          />
         )}
 
         {/* Report table (MUI Horizontal Refactor) */}
@@ -679,72 +797,72 @@ const handleExportPdfSubResult = async () => {
               {/* TableContainer 启用横向滚动 */}
               <TableContainer component={Box} sx={{ maxHeight: 600 }}>
                 <Table size="small" sx={{ minWidth: 1200 }}> {/* 确保 minWidth 强制横向 */}
-                <TableHead>
-                  <TableRow sx={{ bgcolor: theme.palette.grey[100] }}>
-                    <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>Penilaian/Evaluation</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 90 }}>Tarikh/Date</TableCell> 
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: theme.palette.grey[100] }}>
+                      <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>Penilaian/Evaluation</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 90 }}>Tarikh/Date</TableCell>
                       {subCategoryCodes.map(code => (
                         <TableCell key={code} align="right" sx={{ fontWeight: 'bold' }}>{code}</TableCell>
                       ))}
-                    <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 120 }}>Jumlah Skor</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>Taraf</TableCell> {/* 🚨 Taraf 列 */}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {scoreRowData.map((row) => (
-                    <TableRow key={row.label} hover>
-                      <TableCell sx={{ fontWeight: 'bold' }}>{row.label}</TableCell>
-                      <TableCell align="center">{row.date}</TableCell> {/* 🚨 日期内容 */}
-                      {subCategoryCodes.map(code => {
-                        const category = summary!.categories.breakdown.find(c => c.code === code);
-                        const score = category ? category[row.key] : 0;
-                        const isAchieved = score && score > 0;
-                        return (
-                        <TableCell 
-                          key={code} 
-                          align="right" 
-                          sx={{ color: isAchieved ? theme.palette.success.main : theme.palette.grey[500] }}
-                        >
-                          {isAchieved ? score.toFixed(2) : '-'}
-                        </TableCell>
-                        );
-                      })}
-                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>{row.total.toFixed(2)}</TableCell>
-                      <TableCell align="center">
-                        <Chip 
-                          label={row.taraf} 
-                          size="small" 
-                          color={row.taraf === 'CEMERLANG' ? 'success' : row.taraf === 'BAIK' ? 'primary' : 'warning'}
-                        />
-                      </TableCell> {/* 🚨 Taraf 内容 */}
+                      <TableCell align="right" sx={{ fontWeight: 'bold', minWidth: 120 }}>Jumlah Skor</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>Taraf</TableCell> {/* 🚨 Taraf 列 */}
                     </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow sx={{ bgcolor: theme.palette.grey[200] }}>
-                    <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>PURATA KESELURUHAN (Wajaran)</TableCell>
-                    <TableCell colSpan={subCategoryCodes.length} align="right" sx={{ fontWeight: 'bold' }}>
-                      {/* 🚨 跨越 Subkategori 列 */}
-                      &nbsp;
-                    </TableCell> 
-                        <TableCell align="right" sx={{ fontWeight: 'bold', borderLeft: `1px solid ${theme.palette.divider}` }}>
-                            {summary!.overall.triAverageWeighted.toFixed(2)}
-                        </TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 'bold' }}>
-                          <Chip label={summary!.overall.label} size="small" color="secondary" />
-                        </TableCell>
+                  </TableHead>
+                  <TableBody>
+                    {scoreRowData.map((row) => (
+                      <TableRow key={row.label} hover>
+                        <TableCell sx={{ fontWeight: 'bold' }}>{row.label}</TableCell>
+                        <TableCell align="center">{row.date}</TableCell> {/* 🚨 日期内容 */}
+                        {subCategoryCodes.map(code => {
+                          const category = summary!.categories.breakdown.find(c => c.code === code);
+                          const score = category ? category[row.key] : 0;
+                          const isAchieved = score && score > 0;
+                          return (
+                            <TableCell
+                              key={code}
+                              align="right"
+                              sx={{ color: isAchieved ? theme.palette.success.main : theme.palette.grey[500] }}
+                            >
+                              {isAchieved ? score.toFixed(2) : '-'}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>{row.total.toFixed(2)}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={row.taraf}
+                            size="small"
+                            color={row.taraf === 'CEMERLANG' ? 'success' : row.taraf === 'BAIK' ? 'primary' : 'warning'}
+                          />
+                        </TableCell> {/* 🚨 Taraf 内容 */}
                       </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow sx={{ bgcolor: theme.palette.grey[200] }}>
+                      <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>PURATA KESELURUHAN (Wajaran)</TableCell>
+                      <TableCell colSpan={subCategoryCodes.length} align="right" sx={{ fontWeight: 'bold' }}>
+                        {/* 🚨 跨越 Subkategori 列 */}
+                        &nbsp;
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', borderLeft: `1px solid ${theme.palette.divider}` }}>
+                        {summary!.overall.triAverageWeighted.toFixed(2)}
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                        <Chip label={summary!.overall.label} size="small" color="secondary" />
+                      </TableCell>
+                    </TableRow>
 
 
-                      <TableRow sx={{ bgcolor: theme.palette.grey[50] }}>
-                        <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>Wajaran (%)</TableCell>
-                        {/* 渲染 Weight 总和 */}
-                        {summary!.categories.breakdown.map(category => (
-                          <TableCell key={category.code} align="center" sx={{ fontWeight: 'bold' }}>
-                            {category ? category.weight.toFixed(0) : '-'}
-                          </TableCell>
-                          ))}
-                        {/* {subCategoryCodes.map(code => {
+                    <TableRow sx={{ bgcolor: theme.palette.grey[50] }}>
+                      <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>Wajaran (%)</TableCell>
+                      {/* 渲染 Weight 总和 */}
+                      {summary!.categories.breakdown.map(category => (
+                        <TableCell key={category.code} align="center" sx={{ fontWeight: 'bold' }}>
+                          {category ? category.weight.toFixed(0) : '-'}
+                        </TableCell>
+                      ))}
+                      {/* {subCategoryCodes.map(code => {
                           const category = summary!.categories.breakdown.find(c => c.code === code);
                           return (
                             <TableCell key={code} align="center" sx={{ fontWeight: 'bold' }}>
@@ -752,15 +870,15 @@ const handleExportPdfSubResult = async () => {
                             </TableCell>
                           );
                         })} */}
-                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>100</TableCell>
-                        <TableCell align="center">-</TableCell>
-                      </TableRow>
+                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>100</TableCell>
+                      <TableCell align="center">-</TableCell>
+                    </TableRow>
                   </TableFooter>
                 </Table>
               </TableContainer>
             </CardContent>
           </Card>
-         )}
+        )}
 
         {/* Per-subcategory breakdown table */}
         {(summary?.categories.breakdown?.length ?? 0) > 0 && (
@@ -818,8 +936,37 @@ const handleExportPdfSubResult = async () => {
           </Card>
         )}
 
+        {/* Admin Edit Controls */}
+        {isAdminView && report && (
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            {hasObs1 && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<Edit2 size={16} />}
+                onClick={() => navigate(`/cerapan/admin/observation/${report._id}?type=1`)}
+              >
+                Kemaskini Cerapan 1
+              </Button>
+            )}
+            {hasObs2 && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<Edit2 size={16} />}
+                onClick={() => navigate(`/cerapan/admin/observation/${report._id}?type=2`)}
+              >
+                Kemaskini Cerapan 2
+              </Button>
+            )}
+          </Stack>
+        )}
+
+        {/* Radar Charts Breakdown */}
+        {summary && <SubCategoryRadarCharts summary={summary} />}
+
         <Box id="pdf-export-content" sx={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -1 }}>
-            <PDFExportContent report={report} summary={summary} teacherName={fullTeacherName} subCategoryCodes={subCategoryCodes} scoreRowData={scoreRowData}/>
+          <PDFExportContent report={report} summary={summary} teacherName={fullTeacherName} subCategoryCodes={subCategoryCodes} scoreRowData={scoreRowData} />
         </Box>
 
         {/* Action Buttons */}
@@ -852,14 +999,14 @@ const handleExportPdfSubResult = async () => {
             Muat Turun PDF report
           </Button>
 
-          <Button
+          {/* <Button
             variant="contained"
             color="secondary"
             size="large"
             onClick={handleExportPdfSubResult}
           >
             Muat Turun PDF subcategory result
-          </Button>
+          </Button> */}
         </Stack>
       </Stack>
     </Box>

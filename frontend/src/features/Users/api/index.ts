@@ -27,7 +27,8 @@ export const userApi = {
 
   create: async (userData: CreateUserPayload): Promise<UserItem> => {
     const response = await client().post<UserItem>(basePath, userData);
-    return response.data;
+    const createdUser = response.data;
+    return { ...createdUser, id: createdUser._id || createdUser.id };
   },
 
   update: async (
@@ -38,7 +39,8 @@ export const userApi = {
       `${basePath}/${id}`,
       userData,
     );
-    return response.data;
+    const updatedUser = response.data;
+    return { ...updatedUser, id: updatedUser._id || updatedUser.id };
   },
 
   delete: async (id: string | number): Promise<void> => {

@@ -7,7 +7,6 @@ interface GenerationPayload {
     difficulty?: 'easy' | 'medium' | 'hard';
     questionCount?: number;
     numQuestions?: number;
-    // Flashcard specific fields
     subject?: string;
     year?: string;
     // Video Quiz specific fields
@@ -35,6 +34,8 @@ export function useGenerateQuiz(generateApiUrl?: string) {
         questionCount: payload.numQuestions ?? payload.questionCount ?? 5,
         topic : payload.topic,
         difficulty : payload.difficulty,
+        year: payload.year,
+        subject: payload.subject,
     };
         
     // if (apiUrl.includes('video-quiz')) {
@@ -133,7 +134,7 @@ export function useGenerateQuiz(generateApiUrl?: string) {
   }
   
   // ----------------------------------------------------
-  // 2. 生成并保存方法 (用于 Topic Quiz - 保持不变)
+  // 2. 生成并保存方法 (Topic Quiz)
   // ----------------------------------------------------
   async function generateAndSave(payload: GenerationPayload, generatedBy = "web-user") {
     setLoading(true);
@@ -148,6 +149,8 @@ export function useGenerateQuiz(generateApiUrl?: string) {
         body: JSON.stringify({
           topic: payload.topic,
           difficulty: payload.difficulty,
+          year: payload.year,
+          subject: payload.subject,
           questionCount:
             payload.numQuestions ?? payload.questionCount ?? 5,
         }),
@@ -160,7 +163,6 @@ export function useGenerateQuiz(generateApiUrl?: string) {
       ? genJson.questions
       : [];
 
-      // ⭐ 使用辅助函数注入 ID/Index
       const questions = processQuestions(rawQuestions);
 
       // 2) Build Quiz Object
@@ -170,6 +172,7 @@ export function useGenerateQuiz(generateApiUrl?: string) {
           `${payload.subject || "Kuiz"} — ${payload.topic || "Topik"}`,
         subject: payload.subject || "Unknown",
         difficulty: payload.difficulty || "medium",
+        year: payload.year,
         questions,
         createdBy: generatedBy,
       };

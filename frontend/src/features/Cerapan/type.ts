@@ -54,6 +54,8 @@ export interface CerapanRecord {
   createdAt?: string;
   updatedAt?: string;
   aiComment?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
 }
 
 // Computed summary structures returned by /cerapan/report/:id/summary

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import useAuth from "./useAuth";
-import type { UserRole } from "../features/Auth/type";
+import type { UserRole } from "../features/Users/type";
+
 
 export default function useRoleGuard(roles: UserRole[]) {
   const { isInitialized, user, isLoading } = useAuth();
@@ -15,8 +16,12 @@ export default function useRoleGuard(roles: UserRole[]) {
       return false;
     }
 
-    return roles.includes(user.role);
-  }, [isInitialized, user, isLoading])
+    for (const role of user.role) {
+      if (roles.includes(role))
+        return true;
+    }
+    return false;
+  }, [isInitialized, user, isLoading, roles])
 
   return {
     isInitialized,

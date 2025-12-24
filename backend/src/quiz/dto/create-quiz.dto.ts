@@ -10,6 +10,7 @@ export class CreateQuizDto {
   @IsString()
   subject: string;
 
+  @IsOptional()
   @IsString()
   year: string;
 

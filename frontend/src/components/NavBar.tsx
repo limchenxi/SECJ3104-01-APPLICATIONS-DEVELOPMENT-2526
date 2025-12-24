@@ -1,7 +1,8 @@
 import { AppBar, Avatar, Button, Container, Toolbar, Typography, Box, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
-import { ChevronLeftIcon, MenuIcon } from "lucide-react";
+import { ChevronLeftIcon, LogOut, MenuIcon } from "lucide-react";
+import type { UserRole } from "../features/Users/type";
 const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
 interface NavBarProps {
   brand?: string;
@@ -12,11 +13,27 @@ interface NavBarProps {
 
 export default function NavBar({brand = "SISTEM SEKOLAH SK SRI SIAKAP", onMenuClick, sidebarOpen, }: NavBarProps) {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth() as { user: { name: string, role: UserRole[] } | null, logout: () => void };
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  /**
+   * 计算并返回用户的最高优先级角色。
+   * 优先级: SUPERADMIN > PENTADBIR > GURU
+   */
+  const getDisplayRole = (roles: UserRole[] | undefined): string => {
+    if (!roles || roles.length === 0) return "Pelawat";
+
+    if (roles.includes("SUPERADMIN")) return "Superadmin";
+    if (roles.includes("PENTADBIR")) return "Pentadbir";
+    if (roles.includes("GURU")) return "Guru";
+
+    return "Pengguna"; 
+  };
+  
+  const displayRole = getDisplayRole(user?.role);
 
   return (
     <AppBar position="sticky" elevation={3}
@@ -77,14 +94,15 @@ export default function NavBar({brand = "SISTEM SEKOLAH SK SRI SIAKAP", onMenuCl
                 {(currentUser?.name?.[0] || "A").toUpperCase()}
               </Avatar>
             </Box> */}
+
             {/* RIGHT: User info + Logout */}
           <Box display="flex" alignItems="center" gap={2}>
             <Box textAlign="right">
               <Typography variant="subtitle2" color="text.secondary">
-                {user?.role}
+                {displayRole}
               </Typography>
               <Typography variant="body1" fontWeight={600}>
-                {user?.name}
+                {user?.name ?? "Pengguna"}
               </Typography>
             </Box>
 
@@ -106,11 +124,13 @@ export default function NavBar({brand = "SISTEM SEKOLAH SK SRI SIAKAP", onMenuCl
               color="error"
               size="small"
               onClick={handleLogout}
+              startIcon={<LogOut size={16} />}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
                 borderRadius: 2,
                 boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
+                ml: 1,
               }}
             >
               Logout

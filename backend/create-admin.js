@@ -27,7 +27,7 @@ async function createAdminUser() {
       name: 'Admin User',
       email: 'admin@example.com',
       password: '$2b$10$K7L/8Y1t9fZYFKxPtS8cHuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu', // password: admin123
-      role: 'PENTADBIR',
+      role: [Role.PENTADBIR],
       createdAt: new Date(),
       updatedAt: new Date()
     };

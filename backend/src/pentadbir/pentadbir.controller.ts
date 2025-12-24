@@ -9,32 +9,51 @@ import {
   UseGuards,
   Req,
   ForbiddenException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.strategy';
 import { PentadbirService } from './pentadbir.service';
 import { CreateTemplateDto, UpdateTemplateDto } from './dto/template.dto';
+import { Role } from 'src/users/schemas/user.schema';
 
 type RequestWithUser = any; // This should match the definition in auth/types.d.ts
 
 @Controller('pentadbir')
 @UseGuards(JwtAuthGuard)
 export class PentadbirController {
-  constructor(private readonly pentadbirService: PentadbirService) {}
+  constructor(private readonly pentadbirService: PentadbirService) { }
 
   // Check if user is PENTADBIR
   private checkPentadbirRole(req: RequestWithUser) {
-    if (req.user.role !== 'PENTADBIR') {
+    const userRoles: Role[] = req.user.role || [];
+
+    if (
+      !userRoles.includes(Role.PENTADBIR) &&
+      !userRoles.includes(Role.SUPERADMIN)
+    ) {
       throw new ForbiddenException('Access denied. PENTADBIR role required.');
     }
   }
 
   // Check if user can access templates (PENTADBIR or GURU)
   private checkTemplateAccess(req: RequestWithUser) {
-    if (!['PENTADBIR', 'GURU', 'SUPERADMIN'].includes(req.user.role)) {
+    const userRoles: Role[] = req.user.role || [];
+    const allowedRoles: Role[] = [Role.PENTADBIR, Role.GURU, Role.SUPERADMIN];
+    const hasAccess = allowedRoles.some((allowedRole) =>
+      userRoles.includes(allowedRole),
+    );
+
+    if (!hasAccess) {
       throw new ForbiddenException(
         'Access denied. PENTADBIR or GURU role required.',
       );
     }
+    // if (!['PENTADBIR', 'GURU', 'SUPERADMIN'].includes(req.user.role)) {
+    //   throw new ForbiddenException(
+    //     'Access denied. PENTADBIR or GURU role required.',
+    //   );
+    // }
   }
 
   @Get('dashboard')
@@ -73,8 +92,17 @@ export class PentadbirController {
     @Req() req: RequestWithUser,
     @Body() createTemplateDto: CreateTemplateDto,
   ) {
-    this.checkPentadbirRole(req);
-    return this.pentadbirService.createTemplate(createTemplateDto);
+    try {
+      this.checkPentadbirRole(req);
+      console.log('Creating template with DTO:', JSON.stringify(createTemplateDto));
+      return await this.pentadbirService.createTemplate(createTemplateDto);
+    } catch (error) {
+      console.error('Error creating template:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(error.message || 'Failed to create template');
+    }
   }
 
   @Put('templates/:id')

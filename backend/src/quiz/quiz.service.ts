@@ -47,13 +47,14 @@ export class QuizService {
       medium: 'Sederhana',
       hard: 'Sukar',
     };
+    const yearInfo = dto.year ? ` untuk pelajar Tahun ${dto.year}` : '';
 
     const prompt = `
 Anda adalah pakar pembina soalan sekolah rendah.
 Jana ${dto.questionCount} soalan berdasarkan:
 
 Topik: ${dto.topic}
-Tahap Kesukaran: ${difficultyMap[dto.difficulty]}
+Tahap Kesukaran: ${difficultyMap[dto.difficulty]} ${yearInfo}
 
 FORMAT WAJIB JSON SAHAJA:
 
@@ -68,9 +69,10 @@ FORMAT WAJIB JSON SAHAJA:
   ]
 }
 `;
-    // const simulatedUserId = 'User_QuizGen_1'; // ⚠️ TODO: 替换为实际的用户ID
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
 
       const raw = result.response.text().trim();
       console.log('🧪 Raw AI Output:', raw);
@@ -117,12 +119,14 @@ FORMAT WAJIB JSON SAHAJA:
       hard: 'Sukar',
     };
 
+    const yearInfo = dto.year ? ` untuk pelajar Tahun ${dto.year}` : '';
+
     const prompt = `
 Anda adalah pakar pembina bahan pembelajaran.
 Jana ${dto.questionCount} kad imbas (flashcards) berdasarkan:
 
 Topik: ${dto.topic}
-Tahap Kesukaran: ${difficultyMap[dto.difficulty]}
+Tahap Kesukaran: ${difficultyMap[dto.difficulty]} ${yearInfo}
 
 FORMAT WAJIB JSON SAHAJA:
 
@@ -137,7 +141,9 @@ FORMAT WAJIB JSON SAHAJA:
 `;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.model.generateContent({
+        contents: [{ parts: [{ text: prompt }] }],
+      });
       const raw = result.response.text().trim();
       console.log('🧪 Raw AI Flashcard Output:', raw);
 
@@ -155,7 +161,6 @@ FORMAT WAJIB JSON SAHAJA:
         throw new BadRequestException('Invalid JSON structure returned by AI.');
       }
 
-      // 🚨 修复：检查关键字段是否存在
       if (!data.flashcards) {
         throw new BadRequestException(
           'JSON is missing the required "flashcards" field.',

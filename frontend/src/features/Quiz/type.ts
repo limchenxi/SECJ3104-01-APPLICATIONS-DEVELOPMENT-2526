@@ -14,6 +14,7 @@ export interface Quiz {
   _id?: string;
   title: string;
   subject: string;
+  year: string;
   difficulty: QuizDifficulty;
   duration: number;
   questions: QuizQuestion[];

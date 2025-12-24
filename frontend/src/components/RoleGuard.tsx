@@ -1,5 +1,5 @@
+import type { UserRole } from "../features/Users/type";
 import useRoleGuard from "../hooks/useRoleGuard";
-import type { UserRole } from "../features/Auth/type";
 import type { ReactNode } from "react";
 
 export default function RoleGuard({

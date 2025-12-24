@@ -1,21 +1,11 @@
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsOptional,
   IsString,
-  IsArray,
 } from 'class-validator';
-
-export enum Gender {
-  Male = 'Male',
-  Female = 'Female',
-}
-
-export enum Role {
-  GURU = 'GURU',
-  PENTADBIR = 'PENTADBIR',
-  SUPERADMIN = 'SUPERADMIN',
-}
+import { Gender, Role } from '../schemas/user.schema';
 
 export class CreateUserDto {
   @IsString()
@@ -33,8 +23,9 @@ export class CreateUserDto {
   @IsEnum(Gender)
   gender: Gender;
 
-  @IsEnum(Role)
-  role: Role;
+  @IsArray()
+  @IsEnum(Role, { each: true })
+  role: Role[];
 
   @IsOptional()
   @IsString()

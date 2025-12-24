@@ -1,30 +1,32 @@
-export interface User {
+export type UserRole = "GURU" | "PENTADBIR" | "SUPERADMIN";
+export type UserGender = "Male" | "Female";
+export interface UserItem {
   _id: string;
   name: string;
   email: string;
-  gender: "Female" | "Male";
+  gender: UserGender;
   ic: string;
+  role: UserRole[]; 
+
   phone?: string;
-  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
   profilePicture?: string;
 
-  // additional User fields
   password?: string;        // only backend uses
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface UserItem {
-  id?: string; // from Mongodb
-  _id?: string; // for Datagrid
-  name: string;
-  email: string;
-  role: "GURU" | "PENTADBIR" | "SUPERADMIN";
-  ic: string;
-  gender: "Female" | "Male";
-  phone?: string;
-  profileImageUrl?: string;
-}
+// export interface UserItem {
+//   id?: string; // from Mongodb
+//   _id?: string; // for Datagrid
+//   name: string;
+//   email: string;
+//   gender: UserGender;
+//   role: UserRole[]; 
+//   ic: string;
+//   phone?: string;
+//   profileImageUrl?: string;
+// }
 
 export interface UsersState {
   items: UserItem[];
@@ -35,7 +37,16 @@ export interface UsersState {
 export interface CreateUserPayload {
   name: string;
   email: string;
-  role?: string;
   password?: string;
+  gender: UserGender;
+  ic: string;
+  role: UserRole[]; 
+  phone?: string;
 }
 export type UpdateUserPayload = Partial<CreateUserPayload>;
+
+export interface UsersState {
+  items: UserItem[];
+  isLoading: boolean;
+  error?: string;
+}

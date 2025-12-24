@@ -43,10 +43,10 @@ export default function TemplateRubrik() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Dialog states
   const [openTemplateDialog, setOpenTemplateDialog] = useState(false);
-  
+
   // Form state
   const [templateForm, setTemplateForm] = useState({
     name: "",
@@ -96,19 +96,31 @@ export default function TemplateRubrik() {
       return;
     }
 
+    if (!templateForm.description.trim()) {
+      setError("Keterangan template tidak boleh kosong.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
 
-      const templateData = {
+      const templateData: any = {
         name: templateForm.name,
         description: templateForm.description,
-        scaleSkor: templateForm.scaleSkor,
-        categories: editingTemplate?.categories || []
+        scaleSkor: Number(templateForm.scaleSkor || 4), // Ensure number
       };
 
+      if (editingTemplate) {
+        templateData.categories = editingTemplate.categories || [];
+      } else {
+        templateData.categories = [];
+      }
+
+      console.log("Saving template data:", templateData);
+
       let savedTemplate: TemplateRubric;
-      
+
       if (editingTemplate) {
         // Update existing template
         savedTemplate = await updateTemplate(editingTemplate.id, templateData);
@@ -122,19 +134,19 @@ export default function TemplateRubrik() {
       }
 
       setOpenTemplateDialog(false);
-      
+
       // Broadcast update to all connected users (teachers)
       broadcastTemplateUpdate(savedTemplate);
-      
+
     } catch (err: any) {
-      setError(err.response?.data?.message || "Gagal menyimpan template. Sila cuba lagi.");
       console.error("Error saving template:", err);
+      setError(err.response?.data?.message || err.message || "Gagal menyimpan template. Sila cuba lagi.");
     } finally {
       setSaving(false);
     }
   };
 
-  
+
   const broadcastTemplateUpdate = (template: TemplateRubric) => {
     console.log("Template updated - notifying all users:", template);
 
@@ -154,10 +166,10 @@ export default function TemplateRubrik() {
       await deleteTemplate(templateId);
       setTemplates(prev => prev.filter(t => t.id !== templateId));
       setSuccess("Template berjaya dipadam!");
-      
+
       // Notify all users about template deletion
       console.log("Template deleted - notifying all users:", templateId);
-      
+
     } catch (err: any) {
       setError(err.response?.data?.message || "Gagal memadam template. Sila cuba lagi.");
       console.error("Error deleting template:", err);
@@ -170,16 +182,16 @@ export default function TemplateRubrik() {
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
-      <Stack spacing={4}>        
+      <Stack spacing={4}>
         {/* Header */}
         <Box>
-          <Typography variant="h4" sx={{ mb: 0.5 }}><DocumentScanner color="primary" fontSize="large"/> Template Rubrik</Typography>
+          <Typography variant="h4" sx={{ mb: 0.5 }}><DocumentScanner color="primary" fontSize="large" /> Template Rubrik</Typography>
           <Typography color="text.secondary">
             Urus template penilaian untuk cerapan guru. Perubahan akan dikongsi dengan semua pengguna.
           </Typography>
         </Box>
         <Stack direction="row" spacing={2}>
-          <Box sx={{p:3 }}>
+          <Box sx={{ p: 3 }}>
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
@@ -200,7 +212,7 @@ export default function TemplateRubrik() {
             </Stack>
           </Box>
         </Stack>
-          <br />
+        <br />
       </Stack>
 
       {loading ? (
@@ -238,14 +250,14 @@ export default function TemplateRubrik() {
       ) : (
         <Grid container spacing={3}>
           {templates.map((template) => {
-            const totalItems = template.categories.reduce((total, cat) => 
-              total + cat.subCategories.reduce((subTotal, sub) => subTotal + sub.items.length, 0), 0
+            const totalItems = (template.categories || []).reduce((total, cat) =>
+              total + (cat.subCategories || []).reduce((subTotal, sub) => subTotal + (sub.items || []).length, 0), 0
             );
-            
+
             return (
               <Grid key={template.id} size={{ xs: 12, md: 6, lg: 4 }}>
-                <Card 
-                  sx={{ 
+                <Card
+                  sx={{
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
@@ -262,10 +274,10 @@ export default function TemplateRubrik() {
                         <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
                           {template.name}
                         </Typography>
-                        <Typography 
-                          variant="body2" 
-                          color="text.secondary" 
-                          sx={{ 
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
                             mt: 1,
                             display: "-webkit-box",
                             WebkitLineClamp: 2,
@@ -276,22 +288,22 @@ export default function TemplateRubrik() {
                           {template.description}
                         </Typography>
                       </Box>
-                      
+
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        <Chip 
-                          label={`Skala: ${template.scaleSkor}`} 
-                          size="small" 
+                        <Chip
+                          label={`Skala: ${template.scaleSkor}`}
+                          size="small"
                           color="primary"
                           variant="outlined"
                         />
-                        <Chip 
-                          label={`${template.categories.length} Kategori`} 
-                          size="small" 
+                        <Chip
+                          label={`${(template.categories || []).length} Kategori`}
+                          size="small"
                           variant="outlined"
                         />
-                        <Chip 
-                          label={`${totalItems} Item`} 
-                          size="small" 
+                        <Chip
+                          label={`${totalItems} Item`}
+                          size="small"
                           variant="outlined"
                         />
                       </Stack>
@@ -301,7 +313,7 @@ export default function TemplateRubrik() {
                       </Typography>
                     </Stack>
                   </CardContent>
-                  
+
                   <br />
                   <CardContent sx={{ pt: 0 }}>
                     <Stack direction="row" spacing={1} justifyContent="space-between">
@@ -313,14 +325,14 @@ export default function TemplateRubrik() {
                       >
                         Lihat & Edit
                       </Button>
-                      <IconButton 
+                      <IconButton
                         color="primary"
                         onClick={(e) => { e.stopPropagation(); handleEditTemplate(template); }}
                         sx={{ border: 1, borderColor: "primary.main" }}
                       >
                         <Edit size={16} />
                       </IconButton>
-                      <IconButton 
+                      <IconButton
                         color="error"
                         onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(template.id); }}
                         sx={{ border: 1, borderColor: "error.main" }}
@@ -377,9 +389,9 @@ export default function TemplateRubrik() {
           <Button onClick={() => setOpenTemplateDialog(false)} disabled={saving}>
             Batal
           </Button>
-          <Button 
-            onClick={handleSaveTemplate} 
-            variant="contained" 
+          <Button
+            onClick={handleSaveTemplate}
+            variant="contained"
             disabled={saving}
             startIcon={saving ? <CircularProgress size={16} /> : undefined}
           >
@@ -389,9 +401,9 @@ export default function TemplateRubrik() {
       </Dialog>
 
       {/* Success Snackbar */}
-      <Snackbar 
-        open={!!success} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={!!success}
+        autoHideDuration={4000}
         onClose={() => setSuccess(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
@@ -401,9 +413,9 @@ export default function TemplateRubrik() {
       </Snackbar>
 
       {/* Error Snackbar */}
-      <Snackbar 
-        open={!!error} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
         onClose={() => setError(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >

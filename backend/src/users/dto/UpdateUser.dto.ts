@@ -1,5 +1,11 @@
-import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
-import { Gender, Role } from './createUser.dto';
+import {
+  IsArray,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { Gender, Role } from '../schemas/user.schema';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -23,8 +29,9 @@ export class UpdateUserDto {
   gender: Gender;
 
   @IsOptional()
-  @IsEnum(Role)
-  role: Role;
+  @IsArray()
+  @IsEnum(Role, { each: true })
+  role: Role[];
 
   @IsOptional()
   @IsString()

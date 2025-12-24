@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Button, Divider, Stack, Typography } from "@mui/material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { RPH } from "../type";
 import Display from "./Display";
@@ -58,6 +58,7 @@ export default function RPH() {
             Jana Rancangan Pengajaran Harian (RPH) dengan bantuan kecerdasan buatan
           </Typography>
           <br /><br />
+          <Divider/>
         </Box>
         
         <Box sx={{ display: "flex", gap: 3 }}>
