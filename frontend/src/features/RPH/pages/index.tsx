@@ -5,32 +5,42 @@ import type { RPH } from "../type";
 import Display from "./Display";
 import History from "./History";
 import { Edit, Psychology } from "@mui/icons-material";
+import { getAuthToken } from "../../../utils/auth";
 
 export default function RPH() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();      
+  const [searchParams] = useSearchParams();
   const historyRef = useRef<{ refresh: () => void } | null>(null);
 
   const [selected, setSelected] = useState<RPH | null>(null);
 
   useEffect(() => {
-    const id = searchParams.get("id");         
+    const id = searchParams.get("id");
 
     if (id) loadSingle(id);
     else setSelected(null);
 
-  }, [searchParams]);                         
+  }, [searchParams]);
 
   async function loadSingle(id: string) {
-    const res = await fetch(`/api/rph/${id}`);
-    const data = await res.json();
-    setSelected(data);
+    const token = getAuthToken();
+    const res = await fetch(`/api/rph/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setSelected(data);
+    }
   }
 
   async function handleSave(updated: RPH) {
+    const token = getAuthToken();
     const res = await fetch(`/api/rph/${updated._id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
       body: JSON.stringify(updated),
     });
 
@@ -41,7 +51,11 @@ export default function RPH() {
 
   async function handleDelete(id: string) {
     if (!confirm("Padam RPH ini?")) return;
-    await fetch(`/api/rph/${id}`, { method: "DELETE" });
+    const token = getAuthToken();
+    await fetch(`/api/rph/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
     setSelected(null);
     navigate("/rph");
     historyRef.current?.refresh();
@@ -49,18 +63,18 @@ export default function RPH() {
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
-      <Stack spacing={4}>  
+      <Stack spacing={4}>
         <Box>
           <Typography variant="h4" sx={{ mb: 0.5 }}>
-            <Psychology color="primary" fontSize="large"/> eRPH - Penjana Rancangan Pengajaran
+            <Psychology color="primary" fontSize="large" /> eRPH - Penjana Rancangan Pengajaran
           </Typography>
           <Typography color="text.secondary">
             Jana Rancangan Pengajaran Harian (RPH) dengan bantuan kecerdasan buatan
           </Typography>
           <br /><br />
-          <Divider/>
+          <Divider />
         </Box>
-        
+
         <Box sx={{ display: "flex", gap: 3 }}>
 
           {/* left：History */}
@@ -75,7 +89,7 @@ export default function RPH() {
           {/* right：Display */}
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-              <Typography variant="h5" fontWeight="bold"><Edit/> Editor RPH</Typography>
+              <Typography variant="h5" fontWeight="bold"><Edit /> Editor RPH</Typography>
 
               <Button
                 variant="contained"

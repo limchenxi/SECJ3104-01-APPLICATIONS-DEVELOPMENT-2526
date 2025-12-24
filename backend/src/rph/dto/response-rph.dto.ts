@@ -1,26 +1,6 @@
-import { Type } from 'class-transformer';
-import { IsString, IsArray, ValidateNested } from 'class-validator';
+import { IsString } from 'class-validator';
+import { CreateRphDto } from './create-rph.dto';
 
-class SectionDto {
-  @IsString()
-  title: string;
-
-  @IsString()
-  content: string;
-}
-
-export class RPHResponseDto {
-  @IsString()
-  title: string;
-
-  @IsString()
-  date: string;
-
-  @IsString()
-  duration: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SectionDto)
-  sections: SectionDto[];
+export class RPHResponseDto extends CreateRphDto {
+  @IsString() _id: string;
 }

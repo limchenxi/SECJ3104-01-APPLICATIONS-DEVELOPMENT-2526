@@ -3,18 +3,28 @@ export interface RPH {
   subject: string;
   level: string;
   topic: string;
+  standardKandungan: string;
+  standardPembelajaran: string;
   objectives: string;
-  duration?: string;
-  materials?: string;
+  
+  kriteriaKejayaan?: string;  
+  emk?: string;                
+  bbm?: string;                 
+  pbd?: string;
+  
+  date: string;
+  duration: string;
+  minggu?: string;
 
   // AI generated result
   title: string;
-  date: string;
   sections: Array<{
     title: string;
     content: string;
   }>;
 
+  refleksi?: string;
+  userId: string;
   createdAt?: string;
 }
 
@@ -22,18 +32,18 @@ export interface RPHRequest {
   subject: string;
   level: string;         // Tahun 1, Tahun 6
   topic: string;         // Pendaraban
+  standardKandungan: string;
+  standardPembelajaran: string; 
   objectives: string;
-  duration?: string;     // optional
-  materials?: string;    // optional
-}
-
-export interface RPHResponse {
-  title: string;
   date: string;
   duration: string;
-  sections: Array<{
-    title: string;
-    content: string;
-  }>;
-  generatedAt: string;
+  minggu?: string;
+  kriteriaKejayaan?: string;
+  emk?: string;
+  bbm?: string;
+  pbd?: string;
+}
+
+export interface RPHResponse extends RPH {
+  _id: string;
 }

@@ -15,9 +15,6 @@ export class CreateRphDto extends RequestRphDto {
   title: string;
 
   @IsString()
-  date: string;
-
-  @IsString()
   userId: string; // Mandatory for tracking who created it
 
   @IsNumber()

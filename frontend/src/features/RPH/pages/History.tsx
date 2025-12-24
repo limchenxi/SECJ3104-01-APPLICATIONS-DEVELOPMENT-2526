@@ -9,7 +9,8 @@ import {
 } from "@mui/material";
 import { Delete, Restore } from "@mui/icons-material";
 import type { RPH } from "../type";
-import { Bold } from "lucide-react";
+import { getAuthToken } from "../../../utils/auth";
+import useAuth from "../../../hooks/useAuth";
 
 interface Props {
   onSelect: (item: RPH) => void;
@@ -17,17 +18,27 @@ interface Props {
 }
 
 const History = forwardRef(({ onSelect, onDelete }: Props, ref) => {
+  const { user } = useAuth();
   const [list, setList] = useState<RPH[]>([]);
 
   async function loadHistory() {
-    const res = await fetch("/api/rph");
+    const token = getAuthToken();
+    const res = await fetch("/api/rph", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     const data = await res.json();
     setList(data);
   }
 
   useEffect(() => {
-    loadHistory();
-  }, []);
+    if (user) {
+      loadHistory();
+    } else {
+      setList([]); // Clear list on logout
+    }
+  }, [user]);
 
   // expose refresh() to parent component
   useImperativeHandle(ref, () => ({
@@ -39,7 +50,7 @@ const History = forwardRef(({ onSelect, onDelete }: Props, ref) => {
   return (
     <Box sx={{ width: 350 }}>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
-        <Restore/> Sejarah RPH
+        <Restore /> Sejarah RPH
       </Typography>
 
       {list.map((item) => (
@@ -76,7 +87,7 @@ const History = forwardRef(({ onSelect, onDelete }: Props, ref) => {
                   color="error"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(item._id);
+                    if (item._id) onDelete(item._id);
                   }}
                 >
                   <Delete />
