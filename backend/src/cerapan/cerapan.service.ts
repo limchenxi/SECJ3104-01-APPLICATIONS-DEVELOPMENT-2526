@@ -279,7 +279,7 @@ export class CerapanService {
         teacherId: teacherId,
         status: { $ne: 'pending_self_evaluation' },
       })
-      .select('period templateId status')
+      .select('period templateId status subject class')
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -962,18 +962,24 @@ DATA PRESTASI:
 
 ARAHAN STRUKTUR OUTPUT:
 
-# 1. Ringkasan Keseluruhan
-Tulis satu perenggan ringkasan (3-4 ayat).
-- Mulakan dengan menyatakan taraf keseluruhan dan markah.
-- Anda **MESTI** menyebut secara spesifik apa kekuatan utama guru ini (${strongestArea}).
-- Anda **MESTI** menyebut secara spesifik apa bidang yang perlu ditambah baik (${weakestArea}).
-- Nada haruslah profesional dan membina.
+**1. Ringkasan Keseluruhan**
 
-# 2. Maklum Balas Terperinci
-Senaraikan aspek-aspek berikut dengan ulasan membina (satu ayat setiap satu):
-${detailedDataForAI.map((d) => `- [${d.code}] ${d.desc}: Skor ${d.score.toFixed(1)} (${d.taraf})`).join('\n')}
+Tulis satu perenggan ringkasan (3-4 ayat) yang profesional.
+- Nyatakan taraf keseluruhan dan markah.
+- Bincangkan secara spesifik kekuatan utama guru (${strongestArea}).
+- Bincangkan secara spesifik bidang yang perlu ditambah baik (${weakestArea}).
 
-Untuk setiap aspek di atas, berikan satu ulasan ringkas dalam Bahasa Melayu yang sesuai dengan skor tersebut.
+**2. Maklum Balas Terperinci**
+
+Untuk setiap aspek berikut, janakan ulasan dalam format TEPAT ini:
+
+* **[KOD] Nama Aspek: Skor X**
+Ulasan ringkas anda di baris baru...
+
+Senarai Aspek untuk diulas:
+${detailedDataForAI.map((d) => `[${d.code}] ${d.desc}: Skor ${d.score.toFixed(1)}`).join('\n')}
+
+Pastikan anda menjana ulasan untuk KESEMUA aspek yang disenaraikan di atas.
 `;
     try {
       const response = await this.aiModel.generateContent({

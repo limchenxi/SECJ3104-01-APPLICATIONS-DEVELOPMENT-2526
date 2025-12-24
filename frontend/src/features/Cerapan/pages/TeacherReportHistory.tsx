@@ -65,9 +65,9 @@ export default function TeacherReportHistory() {
     return (
         <Box sx={{ maxWidth: "lg", mx: "auto", p: 4 }}>
             <Stack spacing={3}>
-                <Button 
-                    startIcon={<ArrowLeft />} 
-                    onClick={() => navigate('/cerapan')} 
+                <Button
+                    startIcon={<ArrowLeft />}
+                    onClick={() => navigate('/cerapan')}
                     sx={{ width: 'fit-content' }}
                 >
                     Kembali ke Dashboard Kendiri
@@ -92,24 +92,44 @@ export default function TeacherReportHistory() {
                                 <Card key={report._id} variant="outlined">
                                     <CardContent>
                                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                            
+
                                             {/* 左侧：报告信息 (Subject, Class, Period) */}
-                                            <Stack spacing={0.5}>
-                                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                                    {report.subject} - {report.class}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Tempoh: {report.period}
-                                                </Typography>
-                                                <Chip 
-                                                    label={statusInfo.label} 
-                                                    color={statusInfo.color} 
-                                                    size="small" 
+                                            <Stack spacing={1}>
+                                                <Box>
+                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                        Mata Pelajaran
+                                                    </Typography>
+                                                    <Typography variant="body1" fontWeight={600}>
+                                                        {report.subject}
+                                                    </Typography>
+                                                </Box>
+
+                                                <Box>
+                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                        Kelas
+                                                    </Typography>
+                                                    <Typography variant="body1" fontWeight={600}>
+                                                        {report.class}
+                                                    </Typography>
+                                                </Box>
+
+                                                <Box>
+                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                        Tempoh
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        {report.period}
+                                                    </Typography>
+                                                </Box>
+                                                <Chip
+                                                    label={statusInfo.label}
+                                                    color={statusInfo.color}
+                                                    size="small"
                                                     icon={statusInfo.icon}
                                                     sx={{ width: 'fit-content', mt: 1 }}
                                                 />
                                             </Stack>
-                                            
+
                                             {/* 右侧：查看按钮 */}
                                             <Button
                                                 variant="contained"

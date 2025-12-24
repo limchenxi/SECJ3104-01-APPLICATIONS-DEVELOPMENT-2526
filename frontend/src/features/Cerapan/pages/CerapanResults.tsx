@@ -41,6 +41,7 @@ import { userApi } from "../../Users/api";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import SubCategoryRadarCharts from "./SubCategoryRadarCharts";
+import CerapanDetailDialog from "./CerapanDetailDialog";
 
 // New Component for AI Comment Card to handle edit logic cleaner
 const AiCommentCard = ({
@@ -293,6 +294,15 @@ export default function CerapanResults() {
   const [error, setError] = useState("");
   const [fullTeacherName, setFullTeacherName] = useState<string | undefined>(undefined);
 
+  // Dialog State
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailDialogType, setDetailDialogType] = useState<'self' | 'obs1' | 'obs2'>('self');
+
+  const handleOpenDetail = (type: 'self' | 'obs1' | 'obs2') => {
+    setDetailDialogType(type);
+    setDetailDialogOpen(true);
+  };
+
   // Determine if this is admin view
   // const isAdminView = user?.role === "PENTADBIR" || location.pathname.includes("/pentadbir/") || user?.role === "SUPERADMIN";
   // const isSuperAdminView = user?.role === "SUPERADMIN";
@@ -436,47 +446,6 @@ export default function CerapanResults() {
       setError(`Gagal menjana PDF: ${e.message || '未知错误'}`);
     }
   };
-
-  const handleExportPdfSubResult = async () => {
-    if (!report || !summary) {
-      setError("Laporan tidak lengkap untuk eksport.");
-      return;
-    }
-    try {
-      // 🚨 目标元素是 Subcategory Card
-      const input = document.getElementById('sub-category-table-export');
-      if (!input) {
-        setError("Subcategory table container not found.");
-        return;
-      }
-      // 1. 使用 html2canvas 将 HTML 元素渲染为 Canvas
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      // 2. 初始化 jsPDF
-      // 使用 Landscape (横向) A4 格式
-      const pdf = new jsPDF({ orientation: "l", unit: "mm", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgProps = {
-        width: pageWidth,
-        height: (canvas.height * pageWidth) / canvas.width,
-      };
-      // 3. 图像添加到 PDF 中 (这里不需要分页，因为它只是一个表格)
-      pdf.addImage(imgData, "PNG", 0, 0, imgProps.width, imgProps.height, undefined, "FAST");
-      // 4. 保存文件
-      const fileName = `Laporan_Subcategory_${report.subject}_${report.class}.pdf`;
-      pdf.save(fileName.replace(/\s+/g, '_'));
-    } catch (e: any) {
-      console.error("PDF subcategory export failed:", e);
-      setError(`Gagal menjana PDF subcategory: ${e.message || '未知错误'}`);
-    }
-  };
-
-
 
   if (loading) {
     return (
@@ -880,62 +849,6 @@ export default function CerapanResults() {
           </Card>
         )}
 
-        {/* Per-subcategory breakdown table */}
-        {(summary?.categories.breakdown?.length ?? 0) > 0 && (
-          <Card raised id="sub-category-table-export">
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Skor Mengikut Subkategori (4.x.x)
-              </Typography>
-              <Box sx={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: 8 }}>Kod</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Weight</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Full Mark</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Kendiri Weighted</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs1 Weighted</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Achieved</th>
-                      <th style={{ textAlign: 'right', padding: 8 }}>Obs2 Weighted</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary!.categories.breakdown.map((row) => (
-                      <tr key={row.code}>
-                        <td style={{ padding: 8 }}>{row.code}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weight?.toFixed(0) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.fullMark?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achievedSelf?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weightedSelf?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved1?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted1?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.achieved2?.toFixed(2) ?? 0}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{row.weighted2?.toFixed(2) ?? 0}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td style={{ padding: 8, fontWeight: 600 }}>Jumlah</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>100</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.fullMarkSum?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.selfRawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedSelfTotal?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation1RawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation1Total?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.observation2RawAchieved?.toFixed(2) ?? 0}</td>
-                      <td style={{ padding: 8, textAlign: 'right', fontWeight: 600 }}>{summary!.categories.totals.weightedObservation2Total?.toFixed(2) ?? 0}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Admin Edit Controls */}
         {isAdminView && report && (
           <Stack direction="row" spacing={2} justifyContent="flex-end">
@@ -969,46 +882,72 @@ export default function CerapanResults() {
           <PDFExportContent report={report} summary={summary} teacherName={fullTeacherName} subCategoryCodes={subCategoryCodes} scoreRowData={scoreRowData} />
         </Box>
 
-        {/* Action Buttons */}
-        <Stack direction="row" justifyContent="center" spacing={2}>
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => navigate(isAdminView ? "/pentadbir/cerapan" : "/cerapan")}
-          >
-            Kembali ke Dashboard
-          </Button>
-          {isSuperAdminView && report && (
+        {/* Action Buttons Section */}
+        <Stack spacing={2} alignItems="center">
+
+          {/* Row 1: Detailed Views */}
+          <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap">
+            <Button variant="outlined" color="primary" onClick={() => handleOpenDetail('self')}>
+              Lihat Perincian Kendiri
+            </Button>
+
+            {hasObs1 && (
+              <Button variant="outlined" color="primary" onClick={() => handleOpenDetail('obs1')}>
+                Lihat Perincian Cerapan 1
+              </Button>
+            )}
+
+            {hasObs2 && (
+              <Button variant="outlined" color="primary" onClick={() => handleOpenDetail('obs2')}>
+                Lihat Perincian Cerapan 2
+              </Button>
+            )}
+          </Stack>
+
+          {/* Row 2: General Actions */}
+          <Stack direction="row" justifyContent="center" spacing={2} flexWrap="wrap">
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate(isAdminView ? "/pentadbir/cerapan" : "/cerapan")}
+            >
+              Kembali ke Dashboard
+            </Button>
+            {isSuperAdminView && report && (
+              <Button
+                variant="contained"
+                color="warning"
+                size="large"
+                onClick={handleRegenerateComment}
+                disabled={loading}
+              >
+                Regenerasi Komen AI
+              </Button>
+            )}
+
             <Button
               variant="contained"
-              color="warning"
+              color="secondary"
               size="large"
-              onClick={handleRegenerateComment}
-              disabled={loading}
+              onClick={handleExportPdfReport}
             >
-              Regenerasi Komen AI
+              Muat Turun PDF report
             </Button>
-          )}
-
-          <Button
-            variant="contained"
-            color="secondary"
-            size="large"
-            onClick={handleExportPdfReport}
-          >
-            Muat Turun PDF report
-          </Button>
-
-          {/* <Button
-            variant="contained"
-            color="secondary"
-            size="large"
-            onClick={handleExportPdfSubResult}
-          >
-            Muat Turun PDF subcategory result
-          </Button> */}
+          </Stack>
         </Stack>
       </Stack>
-    </Box>
+
+      {
+        report && (
+          <CerapanDetailDialog
+            open={detailDialogOpen}
+            onClose={() => setDetailDialogOpen(false)}
+            report={report}
+            type={detailDialogType}
+            teacherName={fullTeacherName}
+          />
+        )
+      }
+    </Box >
   );
 }
