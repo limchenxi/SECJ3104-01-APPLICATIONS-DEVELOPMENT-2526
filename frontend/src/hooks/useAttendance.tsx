@@ -11,11 +11,9 @@ const toISODateString = (date: Date): string =>
 interface UseAttendanceReturn {
     clockIn: () => Promise<{ timeIn: string } | void>;
     clockOut: () => Promise<{ timeOut: string} | void>;
-    // fetchTodayAttendance: () => Promise<void>;
     fetchAttendanceForRange: (startDate: string, endDate: string) => Promise<void>;
     loading: boolean;
     error: string | null;
-    // todayAttendance: HistoryEntry[];
     historyByDate: HistoryByDate;
 }
 
@@ -66,38 +64,6 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
             setLoading(false);
         }
     }, [userID]);
-
-    // const fetchTodayAttendance = useCallback(async () => {
-    //     if(!userID) {
-    //         setError("User ID is missing");
-    //         return;
-    //     }
-
-    //     setLoading(true);
-    //     setError(null);
-
-    //     try {
-    //         const res = await getAttendanceToday(userID);
-    //         if(res) {
-    //             const mapped: HistoryEntry[] = [];
-    //             if(res.timeIn) {
-    //                 mapped.push({ id: 1, action: "in", timestamp: new Date(res.timeIn) });
-    //             }
-
-    //             if(res.timeOut) {
-    //                 mapped.push({ id: 2, action: "out", timestamp: new Date(res.timeOut) });
-    //             }
-
-    //             setHistory(mapped.sort((a, b) => b.id - a.id));
-    //         }
-    //     }
-    //     catch(err: any) {
-    //         setError(err.response?.data?.message || err.message);
-    //     }
-    //     finally {
-    //         setLoading(false);
-    //     }
-    // }, [userID]);
 
     const fetchAttendanceForRange = useCallback(async (startDate: string, endDate: string) => {
         if(!userID) {

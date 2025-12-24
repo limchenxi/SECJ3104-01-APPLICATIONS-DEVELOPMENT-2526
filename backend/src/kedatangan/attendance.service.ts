@@ -7,6 +7,8 @@ import { ClockInDTO } from './dto/clock-in.dto';
 import { Cron } from '@nestjs/schedule';
 import { Role, User } from 'src/users/schemas/user.schema';
 import { ClockOutDTO } from './dto/clock-out.dto';
+import { BadRequestException } from '@nestjs/common';
+import { ManualEntryDTO } from './dto/manual-entry.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -57,13 +59,45 @@ export class AttendanceService {
     if (!updateRecord) {
       throw new NotFoundException('No clock in record was found');
     }
-
+    
     if (updateRecord.timeOut) {
       return updateRecord;
     }
-
+    
     updateRecord.timeOut = clockOutTime;
     return updateRecord.save();
+  }
+  
+  private checkForLateness(date: Date): 'HADIR' | 'LEWAT' {
+    const eightAM = new Date();
+    eightAM.setHours(8, 0, 0, 0);
+
+    return date <= eightAM ? 'HADIR' : 'LEWAT';
+  }
+
+  async createManualRecord(dto: ManualEntryDTO) {
+    // Always set attendanceDate to midnight UTC
+    const dateObj = new Date(dto.date);
+    const attendanceDate = new Date(Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate(), 0, 0, 0, 0));
+
+    const timeIn = new Date(dto.clockInTime);
+    const timeOut = new Date(dto.clockOutTime);
+
+    if (timeOut < timeIn) {
+      throw new BadRequestException('Clock-out cannot be before clock-in');
+    }
+
+    return this.attendanceModel.findOneAndUpdate(
+      {userID: dto.userID, attendanceDate: attendanceDate},
+      {
+        userID: dto.userID,
+        timeIn: timeIn,
+        timeOut: timeOut,
+        attendanceDate: attendanceDate,
+        attendanceType: this.checkForLateness(timeIn)
+      },
+      {upsert: true, new: true}
+    );
   }
 
   async getRecordsByRange(userId: string, startDate: Date, endDate: Date) {
@@ -79,6 +113,30 @@ export class AttendanceService {
       .lean();
 
     return records;
+  }
+
+  async getAllRecords(startDate: Date, endDate: Date) {
+    const records = await this.attendanceModel
+      .find({
+        attendanceDate: {$gte: startDate, $lte: endDate},
+      })
+      .sort({ attendanceDate: -1 })
+      .lean();
+
+    // Fix: select 'name' instead of 'name_id' so teacher.name is available
+    const teachers = await this.userModel
+      .find({ role: Role.GURU }, 'name')
+      .lean();
+
+    return records.map(record => {
+      // Ensure both IDs are strings for comparison
+      const recordUserId = record.userID?.toString();
+      const teacher = teachers.find(teacher => teacher._id.toString() === recordUserId);
+      return {
+        ...record,
+        userName: teacher ? teacher.name : 'Unknown',
+      }
+    })
   }
 
   async getRecordsForSpecificDay(userId: string, targetDate: Date) {
@@ -108,17 +166,11 @@ export class AttendanceService {
       })
       .sort({ timeIn: -1 })
       .lean();
-
-    return record ?? {};
-  }
-
-  private checkForLateness(date: Date): 'HADIR' | 'LEWAT' {
-    const eightAM = new Date();
-    eightAM.setHours(8, 0, 0, 0);
-
-    return date <= eightAM ? 'HADIR' : 'LEWAT';
-  }
-
+      
+      return record ?? {};
+    }
+    
+    
   @Cron('59 23 * * *')
   async markAbsentees() {
     this.logger.log('Running daily absentee check');
