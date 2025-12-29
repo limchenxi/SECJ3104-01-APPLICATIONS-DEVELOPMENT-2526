@@ -7,6 +7,7 @@ import Logout from "../components/Logout";
 import EditProfile from "../features/Profile/pages/EditProfile";
 import RoleGuard from "../components/RoleGuard";
 import type { UserRole } from "../features/Users/type";
+import TeacherDirectoryPage from "../features/Kedatangan/pages/AttendanceList";
 
 const getDefaultPathByRole = (roles: UserRole[] | undefined): string => {
   if (!roles || roles.length === 0) return "/login";
@@ -176,6 +177,15 @@ export default function AppRoutes() {
               </RoleGuard>
             }
           />
+
+          <Route 
+            path="/kedatangan/keseluruhan"
+            element={
+              <RoleGuard roles={["PENTADBIR", "SUPERADMIN"]}>
+                <TeacherDirectoryPage />
+              </RoleGuard>
+            }
+          /> 
 
           <Route path="/rph" element={<RPH />} />
           <Route path="/rph/new" element={<RPHGenerator />} />

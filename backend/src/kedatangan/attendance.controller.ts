@@ -3,6 +3,9 @@ import { JwtAuthGuard } from "src/auth/jwt.strategy";
 import { AttendanceService } from "./attendance.service";
 import { ClockInDTO } from "./dto/clock-in.dto";
 import { ClockOutDTO } from "./dto/clock-out.dto";
+import { Roles } from "src/auth/roles.decorator";
+import { Role } from "src/users/schemas/user.schema";
+import { ManualEntryDTO } from "./dto/manual-entry.dto";
 
 const setEndOfDay = (date: Date): Date => {
     const end = new Date(date);
@@ -24,6 +27,29 @@ export class AttendanceController {
     clockOut(@Body() dto: ClockOutDTO) {
         return this.attendanceService.clockout(dto);
     }
+
+    @Get('all')
+    @Roles(Role.PENTADBIR, Role.SUPERADMIN)
+    getAllAttendance(
+        @Query('startDate') startDateStr: string,
+        @Query('endDate') endDateStr: string
+    ) {
+        if (!startDateStr || !endDateStr) {
+            throw new BadRequestException('Start and end dates are required');
+        }
+
+        const startDate = new Date(startDateStr);
+        const endDate = setEndOfDay(new Date(endDateStr));
+
+        return this.attendanceService.getAllRecords(startDate, endDate);
+    }
+
+    @Post('manual')
+    // @Roles(Role.PENTADBIR, Role.SUPERADMIN)
+    async createManualEntry(@Body() dto: ManualEntryDTO) {
+        return this.attendanceService.createManualRecord(dto);
+    }
+
 
     @Get('/:userId/today')
     getAttendanceToday(@Param('userId') userId: string) {

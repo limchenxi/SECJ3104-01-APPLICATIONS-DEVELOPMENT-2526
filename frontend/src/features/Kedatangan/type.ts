@@ -26,6 +26,7 @@ export interface HistoryEntry {
   id: string;
   action: ActionId; // Must be one of the literal strings in ActionId
   timestamp: Date;
+  attendanceType?: "HADIR" | "LEWAT" | "TIDAK HADIR";
 }
 
 export interface FormattedHistoryEntry {
