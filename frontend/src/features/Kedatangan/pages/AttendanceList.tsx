@@ -60,8 +60,8 @@ export default function StaffActivityFeed(): JSX.Element {
     const payload = {
       userID: manualEntry.teacherId,
       date: new Date(manualEntry.date).toISOString(),
-      clockInTime: new Date(`${manualEntry.date}T${manualEntry.timeIn}:00.000Z`).toISOString(),
-      clockOutTime: new Date(`${manualEntry.date}T${manualEntry.timeOut}:00.000Z`).toISOString(),
+      clockInTime: new Date(`${manualEntry.date}T${manualEntry.timeIn}:00`).toISOString(),
+      clockOutTime: new Date(`${manualEntry.date}T${manualEntry.timeOut}:00`).toISOString(),
     };
 
     try {
@@ -139,23 +139,23 @@ export default function StaffActivityFeed(): JSX.Element {
         {/* Header Section */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
           <Box>
-            <Typography variant="h5" fontWeight={800} color="primary.dark">Staff Attendance Feed</Typography>
+            <Typography variant="h5" fontWeight={800} color="primary.dark">Rekod Kedatangan</Typography>
             <ButtonGroup variant="outlined" size="small" sx={{ mt: 1, bgcolor: 'white' }}>
               {["today", "7d", "30d"].map((r) => (
                 <Button key={r} onClick={() => setSelectedRange(r)} variant={selectedRange === r ? "contained" : "outlined"}>
-                  {r === 'today' ? 'Today' : r === '7d' ? '7 Days' : '30 Days'}
+                  {r === 'today' ? 'Hari ini' : r === '7d' ? '7 Hari Lepas' : '30 Hari Lepas'}
                 </Button>
               ))}
             </ButtonGroup>
           </Box>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)} sx={{ borderRadius: 2 }}>
-            Manual Entry
+            Tambah
           </Button>
         </Box>
 
         {/* Stats/Filter Cards */}
         <Grid container spacing={2} mb={4}>
-          {['all', 'present', 'absent', 'late'].map((f) => (
+          {['semua', 'hadir', 'tidak hadir', 'lewat'].map((f) => (
             <Grid key={f} size={3}>
               <Card onClick={() => setStatusFilter(f as StatusFilter)} sx={{ p: 1.5, textAlign: 'center', cursor: 'pointer', borderRadius: 3, border: 2, borderColor: statusFilter === f ? 'primary.main' : 'transparent' }}>
                 <Typography variant="caption" fontWeight={700} color="text.secondary">{f.toUpperCase()}</Typography>
@@ -167,7 +167,7 @@ export default function StaffActivityFeed(): JSX.Element {
         {/* The List Container */}
         <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
           <Box sx={{ p: 2, bgcolor: '#fff', borderBottom: '1px solid #eee' }}>
-            <TextField fullWidth variant="standard" placeholder="Search teacher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            <TextField fullWidth variant="standard" placeholder="Cari Guru..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{ disableUnderline: true, startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} /> }}
             />
           </Box>
@@ -240,20 +240,20 @@ export default function StaffActivityFeed(): JSX.Element {
 
         {/* Manual Entry Dialog */}
         <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
-          <DialogTitle sx={{ fontWeight: 800 }}>Manual Record Entry</DialogTitle>
+          <DialogTitle sx={{ fontWeight: 800 }}>Tambah Kedatangan</DialogTitle>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <FormControl fullWidth sx={{ mt: 1 }}>
-              <InputLabel>Teacher</InputLabel>
+              <InputLabel>Guru</InputLabel>
               <Select label="Teacher" value={manualEntry.teacherId} onChange={(e) => setManualEntry({ ...manualEntry, teacherId: e.target.value })}>
                 {teachers.map((teacher) => (
                   <MenuItem key={teacher._id} value={teacher._id}>{teacher.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <TextField label="Date" type="date" fullWidth InputLabelProps={{ shrink: true }} value={manualEntry.date} onChange={(e) => setManualEntry({ ...manualEntry, date: e.target.value })} />
+            <TextField label="Tarikh" type="date" fullWidth InputLabelProps={{ shrink: true }} value={manualEntry.date} onChange={(e) => setManualEntry({ ...manualEntry, date: e.target.value })} />
             <Box display="flex" gap={2}>
-              <TextField label="Clock In" type="time" fullWidth InputLabelProps={{ shrink: true }} value={manualEntry.timeIn} onChange={(e) => setManualEntry({ ...manualEntry, timeIn: e.target.value })} />
-              <TextField label="Clock Out" type="time" fullWidth InputLabelProps={{ shrink: true }} value={manualEntry.timeOut} onChange={(e) => setManualEntry({ ...manualEntry, timeOut: e.target.value })} />
+              <TextField label="Masa Masuk" type="time" fullWidth InputLabelProps={{ shrink: true }} value={manualEntry.timeIn} onChange={(e) => setManualEntry({ ...manualEntry, timeIn: e.target.value })} />
+              <TextField label="Masa Keluar" type="time" fullWidth InputLabelProps={{ shrink: true }} value={manualEntry.timeOut} onChange={(e) => setManualEntry({ ...manualEntry, timeOut: e.target.value })} />
             </Box>
           </DialogContent>
           <DialogActions sx={{ p: 3 }}>

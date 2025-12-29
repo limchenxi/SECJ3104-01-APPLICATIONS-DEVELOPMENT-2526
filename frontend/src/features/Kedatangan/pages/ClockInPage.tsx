@@ -89,7 +89,10 @@ export default function AttendancePage(): JSX.Element {
   const startDate = calculateStartDate(selectedRange);
 
   const todayEntries = historyByDate[todayKey] || [];
-  const currentStatus: ActionId | "none" = todayEntries.length ? todayEntries[0].action : "none";
+  // Sort today's entries by timestamp descending (latest first)
+  const sortedTodayEntries = [...todayEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const lastAction = sortedTodayEntries.length ? sortedTodayEntries[0].action : "none";
+  const currentStatus: ActionId | "none" = lastAction;
 
   const attendanceHistory = useMemo(() => {
     const allEntries = Object.entries(historyByDate)
@@ -350,13 +353,10 @@ export default function AttendancePage(): JSX.Element {
 
             let disabled = false;
 
-            // Rules:
-            if (action.id === "in" && currentStatus === "in") disabled = true;
-            if (
-              action.id === "out" &&
-              (currentStatus === "out" || currentStatus === "none")
-            )
-              disabled = true;
+            // Only allow 'Clock In' if last action is 'out' or none
+            if (action.id === "in" && !(currentStatus === "out" || currentStatus === "none")) disabled = true;
+            // Only allow 'Clock Out' if last action is 'in'
+            if (action.id === "out" && currentStatus !== "in") disabled = true;
 
             return (
               <Grid>
@@ -364,7 +364,6 @@ export default function AttendancePage(): JSX.Element {
                   variant="contained"
                   fullWidth
                   disabled={disabled}
-                  // action.color is 'success'|'error', which is compatible with the expanded ThemeColor
                   color={action.color}
                   onClick={() => handleClockAction(action.id)}
                   sx={{
@@ -372,7 +371,6 @@ export default function AttendancePage(): JSX.Element {
                     flexDirection: "column",
                     borderRadius: 3,
                     boxShadow: 3,
-                    // Conditional styling based on status
                     ...(isCurrent && {
                       border: "3px solid",
                       borderColor: "primary.light",

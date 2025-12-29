@@ -86,14 +86,16 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
                     if(!newHistoryMap[dateKey]) {
                         newHistoryMap[dateKey] = [];
                     }
+
                     newHistoryMap[dateKey].push({
                         id: record.id + '-in',
                         action: 'in',
                         timestamp: timeInDate,
+                        attendanceType: record.attendanceType,
                     })
                 }
 
-                if (record.timeIn) {
+                if (record.timeOut) {
                     const timeOutDate = new Date(record.timeOut);
                     const dateKey = toISODateString(timeOutDate);
 

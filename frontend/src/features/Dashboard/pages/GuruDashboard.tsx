@@ -19,6 +19,7 @@ import { userApi } from "../../Users/api";
 import { getPendingTasksCount } from "../../Cerapan/api/cerapanService";
 import { QuickAction, StatCard } from "./component";
 import { pentadbirService } from "../../Pentadbir/api/pentadbirService";
+import AttendanceVisual from "../../../components/AttendanceVisual";
 
 const CustomChip = ({
   label,
@@ -200,6 +201,8 @@ export default function GuruDashboard() {
             />
           ))}
         </div>
+
+        <AttendanceVisual userId={me._id} />
 
         <div className="p-5 bg-white shadow rounded-lg h-full">
           <h2 className="font-semibold text-lg mb-4">Tugas Harian (Pending)</h2>

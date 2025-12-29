@@ -22,50 +22,55 @@ export class AttendanceService {
 
   async clockIn(dto: ClockInDTO) {
     const clockInDate = new Date(dto.clockInTime);
+    // Set attendanceDate to midnight UTC of the clock-in date
+    const attendanceDate = new Date(Date.UTC(clockInDate.getUTCFullYear(), clockInDate.getUTCMonth(), clockInDate.getUTCDate(), 0, 0, 0, 0));
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const existingRecord = await this.attendanceModel.findOne({
+    // Check for existing unmatched clock-in for today
+    const existingUnmatched = await this.attendanceModel.findOne({
       userID: dto.userID,
-      timeIn: { $gte: today },
+      attendanceDate: attendanceDate,
+      timeIn: { $exists: true },
+      timeOut: { $exists: false }
     });
-
-    if (existingRecord) {
-      return existingRecord;
+    if (existingUnmatched) {
+      return existingUnmatched;
     }
 
     const attendanceRecord = new this.attendanceModel({
       userID: dto.userID,
       timeIn: clockInDate,
       attendanceType: this.checkForLateness(clockInDate),
-      attendanceDate: today,
+      attendanceDate: attendanceDate,
     });
-
     return attendanceRecord.save();
   }
 
   async clockout(dto: ClockOutDTO) {
     const clockOutTime = new Date(dto.clockOutTime);
+    // Set attendanceDate to midnight UTC of the clock-out date
+    const attendanceDate = new Date(Date.UTC(clockOutTime.getUTCFullYear(), clockOutTime.getUTCMonth(), clockOutTime.getUTCDate(), 0, 0, 0, 0));
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const updateRecord = await this.attendanceModel.findOne({
+    // Find the latest record for today with timeIn but no timeOut
+    const latestUnmatchedClockIn = await this.attendanceModel.findOne({
       userID: dto.userID,
-      attendanceDate: { $gte: today },
-    });
+      attendanceDate: attendanceDate,
+      timeIn: { $exists: true },
+      timeOut: { $exists: false }
+    }).sort({ timeIn: -1 });
 
-    if (!updateRecord) {
-      throw new NotFoundException('No clock in record was found');
+    if (latestUnmatchedClockIn) {
+      latestUnmatchedClockIn.timeOut = clockOutTime;
+      return latestUnmatchedClockIn.save();
+    } else {
+      // If no unmatched clock-in, create a new record with only timeOut
+      const attendanceRecord = new this.attendanceModel({
+        userID: dto.userID,
+        timeOut: clockOutTime,
+        attendanceType: undefined,
+        attendanceDate: attendanceDate,
+      });
+      return attendanceRecord.save();
     }
-    
-    if (updateRecord.timeOut) {
-      return updateRecord;
-    }
-    
-    updateRecord.timeOut = clockOutTime;
-    return updateRecord.save();
   }
   
   private checkForLateness(date: Date): 'HADIR' | 'LEWAT' {
@@ -87,17 +92,16 @@ export class AttendanceService {
       throw new BadRequestException('Clock-out cannot be before clock-in');
     }
 
-    return this.attendanceModel.findOneAndUpdate(
-      {userID: dto.userID, attendanceDate: attendanceDate},
-      {
-        userID: dto.userID,
-        timeIn: timeIn,
-        timeOut: timeOut,
-        attendanceDate: attendanceDate,
-        attendanceType: this.checkForLateness(timeIn)
-      },
-      {upsert: true, new: true}
-    );
+    // Always create a new record for each manual entry
+    const attendanceRecord = new this.attendanceModel({
+      userID: dto.userID,
+      timeIn: timeIn,
+      timeOut: timeOut,
+      attendanceDate: attendanceDate,
+      attendanceType: this.checkForLateness(timeIn),
+      isManual: true
+    });
+    return attendanceRecord.save();
   }
 
   async getRecordsByRange(userId: string, startDate: Date, endDate: Date) {
