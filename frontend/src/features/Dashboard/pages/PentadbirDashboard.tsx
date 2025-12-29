@@ -21,6 +21,7 @@ import { TeachingAssignmentAPI } from "../../TeachingAssignment/api";
 import type { UserItem } from "../../Users/type";
 import { QuickAction, StatCard } from "./component";
 import { pentadbirService } from "../../Pentadbir/api/pentadbirService";
+import AttendanceVisual from "../../../components/AttendanceVisual";
 
 const CustomChip = ({
   label,
@@ -244,6 +245,8 @@ export default function PentadbirDashboard() {
             />
           ))}
         </Box>
+
+        {isGuru ? (<AttendanceVisual userId={me._id} />) : (null)}
 
         <div className="p-5 bg-white shadow rounded-lg h-full">
           <h2 className="font-semibold text-lg mb-4">Status Cerapan Semasa</h2>
