@@ -19,6 +19,13 @@ import { getAllTeachers } from "../api/getAllTeachersApi";
 
 type StatusFilter = "all" | "present" | "absent" | "late";
 
+const FILTERS: { label: string, value: StatusFilter }[] = [
+  { label: "SEMUA", value: "all" },
+  { label: "HADIR", value: "present" },
+  { label: "TIDAK HADIR", value: "absent" },
+  { label: "LEWAT", value: "late" },
+];
+
 export default function StaffActivityFeed(): JSX.Element {
   // 1. --- HOOK INTEGRATION ---
   const { globalHistory, fetchDashboardFeed, submitManualRecord, loading } = useAdminAttendance();
@@ -122,9 +129,10 @@ export default function StaffActivityFeed(): JSX.Element {
       groups[date] = groups[date].filter(item => {
         const matchesSearch = item.userName?.toLowerCase().includes(searchTerm.toLowerCase());
         let matchesStatus = true;
-        if (statusFilter === "present") matchesStatus = item.action === "in";
+        if (statusFilter === "present") matchesStatus = item.action === "in" && item.attendanceType !== "LEWAT";
         if (statusFilter === "late") matchesStatus = item.attendanceType === "LEWAT" && item.action === "in";
         if (statusFilter === "absent") matchesStatus = item.attendanceType === "TIDAK HADIR";
+        if (statusFilter === "all") matchesStatus = true;
         return matchesSearch && matchesStatus;
       }).sort((a, b) => b.displayTime.getTime() - a.displayTime.getTime());
     });
@@ -155,10 +163,10 @@ export default function StaffActivityFeed(): JSX.Element {
 
         {/* Stats/Filter Cards */}
         <Grid container spacing={2} mb={4}>
-          {['semua', 'hadir', 'tidak hadir', 'lewat'].map((f) => (
-            <Grid key={f} size={3}>
-              <Card onClick={() => setStatusFilter(f as StatusFilter)} sx={{ p: 1.5, textAlign: 'center', cursor: 'pointer', borderRadius: 3, border: 2, borderColor: statusFilter === f ? 'primary.main' : 'transparent' }}>
-                <Typography variant="caption" fontWeight={700} color="text.secondary">{f.toUpperCase()}</Typography>
+          {FILTERS.map((f) => (
+            <Grid key={f.value} size={3}>
+              <Card onClick={() => setStatusFilter(f.value)} sx={{ p: 1.5, textAlign: 'center', cursor: 'pointer', borderRadius: 3, border: 2, borderColor: statusFilter === f.value ? 'primary.main' : 'transparent' }}>
+                <Typography variant="caption" fontWeight={700} color="text.secondary">{f.label}</Typography>
               </Card>
             </Grid>
           ))}
