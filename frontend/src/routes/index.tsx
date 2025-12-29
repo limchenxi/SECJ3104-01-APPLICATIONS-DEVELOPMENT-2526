@@ -72,15 +72,9 @@ const SchoolConfiguration = lazy(
   () => import("../features/School/pages/SchoolConfiguration")
 );
 const BasicInfo = lazy(() => import("../features/School/pages/BasicInfo"));
-// const ObservationSetting = lazy(
-//   () => import("../features/School/pages/ObservationSetting")
-// );
 const AttendanceSetting = lazy(
   () => import("../features/School/pages/AttendanceSetting")
 );
-// const Notification = lazy(
-//   () => import("../features/School/pages/Notification")
-// );
 
 // Cerapan Pages
 const TeacherCerapanKendiri = lazy(
@@ -92,15 +86,9 @@ const SelfEvaluationForm = lazy(
 const CerapanResults = lazy(
   () => import("../features/Cerapan/pages/CerapanResults")
 );
-// const AdminCerapanDashboard = lazy(
-//   () => import("../features/Cerapan/pages/AdminCerapanDashboard")
-// );
 const AdminObservationForm = lazy(
   () => import("../features/Cerapan/pages/AdminObservationForm")
 );
-// const PentadbirCerapanForm = lazy(
-//   () => import("../features/Cerapan/pages/sample/Cerapan")
-// );
 const TeacherReportHistory = lazy(
   () => import("../features/Cerapan/pages/TeacherReportHistory")
 );
@@ -305,14 +293,6 @@ export default function AppRoutes() {
               </RoleGuard>
             }
           />
-          {/* <Route
-            path="/school/setting/observation"
-            element={
-              <RoleGuard roles={["SUPERADMIN"]}>
-                <ObservationSetting initialData={undefined} />
-              </RoleGuard>
-            }
-          /> */}
           <Route
             path="/school/setting/attendance"
             element={
@@ -321,14 +301,6 @@ export default function AppRoutes() {
               </RoleGuard>
             }
           />
-          {/* <Route
-            path="/school/setting/notification"
-            element={
-              <RoleGuard roles={["SUPERADMIN"]}>
-                <Notification initialData={undefined} />
-              </RoleGuard>
-            }
-          /> */}
 
           <Route
             path="/users"

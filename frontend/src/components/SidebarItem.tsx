@@ -78,6 +78,7 @@ export const SidebarItem: Record<UserRole, MenuItem[]> = {
         { label: "Cerapan", to: "/pentadbir/cerapan" },
         { label: "Template Rubrik", to: "/pentadbir/template-rubrik" },
         { label: "Teaching Assignment", to: "/teaching-assignment" },
+        { label: "Kedatangan Guru", to: "/kedatangan/keseluruhan" },
         { label: "Pengurusan Pengguna", to: "/users" },
       ],
     },
