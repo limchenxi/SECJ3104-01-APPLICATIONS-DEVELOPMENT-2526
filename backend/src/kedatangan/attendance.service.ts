@@ -9,6 +9,7 @@ import { Role, User } from 'src/users/schemas/user.schema';
 import { ClockOutDTO } from './dto/clock-out.dto';
 import { BadRequestException } from '@nestjs/common';
 import { ManualEntryDTO } from './dto/manual-entry.dto';
+import { SchoolService } from '../school/school.service';
 
 @Injectable()
 export class AttendanceService {
@@ -18,9 +19,11 @@ export class AttendanceService {
     @InjectModel(AttendanceRecord.name)
     private attendanceModel: Model<AttendanceRecord>,
     @InjectModel(User.name) private userModel: Model<User>,
-  ) {}
+    private schoolService: SchoolService,
+  ) { }
 
   async clockIn(dto: ClockInDTO) {
+    const settings = await this.schoolService.getSettings();
     const clockInDate = new Date(dto.clockInTime);
     // Set attendanceDate to midnight UTC of the clock-in date
     const attendanceDate = new Date(Date.UTC(clockInDate.getUTCFullYear(), clockInDate.getUTCMonth(), clockInDate.getUTCDate(), 0, 0, 0, 0));
@@ -39,8 +42,9 @@ export class AttendanceService {
     const attendanceRecord = new this.attendanceModel({
       userID: dto.userID,
       timeIn: clockInDate,
-      attendanceType: this.checkForLateness(clockInDate),
+      attendanceType: this.checkForLateness(clockInDate, settings.attendanceSetting.workStartTime),
       attendanceDate: attendanceDate,
+      reasonIn: dto.reason, // Map 'reason' from DTO to 'reasonIn'
     });
     return attendanceRecord.save();
   }
@@ -60,6 +64,7 @@ export class AttendanceService {
 
     if (latestUnmatchedClockIn) {
       latestUnmatchedClockIn.timeOut = clockOutTime;
+      if (dto.reason !== undefined) latestUnmatchedClockIn.reasonOut = dto.reason; // Map to reasonOut
       return latestUnmatchedClockIn.save();
     } else {
       // If no unmatched clock-in, create a new record with only timeOut
@@ -68,16 +73,21 @@ export class AttendanceService {
         timeOut: clockOutTime,
         attendanceType: undefined,
         attendanceDate: attendanceDate,
+        reasonOut: dto.reason, // Map to reasonOut
       });
       return attendanceRecord.save();
     }
   }
-  
-  private checkForLateness(date: Date): 'HADIR' | 'LEWAT' {
-    const eightAM = new Date();
-    eightAM.setHours(8, 0, 0, 0);
 
-    return date <= eightAM ? 'HADIR' : 'LEWAT';
+  /* 
+   * workStartTime format is "HH:MM", e.g. "08:00"
+   */
+  private checkForLateness(clockInDate: Date, workStartTime: string): 'HADIR' | 'LEWAT' {
+    const [h, m] = workStartTime.trim().split(':').map(Number);
+    const thresholdDate = new Date(clockInDate);
+    thresholdDate.setHours(h, m, 0, 0);
+
+    return clockInDate <= thresholdDate ? 'HADIR' : 'LEWAT';
   }
 
   async createManualRecord(dto: ManualEntryDTO) {
@@ -92,13 +102,15 @@ export class AttendanceService {
       throw new BadRequestException('Clock-out cannot be before clock-in');
     }
 
+    const settings = await this.schoolService.getSettings();
+
     // Always create a new record for each manual entry
     const attendanceRecord = new this.attendanceModel({
       userID: dto.userID,
       timeIn: timeIn,
       timeOut: timeOut,
       attendanceDate: attendanceDate,
-      attendanceType: this.checkForLateness(timeIn),
+      attendanceType: this.checkForLateness(timeIn, settings.attendanceSetting.workStartTime),
       isManual: true
     });
     return attendanceRecord.save();
@@ -122,7 +134,7 @@ export class AttendanceService {
   async getAllRecords(startDate: Date, endDate: Date) {
     const records = await this.attendanceModel
       .find({
-        attendanceDate: {$gte: startDate, $lte: endDate},
+        attendanceDate: { $gte: startDate, $lte: endDate },
       })
       .sort({ attendanceDate: -1 })
       .lean();
@@ -170,11 +182,11 @@ export class AttendanceService {
       })
       .sort({ timeIn: -1 })
       .lean();
-      
-      return record ?? {};
-    }
-    
-    
+
+    return record ?? {};
+  }
+
+
   @Cron('59 23 * * *')
   async markAbsentees() {
     this.logger.log('Running daily absentee check');
@@ -206,5 +218,10 @@ export class AttendanceService {
     }
 
     this.logger.log('Absentee checking finished');
+  }
+
+  async updateReason(recordId: string, type: 'in' | 'out', reason: string) {
+    const updateField = type === 'in' ? { reasonIn: reason } : { reasonOut: reason };
+    return this.attendanceModel.findByIdAndUpdate(recordId, { $set: updateField }, { new: true });
   }
 }

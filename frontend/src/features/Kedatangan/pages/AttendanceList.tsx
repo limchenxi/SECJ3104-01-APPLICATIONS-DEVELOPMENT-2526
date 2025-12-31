@@ -96,6 +96,7 @@ export default function StaffActivityFeed(): JSX.Element {
           action: 'in',
           displayTime: new Date(record.timeIn),
           teacherName: record.userName,
+          reason: record.reasonIn || record.reason, // Fallback to legacy
         });
       }
       if (record.timeOut) {
@@ -105,6 +106,7 @@ export default function StaffActivityFeed(): JSX.Element {
           action: 'out',
           displayTime: new Date(record.timeOut),
           teacherName: record.userName,
+          reason: record.reasonOut || record.reason, // Fallback to legacy
         });
       }
       // Handle Absent records
@@ -239,9 +241,16 @@ export default function StaffActivityFeed(): JSX.Element {
                           </Box>
                         }
                         secondary={
-                          <Typography variant="caption" color="text.secondary">
-                            {log.isAbsentVirtual ? 'No record found' : `Clocked ${log.action.toUpperCase()}`}
-                          </Typography>
+                          <Box display="flex" flexDirection="column" gap={0.5}>
+                            <Typography variant="caption" color="text.secondary">
+                              {log.isAbsentVirtual ? 'No record found' : `Clocked ${log.action.toUpperCase()}`}
+                            </Typography>
+                            {log.reason && (
+                              <Typography variant="caption" color="error.main" fontStyle="italic" fontWeight={600}>
+                                Reason: "{log.reason}"
+                              </Typography>
+                            )}
+                          </Box>
                         }
                       />
                       <Typography variant="subtitle2" fontWeight={800}>

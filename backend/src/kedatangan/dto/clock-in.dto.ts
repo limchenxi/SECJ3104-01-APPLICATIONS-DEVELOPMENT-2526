@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsString, IsOptional } from "class-validator";
 
 export class ClockInDTO {
     @IsString()
@@ -7,4 +7,8 @@ export class ClockInDTO {
 
     @IsString()
     clockInTime: string;
+
+    @IsString()
+    @IsOptional()
+    reason?: string;
 }

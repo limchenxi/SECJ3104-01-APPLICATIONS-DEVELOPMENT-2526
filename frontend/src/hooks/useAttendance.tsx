@@ -1,17 +1,18 @@
 import { useState, useCallback } from "react";
 import { clockIn as clockInApi } from "../features/Kedatangan/api/clockInApi";
 import { clockOut as clockOutApi } from "../features/Kedatangan/api/clockOutApi";
-import { getAttendanceToday } from "../features/Kedatangan/api/getAttendanceTodayApi";
 import { getAttendanceRange } from "../features/Kedatangan/api/getAttendanceRangeApi";
-import type { HistoryByDate, HistoryEntry } from "../features/Kedatangan/type";
+import { updateReason as updateReasonApi } from "../features/Kedatangan/api/updateReasonApi";
+import type { HistoryByDate } from "../features/Kedatangan/type";
 
-const toISODateString = (date: Date): string => 
-  date.toLocaleDateString("en-US", { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '-');
+const toISODateString = (date: Date): string =>
+    date.toLocaleDateString("en-US", { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '-');
 
 interface UseAttendanceReturn {
-    clockIn: () => Promise<{ timeIn: string } | void>;
-    clockOut: () => Promise<{ timeOut: string} | void>;
+    clockIn: (reason?: string) => Promise<{ timeIn: string } | void>;
+    clockOut: (reason?: string) => Promise<{ timeOut: string } | void>;
     fetchAttendanceForRange: (startDate: string, endDate: string) => Promise<void>;
+    updateReason: (recordId: string, type: 'in' | 'out', reason: string) => Promise<void>;
     loading: boolean;
     error: string | null;
     historyByDate: HistoryByDate;
@@ -20,11 +21,10 @@ interface UseAttendanceReturn {
 export const useAttendance = (userID: string): UseAttendanceReturn => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [historyByDate, setHistoryByDate] = useState<HistoryByDate>({});
 
-    const clockIn = useCallback(async () => {
-        if(!userID) {
+    const clockIn = useCallback(async (reason?: string) => {
+        if (!userID) {
             setError("User ID is missing");
             return;
         }
@@ -33,9 +33,9 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
         setError(null);
 
         try {
-            const res = await clockInApi(userID);
+            const res = await clockInApi(userID, reason);
             return res;
-        } catch(err: any) {
+        } catch (err: any) {
             setError(err.response?.data?.message || err.message);
             throw err;
         } finally {
@@ -43,8 +43,8 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
         }
     }, [userID]);
 
-    const clockOut = useCallback(async () => {
-        if(!userID) {
+    const clockOut = useCallback(async (reason?: string) => {
+        if (!userID) {
             setError("User ID is missing");
             return;
         }
@@ -53,10 +53,10 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
         setError(null);
 
         try {
-            const res = await clockOutApi(userID);
+            const res = await clockOutApi(userID, reason);
             return res;
         }
-        catch(err: any) {
+        catch (err: any) {
             setError(err.response?.data?.message || err.message);
             throw err;
         }
@@ -66,7 +66,7 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
     }, [userID]);
 
     const fetchAttendanceForRange = useCallback(async (startDate: string, endDate: string) => {
-        if(!userID) {
+        if (!userID) {
             setError("User ID is missing");
             return;
         }
@@ -78,20 +78,22 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
             const attendanceRecord = await getAttendanceRange(userID, startDate, endDate);
             const newHistoryMap: HistoryByDate = {};
 
-            attendanceRecord.forEach(record => {
+            attendanceRecord.forEach((record: any) => {
                 if (record.timeIn) {
                     const timeInDate = new Date(record.timeIn);
                     const dateKey = toISODateString(timeInDate);
 
-                    if(!newHistoryMap[dateKey]) {
+                    if (!newHistoryMap[dateKey]) {
                         newHistoryMap[dateKey] = [];
                     }
 
                     newHistoryMap[dateKey].push({
-                        id: record.id + '-in',
+                        id: (record._id || record.id) + '-in',
                         action: 'in',
                         timestamp: timeInDate,
                         attendanceType: record.attendanceType,
+                        reason: record.reasonIn || record.reason,
+                        originalRecordId: record._id || record.id,
                     })
                 }
 
@@ -99,13 +101,15 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
                     const timeOutDate = new Date(record.timeOut);
                     const dateKey = toISODateString(timeOutDate);
 
-                    if(!newHistoryMap[dateKey]) {
+                    if (!newHistoryMap[dateKey]) {
                         newHistoryMap[dateKey] = [];
                     }
                     newHistoryMap[dateKey].push({
-                        id: record.id + '-out',
+                        id: (record._id || record.id) + '-out',
                         action: 'out',
                         timestamp: timeOutDate,
+                        reason: record.reasonOut || record.reason,
+                        originalRecordId: record._id || record.id,
                     })
                 }
             });
@@ -116,7 +120,7 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
 
             setHistoryByDate(prev => ({ ...prev, ...newHistoryMap }));
         }
-        catch(err: any) {
+        catch (err: any) {
             setError(err.response?.data?.message || err.message);
         }
         finally {
@@ -124,5 +128,19 @@ export const useAttendance = (userID: string): UseAttendanceReturn => {
         }
     }, [userID]);
 
-    return {clockIn, clockOut, fetchAttendanceForRange, loading, error, historyByDate};
+    const updateReason = useCallback(async (recordId: string, type: 'in' | 'out', reason: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            await updateReasonApi(recordId, type, reason);
+            // Refresh logic could go here, or let the component handle it
+        } catch (err: any) {
+            setError(err.response?.data?.message || err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [])
+
+    return { clockIn, clockOut, fetchAttendanceForRange, updateReason, loading, error, historyByDate };
 }

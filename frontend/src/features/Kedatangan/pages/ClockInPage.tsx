@@ -17,15 +17,24 @@ import {
   Stack,
   Chip,
   Divider,
-  useTheme
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  TextField,
+  IconButton
 } from "@mui/material";
 
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import HistoryIcon from "@mui/icons-material/History";
+import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import { useAttendance } from "../../../hooks/useAttendance";
+import { getSchoolSettings } from "../../School/api";
 import useAuth from "../../../hooks/useAuth";
 import { type ActionId, type HistoryRange, type HistoryRangeDetails, type Action, type HistoryEntry, type FormattedHistoryEntry, type SnackbarState } from "../type";
 
@@ -81,11 +90,23 @@ export default function AttendancePage(): JSX.Element {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, text: "" });
 
+  // Reason Dialog State (For new clock-ins)
+  const [openReason, setOpenReason] = useState(false);
+  const [reasonText, setReasonText] = useState("");
+  const [pendingAction, setPendingAction] = useState<ActionId | null>(null);
+
+  // Edit Reason State (For existing records)
+  const [editReasonOpen, setEditReasonOpen] = useState(false);
+  const [editReasonText, setEditReasonText] = useState("");
+  const [editingEntry, setEditingEntry] = useState<{ recordId: string, type: 'in' | 'out' } | null>(null);
+
+  const [attendanceSettings, setAttendanceSettings] = useState<{ start: string, end: string } | null>(null);
+
   if (!user?.id) {
     return <></>;
   }
 
-  const { clockIn, clockOut, fetchAttendanceForRange, error, historyByDate } = useAttendance(user.id);
+  const { clockIn, clockOut, fetchAttendanceForRange, updateReason, error, historyByDate } = useAttendance(user.id);
 
   const todayKey = useMemo(() => toISODateString(new Date()), []);
   const rangeInfo = HISTORY_RANGES.find(r => r.id === selectedRange)!;
@@ -140,7 +161,18 @@ export default function AttendancePage(): JSX.Element {
     }
   }, [user.id, startDate, endDate, fetchAttendanceForRange]);
 
-  const handleClockAction = useCallback(async (actionId: ActionId) => {
+  useEffect(() => {
+    getSchoolSettings().then(settings => {
+      if (settings?.attendanceSetting) {
+        setAttendanceSettings({
+          start: settings.attendanceSetting.workStartTime,
+          end: settings.attendanceSetting.workEndTime
+        });
+      }
+    }).catch(err => console.error("Failed to fetch settings", err));
+  }, []);
+
+  const processClockAction = useCallback(async (actionId: ActionId, reason?: string) => {
     if (!user.id) {
       setSnackbar({ open: true, text: "Pengguna tidak dijumpai" });
       return;
@@ -151,7 +183,7 @@ export default function AttendancePage(): JSX.Element {
 
     if (actionId === "in") {
       try {
-        const res = await clockIn();
+        const res = await clockIn(reason);
         if (res?.timeIn) { successTime = new Date(res.timeIn).toLocaleTimeString(); }
       }
       catch (err: any) { actionFailed = true; }
@@ -159,7 +191,7 @@ export default function AttendancePage(): JSX.Element {
 
     if (actionId === "out") {
       try {
-        const res = await clockOut();
+        const res = await clockOut(reason);
         if (res?.timeOut) { successTime = new Date(res.timeOut).toLocaleTimeString(); }
       }
       catch (err: any) { actionFailed = true; }
@@ -181,8 +213,94 @@ export default function AttendancePage(): JSX.Element {
     if (user.id) {
       fetchAttendanceForRange(todayKey, todayKey);
     }
-
   }, [clockIn, clockOut, user?.id, error, fetchAttendanceForRange, todayKey]);
+
+  const handleClockAction = async (actionId: ActionId) => {
+    // Check for conditions to prompt reason
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    let needsReason = false;
+
+    // Default thresholds
+    let startHour = 8;
+    let startMinute = 0;
+    let endHour = 17; // Default 5pm if not set? User said 4pm (16:00) in prompt, checking code.. old code was 16.
+    // DTO default is 17:00. Local default logic was 16. Let's stick to settings or fallback.
+    let endMinute = 0;
+
+    if (attendanceSettings) {
+      const [sh, sm] = attendanceSettings.start.split(":").map(Number);
+      startHour = sh;
+      startMinute = sm;
+      const [eh, em] = attendanceSettings.end.split(":").map(Number);
+      endHour = eh;
+      endMinute = em;
+    } else {
+      // Fallback to strict hardcoded if settings fail
+      endHour = 16;
+    }
+
+    // Rule 1: Clock In Late (After start time)
+    if (actionId === 'in') {
+      if (currentHour > startHour || (currentHour === startHour && currentMinute > startMinute)) {
+        needsReason = true;
+      }
+    }
+
+    // Rule 2: Clock Out Early (Before end time)
+    if (actionId === 'out') {
+      // Early if before the end hour/minute
+      if (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+        needsReason = true;
+      }
+    }
+
+    if (needsReason) {
+      setPendingAction(actionId);
+      setReasonText(""); // Reset reason
+      setOpenReason(true);
+      return;
+    }
+
+    // If no reason needed, proceed immediately
+    await processClockAction(actionId);
+  };
+
+  const handleConfirmReason = async () => {
+    if (pendingAction) {
+      await processClockAction(pendingAction, reasonText);
+      setOpenReason(false);
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelReason = () => {
+    setOpenReason(false);
+    setPendingAction(null);
+  };
+
+  const handleEditReason = (entry: HistoryEntry) => {
+    if (!entry.originalRecordId) return;
+    setEditingEntry({ recordId: entry.originalRecordId, type: entry.action });
+    setEditReasonText(entry.reason || "");
+    setEditReasonOpen(true);
+  };
+
+  const handleSaveEditReason = async () => {
+    if (editingEntry) {
+      try {
+        await updateReason(editingEntry.recordId, editingEntry.type, editReasonText);
+        setSnackbar({ open: true, text: "Sebab berjaya dikemaskini" });
+        fetchAttendanceForRange(todayKey, todayKey); // Refresh
+      } catch (err) {
+        setSnackbar({ open: true, text: "Gagal mengemaskini sebab" });
+      }
+      setEditReasonOpen(false);
+      setEditingEntry(null);
+    }
+  };
 
 
   const getStatusLabel = (a: ActionId | "none"): string => {
@@ -351,10 +469,24 @@ export default function AttendancePage(): JSX.Element {
                           <ListItemAvatar>
                             <Avatar sx={{ bgcolor: f.colorPath }}>{f.icon}</Avatar>
                           </ListItemAvatar>
-                          <ListItemText primary={f.label} />
-                          <Typography variant="body2" fontFamily="monospace" fontWeight={700}>
-                            {f.time}
-                          </Typography>
+                          <ListItemText
+                            primary={f.label}
+                            secondary={
+                              entry.reason && (
+                                <Typography variant="caption" color="error.main" fontStyle="italic" display="block">
+                                  Reason: {entry.reason}
+                                </Typography>
+                              )
+                            }
+                          />
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="body2" fontFamily="monospace" fontWeight={700}>
+                              {f.time}
+                            </Typography>
+                            <IconButton size="small" onClick={() => handleEditReason(entry)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Stack>
                         </ListItem>
                       );
                     })}
@@ -364,6 +496,59 @@ export default function AttendancePage(): JSX.Element {
             )}
           </Card>
         </Box>
+
+        {/* Reason Dialog */}
+        <Dialog open={openReason} onClose={handleCancelReason} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            {pendingAction === 'in' ? 'Sebab Lewat' : 'Sebab Keluar Awal'}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {pendingAction === 'in'
+                ? 'Anda log masuk lewat. Sila nyatakan sebab:'
+                : 'Anda log keluar awal. Sila nyatakan sebab:'
+              }
+            </DialogContentText>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Sebab / Reason"
+              fullWidth
+              variant="outlined"
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelReason} color="inherit">Batal</Button>
+            <Button onClick={handleConfirmReason} variant="contained">
+              Hantar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit Reason Dialog */}
+        <Dialog open={editReasonOpen} onClose={() => setEditReasonOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Kemaskini Sebab</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Sebab / Reason"
+              fullWidth
+              variant="outlined"
+              value={editReasonText}
+              onChange={(e) => setEditReasonText(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditReasonOpen(false)} color="inherit">Batal</Button>
+            <Button onClick={handleSaveEditReason} variant="contained">
+              Simpan
+            </Button>
+          </DialogActions>
+        </Dialog>
+
       </Stack>
     </Box>
   );

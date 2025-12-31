@@ -16,7 +16,7 @@ const setEndOfDay = (date: Date): Date => {
 @Controller('attendance')
 // @UseGuards(JwtAuthGuard)
 export class AttendanceController {
-    constructor(private readonly attendanceService: AttendanceService) {}
+    constructor(private readonly attendanceService: AttendanceService) { }
 
     @Post('clockin')
     clockIn(@Body() dto: ClockInDTO) {
@@ -62,14 +62,14 @@ export class AttendanceController {
         @Query('startDate') startDateStr: string,
         @Query('endDate') endDateStr: string
     ) {
-        if(!startDateStr || !endDateStr) {
+        if (!startDateStr || !endDateStr) {
             throw new BadRequestException('Start date and end date are required');
         }
 
         const startDate = new Date(startDateStr);
         let endDate = new Date(endDateStr);
 
-        if(isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
             throw new BadRequestException('Invalid date format provided. Use YYYY-MM-DD.');
         }
 
@@ -77,5 +77,12 @@ export class AttendanceController {
 
         const records = await this.attendanceService.getRecordsByRange(userId, startDate, endDate);
         return records;
+    }
+    @Put('reason')
+    async updateReason(@Body() body: { recordId: string, type: 'in' | 'out', reason: string }) {
+        if (!body.recordId || !body.type || body.reason === undefined) {
+            throw new BadRequestException('Record ID, type (in/out) and reason are required');
+        }
+        return this.attendanceService.updateReason(body.recordId, body.type, body.reason);
     }
 }

@@ -6,12 +6,15 @@ export type HistoryRangeDetails = { id: HistoryRange; label: string; days: numbe
 export type HistoryByDate = Record<string, HistoryEntry[]>;
 
 export interface AttendanceRecord {
-  id: string; 
+  id: string;
   userID: string;
   timeIn: Date;
   timeOut: Date;
   attendanceType: "HADIR" | "LEWAT";
   attendanceDate: Date;
+  reasonIn?: string;
+  reasonOut?: string;
+  reason?: string; // Legacy
 }
 
 export interface Action {
@@ -19,7 +22,7 @@ export interface Action {
   label: string;
   icon: JSX.Element;
   // Narrowed type for data integrity, which is compatible with the expanded ThemeColor
-  color: 'success' | 'error'; 
+  color: 'success' | 'error';
 }
 
 export interface HistoryEntry {
@@ -27,6 +30,8 @@ export interface HistoryEntry {
   action: ActionId; // Must be one of the literal strings in ActionId
   timestamp: Date;
   attendanceType?: "HADIR" | "LEWAT" | "TIDAK HADIR";
+  reason?: string;
+  originalRecordId?: string; // For editing reference
 }
 
 export interface FormattedHistoryEntry {
@@ -34,7 +39,7 @@ export interface FormattedHistoryEntry {
   time: string;
   icon: JSX.Element;
   // This will now hold the final string path, e.g., 'success.main'
-  colorPath: string; 
+  colorPath: string;
 }
 
 export interface SnackbarState {
