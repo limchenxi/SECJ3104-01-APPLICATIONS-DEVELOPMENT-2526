@@ -4,7 +4,8 @@ import {
   ListItemAvatar, ListItemText, Avatar, Chip, TextField,
   Divider, ButtonGroup, Button, Dialog,
   DialogTitle, DialogContent, DialogActions, MenuItem,
-  Select, FormControl, InputLabel, Grid, ListSubheader, CircularProgress
+  Select, FormControl, InputLabel, ListSubheader, CircularProgress, Stack,
+  Tabs, Tab
 } from "@mui/material";
 
 // Icons
@@ -13,18 +14,12 @@ import PersonIcon from "@mui/icons-material/Person";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AddIcon from "@mui/icons-material/Add";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 import { useAdminAttendance } from "../../../hooks/useAdminAttendance";
 import { getAllTeachers } from "../api/getAllTeachersApi";
 
 type StatusFilter = "all" | "present" | "absent" | "late";
-
-const FILTERS: { label: string, value: StatusFilter }[] = [
-  { label: "SEMUA", value: "all" },
-  { label: "HADIR", value: "present" },
-  { label: "TIDAK HADIR", value: "absent" },
-  { label: "LEWAT", value: "late" },
-];
 
 export default function StaffActivityFeed(): JSX.Element {
   // 1. --- HOOK INTEGRATION ---
@@ -140,40 +135,54 @@ export default function StaffActivityFeed(): JSX.Element {
     return groups;
   }, [globalHistory, searchTerm, statusFilter]);
 
-  return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#eceff1", p: { xs: 2, md: 4 } }}>
-      <Box maxWidth="900px" mx="auto">
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: StatusFilter) => {
+    setStatusFilter(newValue);
+  };
 
+  return (
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
+      <Stack spacing={4}>
         {/* Header Section */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
-          <Box>
-            <Typography variant="h5" fontWeight={800} color="primary.dark">Rekod Kedatangan</Typography>
-            <ButtonGroup variant="outlined" size="small" sx={{ mt: 1, bgcolor: 'white' }}>
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5, display: 'flex', alignItems: 'center' }}>
+            <AccessTimeIcon color="primary" fontSize="large" sx={{ mr: 1.5 }} /> Rekod Kedatangan
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Pantau kehadiran, masa masuk/keluar, dan rekod manual guru.
+          </Typography>
+        </Box>
+
+        {/* Actions & Filters */}
+        <Stack spacing={2}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpen(true)}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Tambah Rekod
+          </Button>
+
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Tabs value={statusFilter} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+              <Tab label="Semua" value="all" />
+              <Tab label="Hadir" value="present" />
+              <Tab label="Tidak Hadir" value="absent" />
+              <Tab label="Lewat" value="late" />
+            </Tabs>
+
+            <ButtonGroup variant="outlined" size="small">
               {["today", "7d", "30d"].map((r) => (
                 <Button key={r} onClick={() => setSelectedRange(r)} variant={selectedRange === r ? "contained" : "outlined"}>
-                  {r === 'today' ? 'Hari ini' : r === '7d' ? '7 Hari Lepas' : '30 Hari Lepas'}
+                  {r === 'today' ? 'Hari ini' : r === '7d' ? '7 Hari' : '30 Hari'}
                 </Button>
               ))}
             </ButtonGroup>
           </Box>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)} sx={{ borderRadius: 2 }}>
-            Tambah
-          </Button>
-        </Box>
-
-        {/* Stats/Filter Cards */}
-        <Grid container spacing={2} mb={4}>
-          {FILTERS.map((f) => (
-            <Grid key={f.value} size={3}>
-              <Card onClick={() => setStatusFilter(f.value)} sx={{ p: 1.5, textAlign: 'center', cursor: 'pointer', borderRadius: 3, border: 2, borderColor: statusFilter === f.value ? 'primary.main' : 'transparent' }}>
-                <Typography variant="caption" fontWeight={700} color="text.secondary">{f.label}</Typography>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        </Stack>
 
         {/* The List Container */}
-        <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+        <Card sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: 2 }}>
           <Box sx={{ p: 2, bgcolor: '#fff', borderBottom: '1px solid #eee' }}>
             <TextField fullWidth variant="standard" placeholder="Cari Guru..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{ disableUnderline: true, startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} /> }}
@@ -269,7 +278,7 @@ export default function StaffActivityFeed(): JSX.Element {
             <Button onClick={handleManualSubmit} variant="contained">Save Record</Button>
           </DialogActions>
         </Dialog>
-      </Box>
+      </Stack>
     </Box>
   );
 }

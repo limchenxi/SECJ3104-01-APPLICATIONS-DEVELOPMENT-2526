@@ -14,6 +14,10 @@ import {
   ListItemText,
   Avatar,
   ButtonGroup,
+  Stack,
+  Chip,
+  Divider,
+  useTheme
 } from "@mui/material";
 
 import LoginIcon from "@mui/icons-material/Login";
@@ -21,20 +25,19 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import HistoryIcon from "@mui/icons-material/History";
 import PersonIcon from "@mui/icons-material/Person";
-import DateRangeIcon from "@mui/icons-material/DateRange"
 import { useAttendance } from "../../../hooks/useAttendance";
 import useAuth from "../../../hooks/useAuth";
 import { type ActionId, type HistoryRange, type HistoryRangeDetails, type Action, type HistoryEntry, type FormattedHistoryEntry, type SnackbarState } from "../type";
 
 const HISTORY_RANGES: { id: HistoryRange; label: string; days: number }[] = [
-  { id: "today", label: "Today", days: 0 },
-  { id: "7d", label: "Last 7 Days", days: 7 },
-  { id: "30d", label: "Last 30 Days", days: 30 },
+  { id: "today", label: "Hari Ini", days: 0 },
+  { id: "7d", label: "7 Hari Lepas", days: 7 },
+  { id: "30d", label: "30 Hari Lepas", days: 30 },
 ];
 
 const ACTIONS: Action[] = [
-  { id: "in", label: "Clock In", icon: <LoginIcon />, color: "success" },
-  { id: "out", label: "Clock Out", icon: <LogoutIcon />, color: "error" },
+  { id: "in", label: "Clock In", icon: <LoginIcon fontSize="large" />, color: "success" },
+  { id: "out", label: "Clock Out", icon: <LogoutIcon fontSize="large" />, color: "error" },
 ];
 
 const formatTime = (d: Date): string =>
@@ -46,7 +49,7 @@ const formatTime = (d: Date): string =>
   });
 
 const formatDate = (d: Date): string =>
-  d.toLocaleDateString("en-US", {
+  d.toLocaleDateString("ms-MY", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -72,6 +75,7 @@ const calculateStartDate = (rangeID: HistoryRange): string => {
 
 export default function AttendancePage(): JSX.Element {
   const { user } = useAuth();
+  const theme = useTheme();
 
   const [selectedRange, setSelectedRange] = useState<HistoryRange>("today");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -89,7 +93,6 @@ export default function AttendancePage(): JSX.Element {
   const startDate = calculateStartDate(selectedRange);
 
   const todayEntries = historyByDate[todayKey] || [];
-  // Sort today's entries by timestamp descending (latest first)
   const sortedTodayEntries = [...todayEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   const lastAction = sortedTodayEntries.length ? sortedTodayEntries[0].action : "none";
   const currentStatus: ActionId | "none" = lastAction;
@@ -117,9 +120,6 @@ export default function AttendancePage(): JSX.Element {
 
   const sortedDates = useMemo(() => Object.keys(groupedHistory).sort().reverse(), [groupedHistory]);
 
-  // // Attendance history (no break entries)
-  // const [history, setHistory] = useState<HistoryEntry[]>([]);
-
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -129,7 +129,7 @@ export default function AttendancePage(): JSX.Element {
     if (error) {
       setSnackbar({
         open: true,
-        text: `Action Failed: ${error}`,
+        text: `Tindakan Gagal: ${error}`,
       });
     }
   }, [error]);
@@ -140,58 +140,9 @@ export default function AttendancePage(): JSX.Element {
     }
   }, [user.id, startDate, endDate, fetchAttendanceForRange]);
 
-  // const handleClockAction = useCallback(async (actionId: ActionId) => {
-  //   if(!user.id) {
-  //     setSnackbar({
-  //       open: true,
-  //       text: "User not found",
-  //     });
-  //     return;
-  //   }
-
-
-  //   if(actionId === "in") {
-  //     try {
-  //       const res = await clockIn();
-  //       if(res?.timeIn) {
-  //         setSnackbar({
-  //           open: true,
-  //           text: `Clock in successful at ${new Date(res.timeIn).toLocaleTimeString()}`,
-  //         })
-  //       }
-  //       fetchTodayAttendance();
-  //     }
-  //     catch(err: any) {
-  //       setSnackbar({
-  //         open: true,
-  //         text: `Clock in failed: ${error ?? 'Unknown error'}`,
-  //       });
-  //     }
-  //   }
-
-  //   if(actionId === "out") {
-  //     try {
-  //       const res = await clockOut();
-  //       if(res?.timeOut) {
-  //         setSnackbar({
-  //           open: true,
-  //           text: `Clock out successful at ${new Date(res.timeOut).toLocaleTimeString()}`,
-  //         })
-  //       }
-  //       fetchTodayAttendance();
-  //     }
-  //     catch(err: any) {
-  //       setSnackbar({
-  //         open: true,
-  //         text: `Clock in failed: ${error ?? 'Unknown error'}`,
-  //       });
-  //     }
-  //   }
-  // }, [clockIn, clockOut, user?.id, error, fetchTodayAttendance]);
-
   const handleClockAction = useCallback(async (actionId: ActionId) => {
     if (!user.id) {
-      setSnackbar({ open: true, text: "User not found" });
+      setSnackbar({ open: true, text: "Pengguna tidak dijumpai" });
       return;
     }
 
@@ -218,17 +169,15 @@ export default function AttendancePage(): JSX.Element {
     if (successTime) {
       setSnackbar({
         open: true,
-        text: `${actionId === "in" ? "Clock in" : "Clock out"} successful at ${successTime}`,
+        text: `${actionId === "in" ? "Clock In" : "Clock Out"} berjaya pada ${successTime}`,
       })
     } else if (actionFailed) {
       setSnackbar({
         open: true,
-        text: `${actionId === "in" ? "Clock in" : "Clock out"} failed: ${error ?? 'Unknown error'}`,
+        text: `${actionId === "in" ? "Clock In" : "Clock Out"} gagal: ${error ?? 'Unknown error'}`,
       });
     }
 
-    // CRITICAL FIX: After clocking, refresh ONLY the current day's history
-    // to instantly update currentStatus and the log entry.
     if (user.id) {
       fetchAttendanceForRange(todayKey, todayKey);
     }
@@ -236,222 +185,186 @@ export default function AttendancePage(): JSX.Element {
   }, [clockIn, clockOut, user?.id, error, fetchAttendanceForRange, todayKey]);
 
 
-  // const currentStatus: ActionId | "none" = history.length ? history[0].action : "none";
-
   const getStatusLabel = (a: ActionId | "none"): string => {
-    if (a === "in") return "ACTIVE";
-    if (a === "out") return "LOGGED OUT";
-    return "PENDING";
+    if (a === "in") return "AKTIF (Clocked In)";
+    if (a === "out") return "TIDAK AKTIF (Clocked Out)";
+    return "TIADA REKOD";
   };
 
-  const getStatusColor = (a: ActionId | "none"): string => {
-    if (a === "in") return "success.main";
-    if (a === "out") return "error.main";
-    return "text.disabled";
+  const getStatusColor = (a: ActionId | "none"): "success" | "error" | "default" => {
+    if (a === "in") return "success";
+    if (a === "out") return "error";
+    return "default";
   };
 
-  // Explicitly define the return type as FormattedHistoryEntry
   const formatHistoryEntry = (entry: HistoryEntry): FormattedHistoryEntry => {
     const meta = ACTIONS.find((a) => a.id === entry.action);
-
-    // Fallback logic must return a color compatible with the narrower Action['color'] type
-    // Since we only use 'success' and 'error' in ACTIONS, we ensure the fallback is also a valid MUI color.
     const colorKey = (meta?.color ?? "primary");
 
     return {
       label: meta?.label ?? "Unknown Action",
       time: formatTime(entry.timestamp),
       icon: meta?.icon ?? <AccessTimeIcon />,
-      // Construct the full color path string here
       colorPath: `${colorKey}.main`,
     };
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", p: 4 }}>
-      {/* Snackbar */}
+    <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert severity="info" variant="filled">
           {snackbar.text}
         </Alert>
       </Snackbar>
 
-      <Box maxWidth="800px" mx="auto">
-        {/* Header Card */}
-        <Card sx={{ mb: 4, borderTop: 4, borderColor: "primary.main" }}>
-          <CardContent>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              pb={2}
-              borderBottom="1px solid #eee"
-            >
-              <Box display="flex" alignItems="center">
-                <PersonIcon
-                  sx={{ fontSize: 40, color: "primary.main", mr: 2 }}
-                />
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>
-                    {user.name}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    ID: {user.id}
-                  </Typography>
-                </Box>
-              </Box>
+      <Stack spacing={4}>
+        {/* Header Section */}
+        <Box>
+          <Typography variant="h4" sx={{ mb: 0.5, display: 'flex', alignItems: 'center' }}>
+            <AccessTimeIcon color="primary" fontSize="large" sx={{ mr: 1.5 }} /> Kedatangan Saya
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Uruskan masa masuk dan keluar harian anda di sini.
+          </Typography>
+        </Box>
 
-              <Box textAlign="right">
-                <Typography variant="body2" color="text.secondary">
-                  Current Status:
-                </Typography>
-                <Typography
-                  sx={{
-                    bgcolor: "grey.100",
-                    borderRadius: 2,
-                    px: 2,
-                    py: 0.5,
-                    fontWeight: 700,
-                    color: getStatusColor(currentStatus),
-                  }}
-                >
-                  {getStatusLabel(currentStatus)}
-                </Typography>
-              </Box>
-            </Box>
+        {/* Dashboard Grid */}
+        <Grid container spacing={4}>
+          {/* Left Column: User Info & Clock */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Stack spacing={4}>
+              {/* User Card */}
+              <Card sx={{ borderRadius: 2, boxShadow: 2, bgcolor: theme.palette.primary.main, color: 'white' }}>
+                <CardContent>
+                  <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                    <Avatar sx={{ bgcolor: 'white', color: theme.palette.primary.main, width: 56, height: 56 }}>
+                      <PersonIcon fontSize="large" />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" fontWeight={700}>{user.name}</Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>ID: {user.id}</Typography>
+                    </Box>
+                  </Stack>
+                  <Divider sx={{ bgcolor: 'rgba(255,255,255,0.2)', mb: 2 }} />
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" fontWeight={600}>Status Semasa:</Typography>
+                    <Chip
+                      label={getStatusLabel(currentStatus)}
+                      color={getStatusColor(currentStatus) === 'default' ? 'default' : getStatusColor(currentStatus) as any}
+                      sx={{ bgcolor: 'white', color: getStatusColor(currentStatus) === 'error' ? 'error.main' : 'success.main', fontWeight: 'bold' }}
+                    />
+                  </Stack>
+                </CardContent>
+              </Card>
 
-            <Box
-              mt={3}
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              bgcolor="primary.light"
-              p={2}
-              borderRadius={2}
-            >
-              <Box>
-                <Typography variant="h3" fontFamily="monospace" fontWeight={800}>
+              {/* Digital Clock Card */}
+              <Card sx={{ borderRadius: 2, boxShadow: 2, textAlign: 'center', p: 2 }}>
+                <Typography variant="h2" fontFamily="monospace" fontWeight={700} color="primary">
                   {formatTime(currentTime)}
                 </Typography>
-                <Typography color="primary.dark">
+                <Typography variant="subtitle1" color="text.secondary" fontWeight={500}>
                   {formatDate(currentTime)}
                 </Typography>
-              </Box>
-              <AccessTimeIcon sx={{ fontSize: 40, color: "primary.main" }} />
-            </Box>
-          </CardContent>
-        </Card>
+              </Card>
+            </Stack>
+          </Grid>
 
-        {/* ACTION BUTTONS */}
-        <Grid container spacing={2} mb={4}>
-          {ACTIONS.map((action) => {
-            const isCurrent = action.id === currentStatus;
+          {/* Right Column: Actions */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CardContent sx={{ width: '100%' }}>
+                <Typography variant="h6" fontWeight={700} mb={3} textAlign="center">Tindakan</Typography>
+                <Stack spacing={3}>
+                  {ACTIONS.map((action) => {
+                    let disabled = false;
+                    if (action.id === "in" && !(currentStatus === "out" || currentStatus === "none")) disabled = true;
+                    if (action.id === "out" && currentStatus !== "in") disabled = true;
 
-            let disabled = false;
-
-            // Only allow 'Clock In' if last action is 'out' or none
-            if (action.id === "in" && !(currentStatus === "out" || currentStatus === "none")) disabled = true;
-            // Only allow 'Clock Out' if last action is 'in'
-            if (action.id === "out" && currentStatus !== "in") disabled = true;
-
-            return (
-              <Grid>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  disabled={disabled}
-                  color={action.color}
-                  onClick={() => handleClockAction(action.id)}
-                  sx={{
-                    py: 3,
-                    flexDirection: "column",
-                    borderRadius: 3,
-                    boxShadow: 3,
-                    ...(isCurrent && {
-                      border: "3px solid",
-                      borderColor: "primary.light",
-                    }),
-                  }}
-                >
-                  {action.icon}
-                  <Typography mt={1} fontWeight={700}>
-                    {action.label}
-                  </Typography>
-                </Button>
-              </Grid>
-            );
-          })}
+                    return (
+                      <Button
+                        key={action.id}
+                        variant="contained"
+                        size="large"
+                        fullWidth
+                        disabled={disabled}
+                        color={action.color as any}
+                        onClick={() => handleClockAction(action.id)}
+                        startIcon={action.icon}
+                        sx={{
+                          py: 3,
+                          borderRadius: 3,
+                          fontSize: '1.2rem',
+                          fontWeight: 800,
+                          opacity: disabled ? 0.5 : 1
+                        }}
+                      >
+                        {action.label}
+                      </Button>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
-        {/* HISTORY */}
-        <Card>
-          <CardContent>
-            <Box
-              display="flex"
-              alignItems="center"
-              mb={2}
-              borderBottom="1px solid #eee"
-              pb={1}
-            >
-              <HistoryIcon sx={{ mr: 1, color: "primary.main" }} />
-              <Typography variant="h6" fontWeight={700}>
-                Attendance Log
-              </Typography>
-            </Box>
-
-            <ButtonGroup variant="outlined" size="small">
+        {/* History Section */}
+        <Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6" fontWeight={700} display="flex" alignItems="center">
+              <HistoryIcon sx={{ mr: 1 }} /> Sejarah Kedatangan
+            </Typography>
+            <ButtonGroup variant="outlined" size="small" sx={{ bgcolor: 'white' }}>
               {HISTORY_RANGES.map((range) => (
                 <Button key={range.id} onClick={() => setSelectedRange(range.id)} variant={selectedRange === range.id ? "contained" : "outlined"}>
                   {range.label}
                 </Button>
               ))}
             </ButtonGroup>
+          </Stack>
 
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
-              <DateRangeIcon sx={{ mr: 1, fontSize: 18}} />
-              <Typography variant="body2">
-                Viewing <b>{rangeInfo.label}</b> ({startDate} to {endDate})
-              </Typography>
-            </Box>
-
+          <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
             {attendanceHistory.length === 0 ? (
-              <Typography textAlign="center" color="text.secondary" fontStyle="italic">
-                No activity recorded for the {rangeInfo.label} period.
-              </Typography>
+              <Box p={4} textAlign="center">
+                <Typography color="text.secondary" fontStyle="italic">
+                  Tiada rekod aktiviti untuk tempoh {rangeInfo.label}.
+                </Typography>
+              </Box>
             ) : (
-              sortedDates.map((dateKey) => (
-                <Box key={dateKey} mb={3}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{mt: 2, mb: 1, borderBottom: '2px solid #ddd', pb: 0.5, color: 'primary.dark'}}>
-                    {dateKey === todayKey ? "Today" : formatDate(new Date(dateKey))}
-                  </Typography>
-                  <List disablePadding>
+              <List disablePadding>
+                {sortedDates.map((dateKey) => (
+                  <Box key={dateKey}>
+                    <ListItem sx={{ bgcolor: theme.palette.grey[100], borderBottom: '1px solid #eee' }}>
+                      <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
+                        {dateKey === todayKey ? "Hari Ini" : formatDate(new Date(dateKey))}
+                      </Typography>
+                    </ListItem>
                     {groupedHistory[dateKey].map((entry) => {
                       const f = formatHistoryEntry(entry);
                       return (
-                        <ListItem key={entry.id} 
-                        sx={{borderRadius: 2, mb: 0.5, transition: "0.2s", "&:hover": { bgcolor: "primary.lighter"}, }} 
-                        secondaryAction={
-                          <Typography variant="body1" fontFamily="monospace" fontWeight={700}>{f.time}</Typography>
-                        }
-                      >
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: f.colorPath}}>{f.icon}</Avatar>
-                        </ListItemAvatar>
-                        <ListItemText primary={f.label} />
-                      </ListItem>
+                        <ListItem key={entry.id} divider>
+                          <ListItemAvatar>
+                            <Avatar sx={{ bgcolor: f.colorPath }}>{f.icon}</Avatar>
+                          </ListItemAvatar>
+                          <ListItemText primary={f.label} />
+                          <Typography variant="body2" fontFamily="monospace" fontWeight={700}>
+                            {f.time}
+                          </Typography>
+                        </ListItem>
                       );
                     })}
-                  </List>
-                </Box>
-              ))
+                  </Box>
+                ))}
+              </List>
             )}
-          </CardContent>
-        </Card>
-      </Box>
+          </Card>
+        </Box>
+      </Stack>
     </Box>
   );
 }

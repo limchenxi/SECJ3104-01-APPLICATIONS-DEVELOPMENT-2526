@@ -470,8 +470,8 @@ export class CerapanService {
       .map((x) => x.percent);
     const overallPercent = observedPercents.length
       ? +(
-        observedPercents.reduce((a, b) => a + b, 0) / observedPercents.length
-      ).toFixed(2)
+          observedPercents.reduce((a, b) => a + b, 0) / observedPercents.length
+        ).toFixed(2)
       : 0;
 
     // New overall weighted observation percent (summing weighted contributions of obs1 & obs2)
@@ -493,8 +493,8 @@ export class CerapanService {
     );
     const triAverageWeighted = presentWeighted.length
       ? +(
-        presentWeighted.reduce((a, b) => a + b, 0) / presentWeighted.length
-      ).toFixed(2)
+          presentWeighted.reduce((a, b) => a + b, 0) / presentWeighted.length
+        ).toFixed(2)
       : 0;
 
     const scale = (() => {
