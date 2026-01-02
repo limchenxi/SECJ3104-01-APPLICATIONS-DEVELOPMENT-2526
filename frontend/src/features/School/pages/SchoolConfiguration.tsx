@@ -4,9 +4,8 @@ import { useStore } from '@tanstack/react-store';
 
 import BasicInfoTab from "./BasicInfo";
 import { fetchSettings, schoolSettingsStore } from "../stores";
-import ObservationSettingsTab from "./ObservationSetting";
 import AttendanceSettingsTab from "./AttendanceSetting";
-import NotificationsTab from "./Notification";
+// import NotificationsTab from "./Notification";
 import { School } from "@mui/icons-material";
 
 interface TabPanelProps {
@@ -82,9 +81,6 @@ export default function SchoolConfiguration() {
         <CustomTabPanel value={activeTab} index={0}>
           <BasicInfoTab initialData={settings.basicInfo} />
         </CustomTabPanel>
-        {/* <CustomTabPanel value={activeTab} index={1}>
-          <ObservationSettingsTab initialData={settings.observationSetting} />
-        </CustomTabPanel> */}
         <CustomTabPanel value={activeTab} index={1}>
           <AttendanceSettingsTab initialData={settings.attendanceSetting} />
         </CustomTabPanel>

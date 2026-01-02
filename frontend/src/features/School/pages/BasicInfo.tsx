@@ -7,7 +7,7 @@ type BasicInfoTabProps = {
 	initialData: BasicInfo;
 };
 
-const LANGUAGES = [{ value: 'ms-MY', label: 'Bahasa Malaysia' }, { value: 'en-US', label: 'English (US)' }];
+// const LANGUAGES = [{ value: 'ms-MY', label: 'Bahasa Malaysia' }, { value: 'en-US', label: 'English (US)' }];
 const TIMEZONES = [{ value: 'Asia/Kuala_Lumpur', label: 'Asia/Kuala_Lumpur' }, { value: 'Asia/Shanghai', label: 'Asia/Shanghai' }];
 
 const DEFAULT_BASIC_INFO: BasicInfo = {

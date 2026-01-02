@@ -13,7 +13,6 @@ import { QuizService } from './quiz.service';
 import { GenerateQuizDto } from './dto/generate-quiz.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizHistoryDto } from './dto/create-history.dto';
-import { GenerateVideoQuizDto } from './dto/generate-video-quiz.dto';
 
 @Controller('quiz')
 export class QuizController {

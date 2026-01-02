@@ -13,7 +13,6 @@ import { QuizHistory } from './schemas/quiz-history.schema';
 import { GenerateQuizDto } from './dto/generate-quiz.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizHistoryDto } from './dto/create-history.dto';
-// import { GenerateVideoQuizDto } from './dto/generate-video-quiz.dto';
 import { AI_USAGE_MODEL_NAME, AiUsage } from 'src/ai/schemas/ai-usage.schema';
 
 @Injectable()
