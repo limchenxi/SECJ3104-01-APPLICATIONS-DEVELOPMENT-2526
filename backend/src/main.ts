@@ -34,18 +34,9 @@ const ensureAdminUser = async (usersService: UsersService) => {
       gender: gender as Gender,
       contactNumber,
       profilePicture,
-      // subjects: ['Matematik', 'Bahasa Melayu'],
-      // classes: ['5 Amanah', '5 Bestari'],
     });
     Logger.log(`Default GURU user ensured: ${guruEmail}`, 'Bootstrap');
   }
-  // If guru exists but no assignments, optionally patch them (idempotent)
-  // else if (!existingGuru.subjects || existingGuru.subjects.length === 0) {
-  //   existingGuru.subjects = ['Matematik', 'Bahasa Melayu'];
-  //   existingGuru.classes = ['5 Amanah', '5 Bestari'];
-  //   await existingGuru.save();
-  //   Logger.log(`Default GURU assignments patched`, 'Bootstrap');
-  // }
 
   // Default PENTADBIR user
   const pentadbirEmail = 'pentadbir@app.local';
@@ -87,7 +78,8 @@ async function bootstrap() {
     allowedHeaders:
       'Content-Type, Accept, Authorization, ngrok-skip-browser-warning',
   });
-  await app.listen(port);
-  Logger.log(`App running on port ${port}`);
+  await app.listen(port, '0.0.0.0');
+  // Logger.log(`App running on port ${port}`);
+  Logger.log(`App running on port ${await app.getUrl()}`);
 }
 bootstrap();
