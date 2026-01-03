@@ -1,26 +1,26 @@
 import { useState } from "react";
 import { Box, Tabs, Tab, Stack, Typography } from "@mui/material";
-import { FileQuestion, BookOpen,  ClipboardClock } from "lucide-react";
+import { FileQuestion, BookOpen, ClipboardClock } from "lucide-react";
 
 import TopicQuizGenerator from "./topic/TopicQuiz";
 import FlashcardGenerator from "./flashcard/Flashcard";
 // import VideoQuizGenerator from "./video/VideoQuiz";
 import QuizDetailModal from "./history/QuizDetailModal";
 import { Quiz } from "@mui/icons-material";
-import QuizHistory from "./history/History";
+import QuizHistory from "./history/History.tsx";
 
 export default function QuizGeneratorPage() {
   const [tabValue, setTabValue] = useState(0);
   // const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
-  
+
   // 处理从 QuizHistory 传来的选中事件
-  const handleSelectQuiz = (historyItem) => {
+  const handleSelectQuiz = (historyItem: any) => {
     setSelectedHistory(historyItem);
     setIsModalOpen(true); // 打开模态框
   };
-  
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedHistory(null);
@@ -28,11 +28,11 @@ export default function QuizGeneratorPage() {
 
   return (
     <Box sx={{ p: 3, maxWidth: "xl", mx: "auto" }}>
-      <Stack spacing={4}>  
+      <Stack spacing={4}>
         {/* Header */}
         <Box>
           <Typography variant="h4" sx={{ mb: 0.5 }}>
-            <Quiz color="primary" fontSize="large"/> AI Penjana Kuiz & Kad Imbas
+            <Quiz color="primary" fontSize="large" /> AI Penjana Kuiz & Kad Imbas
           </Typography>
           <Typography color="text.secondary">
             Jana kuiz dan kad imbas dengan bantuan AI
@@ -81,7 +81,7 @@ export default function QuizGeneratorPage() {
         {/* {tabValue === 2 && <VideoQuizGenerator />} */}
         {tabValue === 2 && <QuizHistory onSelect={handleSelectQuiz} />}
       </Stack>
-        {/* 4. 渲染模态框 */}
+      {/* 4. 渲染模态框 */}
       {selectedHistory && (
         <QuizDetailModal
           historyItem={selectedHistory}
