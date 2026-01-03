@@ -21,7 +21,12 @@ import { SchoolModule } from './school/school.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot('mongodb://localhost:27017/teacher_system'),
+    // MongooseModule.forRoot('mongodb://localhost:27017/teacher_system'),
+    MongooseModule.forRootAsync({
+      useFactory: () => ({
+        uri: process.env.MONGODB_URI,
+      }),
+    }),
     AiModule,
     AuthModule,
     CerapanModule,
