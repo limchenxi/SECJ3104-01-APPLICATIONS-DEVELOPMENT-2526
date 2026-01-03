@@ -7,7 +7,7 @@ import FlashcardGenerator from "./flashcard/Flashcard";
 // import VideoQuizGenerator from "./video/VideoQuiz";
 import QuizDetailModal from "./history/QuizDetailModal";
 import { Quiz } from "@mui/icons-material";
-import QuizHistory from "./history/History.tsx";
+import QuizHistory from "./history/QuizHistoryList";
 
 export default function QuizGeneratorPage() {
   const [tabValue, setTabValue] = useState(0);
