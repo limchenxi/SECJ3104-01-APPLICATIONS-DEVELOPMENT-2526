@@ -1,5 +1,5 @@
 import { backendClient } from "../../../utils/axios-client";
-import { type AttendanceRecord } from "../type";
+// import { type AttendanceRecord } from "../type";
 
 export async function createManualEntry(dto: {
     userID: string,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { 
   Box, 
   Card, 
@@ -11,10 +11,10 @@ import type { Flashcard } from "../../type";
 interface FlashcardPreviewProps {
   flashcards: Flashcard[];
 }
-interface SingleFlashcardProps {
-  card: Flashcard;
-  index: number;
-}
+// interface SingleFlashcardProps {
+//   card: Flashcard;
+//   index: number;
+// }
 
 function SingleFlashcard({ card, index }: { card: Flashcard; index: number }) {
   const [isFlipped, setIsFlipped] = useState(false);

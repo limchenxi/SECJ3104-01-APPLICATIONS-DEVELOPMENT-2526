@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Card, Typography, Button } from "@mui/material";
 import { Download as DownloadIcon } from "lucide-react";
 import { useGenerateQuiz } from "../../hooks/useGenerateQuiz";

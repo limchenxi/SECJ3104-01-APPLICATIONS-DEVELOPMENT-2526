@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getReportDetails } from '../api/cerapan-service'; // Use your API file
-import type { CerapanRecord } from '../type'; // Import your type
+
+import type { CerapanRecord } from '../features/Cerapan/type';
+import { getReportDetails } from '../features/Cerapan/api/cerapanService';
+
 
 // A helper component to display one set of results
 function ResultBlock({ title, results, type }) {

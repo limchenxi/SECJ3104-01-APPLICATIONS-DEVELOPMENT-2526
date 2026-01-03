@@ -1,5 +1,5 @@
 import { Avatar, Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, Stack, Typography } from "@mui/material";
-import { User, Mail, Phone, Briefcase, Calendar, Edit, Lock, School } from "lucide-react";
+import { User, Mail, Phone, Briefcase, Calendar, Edit } from "lucide-react";
 import { profileStore } from "../store";
 import { loadProfile } from "../api";
 import { useEffect } from "react";

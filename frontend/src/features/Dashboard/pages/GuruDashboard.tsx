@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GridView} from "@mui/icons-material";
 import {
   Alert,
@@ -8,15 +8,13 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  Clock,
   GraduationCap,
   FileText,
-  User as UserIcon,
   ClipboardCheck,
   CalendarDays,
 } from "lucide-react";
 import { userApi } from "../../Users/api";
-import { getPendingTasksCount } from "../../Cerapan/api/cerapanService";
+// import { getPendingTasksCount } from "../../Cerapan/api/cerapanService";
 import { QuickAction, StatCard } from "./component";
 import { pentadbirService } from "../../Pentadbir/api/pentadbirService";
 import AttendanceVisual from "../../../components/AttendanceVisual";

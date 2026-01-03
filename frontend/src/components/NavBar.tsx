@@ -1,7 +1,7 @@
 import { AppBar, Avatar, Button, Container, Toolbar, Typography, Box, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
-import { ChevronLeftIcon, LogOut, MenuIcon } from "lucide-react";
+import { LogOut, MenuIcon } from "lucide-react";
 import type { UserRole } from "../features/Users/type";
 const SCHOOL_LOGO_URL = "/SKSRISIAKAP.png";
 interface NavBarProps {

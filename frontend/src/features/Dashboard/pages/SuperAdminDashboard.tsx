@@ -1,5 +1,5 @@
 import { GridView } from "@mui/icons-material";
-import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
+import { Alert, Box, CircularProgress, Stack, Typography } from "@mui/material";
 import type { AIUsage } from "../../AI/type";
 import { useEffect, useMemo, useState } from "react";
 import { TeachingAssignmentAPI } from "../../TeachingAssignment/api";

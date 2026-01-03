@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Tabs, Tab, Stack, Typography } from "@mui/material";
-import { FileQuestion, BookOpen, Youtube, ClipboardClock } from "lucide-react";
+import { FileQuestion, BookOpen,  ClipboardClock } from "lucide-react";
 
 import TopicQuizGenerator from "./topic/TopicQuiz";
 import FlashcardGenerator from "./flashcard/Flashcard";
 // import VideoQuizGenerator from "./video/VideoQuiz";
-import QuizHistory from "./history/HIstory";
 import QuizDetailModal from "./history/QuizDetailModal";
 import { Quiz } from "@mui/icons-material";
+import QuizHistory from "./history/History";
 
 export default function QuizGeneratorPage() {
   const [tabValue, setTabValue] = useState(0);

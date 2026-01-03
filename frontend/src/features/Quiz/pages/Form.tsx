@@ -4,7 +4,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Typography,
   Card,
   Button,
 } from "@mui/material";

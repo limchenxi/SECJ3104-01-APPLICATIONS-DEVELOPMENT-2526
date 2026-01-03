@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Box, Card, Typography, Button, CircularProgress } from "@mui/material";
+import { useState } from "react";
+import { Box, Card, Typography, Button } from "@mui/material";
 import QuizForm from "../Form";
 import { useGenerateQuiz } from "../../hooks/useGenerateQuiz"; 
 import QuizPreview from "./QuizPreview";

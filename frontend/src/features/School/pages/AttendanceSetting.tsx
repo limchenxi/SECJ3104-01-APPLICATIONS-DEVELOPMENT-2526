@@ -1,4 +1,4 @@
-import { Button, Stack, TextField, Grid, Alert, FormControlLabel, Checkbox, Typography } from "@mui/material";
+import { Button, Stack, TextField, Grid, Alert, FormControlLabel, Checkbox } from "@mui/material";
 import { useState, useMemo } from "react";
 import type { AttendanceSetting } from "../type";
 import { updatePartialSettings } from "../stores";

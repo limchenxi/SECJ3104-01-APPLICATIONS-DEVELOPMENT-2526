@@ -1,6 +1,4 @@
-// src/components/QuizDetailModal.tsx
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -14,7 +12,6 @@ import {
 
 import { exportQuizToPDF } from "../exportQuizToPdf"; // 导入导出函数
 import QuizPreview from "../topic/QuizPreview";
-import { DownloadIcon } from "lucide-react";
 import { downloadFlashcardPDF } from "../flashcard/downloadFlashcardPDF";
 import FlashcardPreview from "../flashcard/FlashcardPreview";
 

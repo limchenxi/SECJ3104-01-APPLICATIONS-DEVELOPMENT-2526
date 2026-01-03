@@ -1,11 +1,8 @@
-import React from 'react';
 import {
     Container,
     Typography,
     Box,
-    Button,
     Paper,
-    SvgIcon,
 } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material'; // A common icon for unauthorized/security issues
 

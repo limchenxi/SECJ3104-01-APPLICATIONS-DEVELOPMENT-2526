@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -27,7 +27,7 @@ import {
 } from "@mui/material";
 
 import { Edit, Trash2, Plus } from "lucide-react";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion";
 
 import {
   TeachingAssignmentAPI,

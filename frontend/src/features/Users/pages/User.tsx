@@ -28,7 +28,7 @@ import {
 import { userApi } from "../api";
 import { Pen, Plus, Trash2 } from "lucide-react";
 import { enqueueSnackbar } from "notistack";
-import { Edit, People } from "@mui/icons-material";
+import { People } from "@mui/icons-material";
 import type { UserItem, UpdateUserPayload, UserRole, UserGender, CreateUserPayload } from "../type";
 
 const roleOptions: UserRole[] = ["GURU", "PENTADBIR", "SUPERADMIN"];
