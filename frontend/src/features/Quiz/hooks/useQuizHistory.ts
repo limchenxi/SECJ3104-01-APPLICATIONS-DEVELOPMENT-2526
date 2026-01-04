@@ -14,16 +14,19 @@ export function useQuizHistory({ pollInterval = 0 } = {}) {
       // const res = await fetch("/api/quiz/history");
       const client = backendClient();
       const res = await client.get("/quiz/history");
-      if (!res.ok) throw new Error("Failed to load quiz history");
-
-      const json = await res.json();
+      const json = res.data;
 
       // Snapshot JSON.parse here
       const parsed = json.map((item: any) => {
         let snap = {};
         try {
-          snap = JSON.parse(typeof item.snapshot === 'string' ? item.snapshot : "{}"); 
-        } catch {}
+          // If snapshot is a string, parse it. If it's already an object, use it.
+          if (typeof item.snapshot === 'string') {
+            snap = JSON.parse(item.snapshot);
+          } else if (item.snapshot) {
+            snap = item.snapshot;
+          }
+        } catch { }
 
         return {
           ...item,
@@ -44,13 +47,13 @@ export function useQuizHistory({ pollInterval = 0 } = {}) {
     load();
     let t: number | undefined;
     if (pollInterval > 0) {
-        t = setInterval(load, pollInterval);
+      t = setInterval(load, pollInterval);
     }
-    
+
     return () => {
-        if (t !== undefined) {
-            clearInterval(t);
-        }
+      if (t !== undefined) {
+        clearInterval(t);
+      }
     };
   }, [load, pollInterval]);
   return { list, loading, error, reload: load };

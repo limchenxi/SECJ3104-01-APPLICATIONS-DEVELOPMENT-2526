@@ -8,27 +8,30 @@ import {
   HttpCode,
   HttpStatus,
   Request,
+  UseGuards,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { GenerateQuizDto } from './dto/generate-quiz.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizHistoryDto } from './dto/create-history.dto';
+import { JwtAuthGuard } from 'src/auth/jwt.strategy';
 
 @Controller('quiz')
+@UseGuards(JwtAuthGuard)
 export class QuizController {
-  constructor(private readonly quizService: QuizService) {}
+  constructor(private readonly quizService: QuizService) { }
 
   // -------- AI Generate Quiz --------
   @Post('generate')
   async generate(@Body() dto: GenerateQuizDto, @Request() req: any) {
-    const userId = req.user?.userId || 'GUEST_QUIZ';
+    const userId = req.user?._id?.toString() || 'GUEST_QUIZ';
     return this.quizService.generateQuiz(dto, userId);
   }
 
   // -------- AI Generate Flashcards --------
   @Post('ai/flashcards')
   async generateFlashcards(@Body() dto: GenerateQuizDto, @Request() req: any) {
-    const userId = req.user?.userId || 'GUEST_FLASHCARD';
+    const userId = req.user?._id?.toString() || 'GUEST_FLASHCARD';
     return this.quizService.generateFlashcards(dto, userId);
   }
 
