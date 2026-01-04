@@ -11,6 +11,7 @@ import {
 import type { AIUsage } from "../../type";
 import { getUsageColor, preprocessUsageData } from "./preprocess";
 import { PieChart, LineChart } from '@mui/x-charts';
+import { backendClient } from "../../../../utils/axios-client";
 
 export default function AiUsageAnalytics() {
   const [usage, setUsage] = useState<AIUsage[]>([]);
@@ -20,14 +21,25 @@ export default function AiUsageAnalytics() {
   const { pieData, lineData } = preprocessUsageData(usage);
   
   useEffect(() => {
-    fetch("/api/ai/usage")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("API error");
-        return res.json();
-      })
-      .then((data:AIUsage[]) => setUsage(data))
-      .catch(() => setError("Failed to load analytics"))
-      .finally(() => setLoading(false));
+    const client = backendClient();
+
+    client.get("/ai/usage")
+    .then((res) => {
+      setUsage(res.data);
+    })
+    .catch((err) => {
+      console.error("Analytics fetch error:", err);
+      setError("Failed to load analytics");
+    })
+    .finally(() => setLoading(false));
+    // fetch("/api/ai/usage")
+    //   .then(async (res) => {
+    //     if (!res.ok) throw new Error("API error");
+    //     return res.json();
+    //   })
+    //   .then((data:AIUsage[]) => setUsage(data))
+    //   .catch(() => setError("Failed to load analytics"))
+    //   .finally(() => setLoading(false));
   }, []);
 
   if (loading) {

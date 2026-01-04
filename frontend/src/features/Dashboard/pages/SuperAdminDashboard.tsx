@@ -7,6 +7,7 @@ import { userApi } from "../../Users/api";
 import { BookOpen, ClipboardCheck, Users } from "lucide-react";
 import type { UserItem } from "../../Users/type";
 import { QuickAction, StatCard } from "./component";
+import { backendClient } from "../../../utils/axios-client";
 
 const AI_MODEL_DEFAULT = "Gemini";
 const AI_MODEL_VERSION = "gemini-2.5-flash";
@@ -27,8 +28,9 @@ function useDashboardData() {
       try {
         const usersPromise = userApi.getAll();
         const assignmentsPromise = TeachingAssignmentAPI.getAll(); 
-        const usagePromise = fetch("/api/ai/usage").then(res => res.json());
-
+        // const usagePromise = fetch("/api/ai/usage").then(res => res.json());
+        const client = backendClient(); 
+        const usagePromise = client.get("/ai/usage").then(res => res.data);
         const [users, assignmentsData, aiUsage] = await Promise.all([
           usersPromise,
           assignmentsPromise,

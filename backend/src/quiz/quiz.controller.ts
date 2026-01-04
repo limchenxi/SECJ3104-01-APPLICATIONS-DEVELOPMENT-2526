@@ -32,12 +32,6 @@ export class QuizController {
     return this.quizService.generateFlashcards(dto, userId);
   }
 
-  // -------- AI Generate Video Quiz (New Route) --------
-  // @Post('ai/video-quiz') // 👈 匹配前端的 /api/ai/video-quiz
-  // async generateVideoQuiz(@Body() dto: GenerateVideoQuizDto) {
-  //   return this.quizService.generateVideoQuiz(dto);
-  // }
-
   // -------- Save generated quiz --------
   @Post()
   async createQuiz(@Body() dto: CreateQuizDto) {

@@ -6,6 +6,7 @@ import Display from "./Display";
 import History from "./History";
 import { Edit, Psychology } from "@mui/icons-material";
 import { getAuthToken } from "../../../utils/auth";
+import { backendClient } from "../../../utils/axios-client";
 
 export default function RPH() {
   const navigate = useNavigate();
@@ -23,42 +24,66 @@ export default function RPH() {
   }, [searchParams]);
 
   async function loadSingle(id: string) {
-    const token = getAuthToken();
-    const res = await fetch(`/api/rph/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setSelected(data);
+    // const token = getAuthToken();
+    // const res = await fetch(`/api/rph/${id}`, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // if (res.ok) {
+    //   const data = await res.json();
+    //   setSelected(data);
+    // }
+    try {
+      const client = backendClient();
+      const res = await client.get(`/rph/${id}`);
+      setSelected(res.data);
+    } catch (err) {
+      console.error("Load single RPH failed", err);
     }
   }
 
   async function handleSave(updated: RPH) {
-    const token = getAuthToken();
-    const res = await fetch(`/api/rph/${updated._id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(updated),
-    });
+    // const token = getAuthToken();
+    // const res = await fetch(`/api/rph/${updated._id}`, {
+    //   method: "PUT",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     Authorization: `Bearer ${token}`
+    //   },
+    //   body: JSON.stringify(updated),
+    // });
 
-    const saved = await res.json();
-    setSelected(saved);
-    historyRef.current?.refresh();
+    // const saved = await res.json();
+    // setSelected(saved);
+    // historyRef.current?.refresh();
+    try {
+      const client = backendClient();
+      const res = await client.put(`/rph/${updated._id}`, updated);
+      setSelected(res.data);
+      historyRef.current?.refresh();
+    } catch (err) {
+      console.error("Save RPH failed", err);
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Padam RPH ini?")) return;
-    const token = getAuthToken();
-    await fetch(`/api/rph/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setSelected(null);
-    navigate("/rph");
-    historyRef.current?.refresh();
+    // const token = getAuthToken();
+    // await fetch(`/api/rph/${id}`, {
+    //   method: "DELETE",
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // setSelected(null);
+    // navigate("/rph");
+    // historyRef.current?.refresh();
+    try {
+      const client = backendClient();
+      await client.delete(`/rph/${id}`);
+      setSelected(null);
+      navigate("/rph");
+      historyRef.current?.refresh();
+    } catch (err) {
+      console.error("Delete RPH failed", err);
+    }
   }
 
   return (

@@ -16,6 +16,14 @@ export const backendClient = (config?: BackendClientConfig) => {
       ...(withAuth && { Authorization: `Bearer ${getAuthToken()}` }),
     },
   });
-
+  if (withAuth) {
+    client.interceptors.request.use((req) => {
+      const token = getAuthToken();
+      if (token) {
+        req.headers.Authorization = `Bearer ${token}`;
+      }
+      return req;
+    });
+  }
   return client;
 };

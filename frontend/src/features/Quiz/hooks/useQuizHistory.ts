@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { backendClient } from "../../../utils/axios-client";
 
 export function useQuizHistory({ pollInterval = 0 } = {}) {
   const [list, setList] = useState<any[]>([]);
@@ -10,12 +11,14 @@ export function useQuizHistory({ pollInterval = 0 } = {}) {
     setError(null);
 
     try {
-      const res = await fetch("/api/quiz/history");
+      // const res = await fetch("/api/quiz/history");
+      const client = backendClient();
+      const res = await client.get("/quiz/history");
       if (!res.ok) throw new Error("Failed to load quiz history");
 
       const json = await res.json();
 
-      // ⭐ Snapshot JSON.parse here
+      // Snapshot JSON.parse here
       const parsed = json.map((item: any) => {
         let snap = {};
         try {
@@ -30,7 +33,8 @@ export function useQuizHistory({ pollInterval = 0 } = {}) {
 
       setList(parsed);
     } catch (err: any) {
-      setError(err?.message || "Failed to load");
+      // setError(err?.message || "Failed to load");
+      setError(err?.response?.data?.message || err?.message || "Failed to load");
     } finally {
       setLoading(false);
     }

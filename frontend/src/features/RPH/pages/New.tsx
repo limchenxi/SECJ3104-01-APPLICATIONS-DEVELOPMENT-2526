@@ -5,6 +5,7 @@ import RPHForm from "./Form";
 import type { RPHRequest } from "../type";
 import { ArrowBack } from "@mui/icons-material";
 import { getAuthToken } from "../../../utils/auth";
+import { backendClient } from "../../../utils/axios-client";
 
 export default function NewRPH() {
   const navigate = useNavigate();
@@ -14,26 +15,31 @@ export default function NewRPH() {
     setLoading(true);
 
     try {
-      const token = getAuthToken();
-      const res = await fetch("/api/rph/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(values),
-      });
+      // const token = getAuthToken();
+      // const res = await fetch("/api/rph/generate", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify(values),
+      // });
+      const client = backendClient();
+      const res = await client.post("/rph/generate", values);
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Server Error");
-      }
+      // if (!res.ok) {
+      //   const errData = await res.json().catch(() => ({}));
+      //   throw new Error(errData.message || "Server Error");
+      // }
 
-      const data = await res.json();
+      // const data = await res.json();
+      const data = res.data;
       navigate(`/rph?id=${data._id}`);
     } catch (error) {
       console.error("Generate Error:", error);
-      alert(`Gagal menjana RPH: ${error instanceof Error ? error.message : "Unknown Error"}`);
+      // alert(`Gagal menjana RPH: ${error instanceof Error ? error.message : "Unknown Error"}`);
+      const msg = error.response?.data?.message || "Gagal menjana RPH";
+      alert(`Gagal menjana RPH: ${msg}`);
     }
 
     setLoading(false);

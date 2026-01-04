@@ -11,6 +11,7 @@ import { Delete, Restore } from "@mui/icons-material";
 import type { RPH } from "../type";
 import { getAuthToken } from "../../../utils/auth";
 import useAuth from "../../../hooks/useAuth";
+import { backendClient } from "../../../utils/axios-client";
 
 interface Props {
   onSelect: (item: RPH) => void;
@@ -22,14 +23,21 @@ const History = forwardRef(({ onSelect, onDelete }: Props, ref) => {
   const [list, setList] = useState<RPH[]>([]);
 
   async function loadHistory() {
-    const token = getAuthToken();
-    const res = await fetch("/api/rph", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const data = await res.json();
-    setList(data);
+    try {
+      const client = backendClient(); 
+      const res = await client.get("/rph"); 
+      setList(res.data);
+    } catch (err) {
+      console.error("Failed to load RPH history", err);
+    }
+    // const token = getAuthToken();
+    // const res = await fetch("/api/rph", {
+    //   headers: {
+    //     Authorization: `Bearer ${token}`,
+    //   },
+    // });
+    // const data = await res.json();
+    // setList(data);
   }
 
   useEffect(() => {

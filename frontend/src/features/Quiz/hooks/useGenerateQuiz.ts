@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useQuizHistory } from "./useQuizHistory";
 import { processQuestions } from "../../../utils/quizUtils";
+import { backendClient } from "../../../utils/axios-client";
 const ArrayOf = Array.isArray;
 interface GenerationPayload {
     topic?: string;
@@ -9,8 +10,6 @@ interface GenerationPayload {
     numQuestions?: number;
     subject?: string;
     year?: string;
-    // Video Quiz specific fields
-    // url?: string;
 }
 
 export function useGenerateQuiz(generateApiUrl?: string) {
@@ -26,8 +25,10 @@ export function useGenerateQuiz(generateApiUrl?: string) {
     setError(null);
     setData(null);
 
-    // 确定目标 API URL，默认为 generateApiUrl，如果未提供则使用 Quiz 的路径
-    const apiUrl = generateApiUrl || "/api/quiz/generate"; 
+    const client = backendClient();
+  const apiUrl = generateApiUrl || "/quiz/generate";
+
+    // const apiUrl = generateApiUrl || "/api/quiz/generate"; 
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiBody: any = {
@@ -37,48 +38,25 @@ export function useGenerateQuiz(generateApiUrl?: string) {
         year: payload.year,
         subject: payload.subject,
     };
-        
-    // if (apiUrl.includes('video-quiz')) {
-    //     // Video Quiz (GenerateVideoQuizDto) 只需要 url 和 questionCount
-    //     if (!payload.url) throw new Error("URL diperlukan untuk kuiz video.");
-    //     apiBody = {
-    //         url: payload.url,
-    //         questionCount: apiBody.questionCount,
-    //     };
-    //     // ⚠️ 故意不包含 topic 和 difficulty
-    // } else {
-    //     // Flashcard/Topic Quiz Generate 需要 topic 和 difficulty
-    //     apiBody.topic = payload.topic;
-    //     apiBody.difficulty = payload.difficulty;
-    // }
 
     try {
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(apiBody),
-      });
+      const res = await client.post(apiUrl, apiBody);
+      const processedData = res.data;
+      // const res = await fetch(apiUrl, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(apiBody),
+      // });
 
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(`Generation failed: Status ${res.status}. ${errorText.substring(0, 100)}...`);
       }
-      const processedData = await res.json();
-      // const isVideoQuiz = apiUrl.includes('video-quiz');
+      // const processedData = await res.json();
       const isFlashcard = apiUrl.includes('flashcards');
       
       let historyType: 'flashcard' | 'quiz-topic' = 'quiz-topic';
 
-      // 🚨 Video Quiz 逻辑：注入 ID/Index
-      // if (isVideoQuiz && processedData.questions) {
-      //     processedData.questions = processQuestions(processedData.questions);
-      //     historyType = 'quiz-video';
-      // } else if (isFlashcard && processedData.flashcards) {
-      //     historyType = 'flashcard';
-      // } else if (processedData.questions) {
-      //     processedData.questions = processQuestions(processedData.questions);
-      //     historyType = 'quiz-topic';
-      // }
       if (isFlashcard && processedData.flashcards) {
         historyType = 'flashcard';
       } else if (processedData.questions) {
@@ -88,8 +66,7 @@ export function useGenerateQuiz(generateApiUrl?: string) {
       
       setData(processedData); 
       
-      // ----------------------------------------------------
-      // 历史记录保存逻辑 (Flashcard)
+      // History (Flashcard)
       // ----------------------------------------------------
       
       if (historyType !== 'quiz-topic') { 
@@ -103,16 +80,22 @@ export function useGenerateQuiz(generateApiUrl?: string) {
           flashcards: content,
         };
         try { 
-          const histRes = await fetch("/api/quiz/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              generatedBy: isFlashcard ? 'flashcard-generator' : 'topic-quiz-generator',
-              note: `Generated via ${historyType}`,
-              snapshot: JSON.stringify(snapshotData),
-              contentType: historyType, 
-            }),
+          const histRes = await client.post("/quiz/history", {
+            generatedBy: isFlashcard ? 'flashcard-generator' : 'topic-quiz-generator',
+            note: `Generated via ${historyType}`,
+            snapshot: JSON.stringify(snapshotData),
+            contentType: historyType,
           });
+          // const histRes = await fetch("/api/quiz/history", {
+          //   method: "POST",
+          //   headers: { "Content-Type": "application/json" },
+          //   body: JSON.stringify({
+          //     generatedBy: isFlashcard ? 'flashcard-generator' : 'topic-quiz-generator',
+          //     note: `Generated via ${historyType}`,
+          //     snapshot: JSON.stringify(snapshotData),
+          //     contentType: historyType, 
+          //   }),
+          // });
                     
           if (!histRes.ok) {
             const errorText = await histRes.text();

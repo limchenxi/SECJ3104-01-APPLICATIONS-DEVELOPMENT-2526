@@ -16,6 +16,7 @@ import { exportQuizToPDF } from "../exportQuizToPdf";
 import { downloadFlashcardPDF } from "../flashcard/downloadFlashcardPDF";
 import { Savings } from "@mui/icons-material";
 import { HistoryExportAction } from "./HistoryExportAction";
+import { backendClient } from "../../../../utils/axios-client";
 
 export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void }) {
   const { list, loading, error, reload } = useQuizHistory({ pollInterval: 0 });
@@ -23,7 +24,9 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
   async function handleDeleteHistory(id: string) {
     if (!confirm("Padam rekod sejarah ini?")) return;
     try {
-      const res = await fetch(`/api/quiz/history/${id}`, { method: "DELETE" });
+      // const res = await fetch(`/api/quiz/history/${id}`, { method: "DELETE" });
+      const client = backendClient();
+      const res = await client.delete(`/quiz/history/${id}`);
       if (res.ok) {
         reload();
       } else {
@@ -68,7 +71,10 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
     // 2. 否则，通过 API 获取
     else if (historyItem.quizId) {
       try {
-        const res = await fetch(`/api/quiz/${historyItem.quizId}`);
+        const client = backendClient();
+        const res = await client.get(`/quiz/${historyItem.quizId}`);
+        const contentObj = res.data;
+        // const res = await fetch(`/api/quiz/${historyItem.quizId}`);
         if (!res.ok) throw new Error("Failed to fetch quiz");
         contentObj = await res.json();
       } catch (e) {

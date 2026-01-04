@@ -14,6 +14,7 @@ import { exportQuizToPDF } from "../exportQuizToPdf"; // 导入导出函数
 import QuizPreview from "../topic/QuizPreview";
 import { downloadFlashcardPDF } from "../flashcard/downloadFlashcardPDF";
 import FlashcardPreview from "../flashcard/FlashcardPreview";
+import { backendClient } from "../../../../utils/axios-client";
 
 // 假设我们有一个接口来定义传递进来的 props
 interface QuizDetailModalProps {
@@ -69,9 +70,12 @@ export default function QuizDetailModal({ historyItem, open, onClose }: QuizDeta
       // 2. 否则，通过 API 获取
       else if (historyItem.quizId) {
         try {
-          const res = await fetch(`/api/quiz/${historyItem.quizId}`);
+          const client = backendClient();
+          const res = await client.get(`/quiz/${historyItem.quizId}`);
+          // const res = await fetch(`/api/quiz/${historyItem.quizId}`);
           if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
-          const apiData = await res.json();
+          // const apiData = await res.json();
+          const apiData = res.data;
           loadedData = {
                 title: apiData.title || "Kuiz Pangkalan Data",
                 subject: apiData.subject || "N/A",
