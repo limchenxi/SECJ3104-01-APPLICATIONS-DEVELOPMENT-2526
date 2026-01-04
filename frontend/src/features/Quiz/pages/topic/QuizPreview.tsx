@@ -44,10 +44,11 @@ export default function QuizPreview({
                 {question.options.map((option, optionIndex) => {
                   const isAnswer = optionIndex === question.answerIndex;
                   const fontWeight = showAnswers && isAnswer ? 'bold' : 'normal';
-                  const optionLabel = `${String.fromCharCode(65 + optionIndex)}. ${option}`; 
-                    return (
+                  const labelPrefix = `${String.fromCharCode(65 + optionIndex)}.`;
+                  const optionLabel = option.startsWith(labelPrefix) ? option : `${labelPrefix} ${option}`;
+                  return (
                     <ListItem key={optionIndex} disableGutters>
-                      <ListItemText primary={optionLabel} primaryTypographyProps={{ sx: { fontWeight: fontWeight } }}/>
+                      <ListItemText primary={optionLabel} primaryTypographyProps={{ sx: { fontWeight: fontWeight } }} />
                       {showAnswers && isAnswer ? (
                         <Chip label="Jawapan" size="small" color="success" />
                       ) : null}

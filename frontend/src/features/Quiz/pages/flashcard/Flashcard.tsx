@@ -10,7 +10,7 @@ import { useQuizHistory } from "../../hooks/useQuizHistory";
 
 export default function FlashcardGenerator() {
   // Point to the flashcard API endpoint
-  const { loading, data, generate } = useGenerateQuiz("/api/quiz/ai/flashcards");
+  const { loading, data, generate } = useGenerateQuiz("/quiz/ai/flashcards");
   const { reload } = useQuizHistory({ pollInterval: 0 });
   const [form, setForm] = useState({
     subject: "",
@@ -30,8 +30,8 @@ export default function FlashcardGenerator() {
         numQuestions: form.numQuestions,
       });
       reload();
-    }catch (error) {
-        console.error("Flashcard generation error:", error);
+    } catch (error) {
+      console.error("Flashcard generation error:", error);
     }
   };
 
@@ -70,17 +70,17 @@ export default function FlashcardGenerator() {
             <Typography variant="h6" fontWeight="bold">
               📚 Kad Imbas Dijana
             </Typography>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleExport}
               startIcon={<DownloadIcon size={18} />}
             >
               Eksport PDF
             </Button>
           </Box>
-          
+
           <FlashcardPreview flashcards={data.flashcards} />
-          
+
         </Card>
       )}
     </Box>
