@@ -22,15 +22,15 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
   const { list, loading, error, reload } = useQuizHistory({ pollInterval: 0 });
 
   async function handleDeleteHistory(id: string) {
-    if (!confirm("Padam rekod sejarah ini?")) return;
+    if (!window.confirm("Padam rekod sejarah ini?")) return;
     try {
       // const res = await fetch(`/api/quiz/history/${id}`, { method: "DELETE" });
       const client = backendClient();
       const res = await client.delete(`/quiz/history/${id}`);
-      if (res.ok) {
+      if (res.status === 204 || res.status === 200) {
         reload();
       } else {
-        const errorText = await res.text();
+        const errorText = JSON.stringify(res.data);
         console.error("DELETE FAILED:", res.status, errorText);
         //   alert(`Gagal padam rekod. Status: ${res.status}`);
       }
@@ -73,10 +73,7 @@ export default function QuizHistory({ onSelect }: { onSelect?: (q: any) => void 
       try {
         const client = backendClient();
         const res = await client.get(`/quiz/${historyItem.quizId}`);
-        const contentObj = res.data;
-        // const res = await fetch(`/api/quiz/${historyItem.quizId}`);
-        if (!res.ok) throw new Error("Failed to fetch quiz");
-        contentObj = await res.json();
+        contentObj = res.data;
       } catch (e) {
         console.error("Failed to fetch quiz by ID:", e);
         alert("Gagal memuat kuiz dari API. Sila cuba lagi.");
